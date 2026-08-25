@@ -15,6 +15,7 @@ import { FoundryClient } from '../foundry-client.js';
 import { Logger } from '../logger.js';
 import { SystemRegistry } from '../systems/system-registry.js';
 import { detectGameSystem } from '../utils/system-detection.js';
+import { parseFolderPath } from './folder-path.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -126,6 +127,13 @@ export class ActorManagementTools {
                   img: {
                     type: 'string',
                     description: 'New icon/portrait path.',
+                  },
+                  folder: {
+                    type: ['string', 'null'],
+                    description:
+                      'File this actor into a folder, by "/" separated path (e.g. ' +
+                      '"Iron Gods/Book 1 - Fires of Creation"). Missing parent folders are created. ' +
+                      'Pass null to move the actor to the root. Use manage-folders to inspect the tree.',
                   },
                   system: {
                     type: 'object',
@@ -266,6 +274,7 @@ export class ActorManagementTools {
             id: z.string().min(1),
             name: z.string().optional(),
             img: z.string().optional(),
+            folder: z.string().nullable().optional(),
             system: z.record(z.any()).optional(),
           })
         )
@@ -274,14 +283,22 @@ export class ActorManagementTools {
 
     const { updates } = schema.parse(args);
 
-    this.logger.info('Updating actors', { count: updates.length });
+    // "folder" is a user-facing path; the bridge resolves segments against game.folders.
+    // Parsing here means a malformed path fails before any actor is touched.
+    const filedUpdates = updates.map(u => {
+      if (u.folder === undefined) return u;
+      const { folder, ...rest } = u;
+      return { ...rest, folderSegments: folder === null ? null : parseFolderPath(folder) };
+    });
+
+    this.logger.info('Updating actors', { count: filedUpdates.length });
 
     const adapter = await this.getAdapter();
     const normalizedUpdates = adapter?.normalizePayload
-      ? updates.map(u =>
+      ? filedUpdates.map(u =>
           u.system !== undefined ? { ...u, system: adapter.normalizePayload!(u.system) } : u
         )
-      : updates;
+      : filedUpdates;
 
     const result = await this.foundryClient.query('foundry-mcp-bridge.updateActors', {
       updates: normalizedUpdates,
