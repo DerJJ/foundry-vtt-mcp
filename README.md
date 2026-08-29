@@ -52,7 +52,7 @@ The Foundry MCP Bridge enables natural AI conversations with your Foundry VTT ga
 
 1. Open Foundry VTT (v13 or v14)
 2. Select install module in the Foundry Add-ons menu
-3. At the bottom of the window, add the Manifest URL as: https://github.com/KillgoreAlpha/foundry-vtt-mcp/blob/master/packages/foundry-module/module.json and click install
+3. At the bottom of the window, add the Manifest URL as: https://github.com/KillgoreAlpha/foundry-vtt-mcp/releases/latest/download/module.json and click install
 4. Enable "Foundry MCP Bridge" in Module Management
    - **Do not change the module ID or folder name.** The MCP backend and the Claude integration both expect the module to live in a directory called `foundry-mcp-bridge`. Renaming the ID in `module.json` breaks socket routing and stops Claude from seeing the backend.
 
