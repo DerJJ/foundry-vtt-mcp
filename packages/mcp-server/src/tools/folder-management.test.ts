@@ -110,6 +110,71 @@ describe('FolderManagementTools delete', () => {
   });
 });
 
+describe('FolderManagementTools pack scoping', () => {
+  it('scopes create to a compendium pack and drops documentType', async () => {
+    const { tools, query } = makeTools();
+
+    await tools.handleManageFolders({
+      action: 'create',
+      path: 'Robots/Gearsmen',
+      pack: 'world.my-monsters',
+    });
+
+    expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.createFolder', {
+      segments: ['Robots', 'Gearsmen'],
+      pack: 'world.my-monsters',
+    });
+  });
+
+  it('scopes list to a pack', async () => {
+    const { tools, query } = makeTools();
+
+    await tools.handleManageFolders({ action: 'list', pack: 'world.my-monsters' });
+
+    expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.listFolders', {
+      pack: 'world.my-monsters',
+    });
+  });
+
+  it('scopes rename, move and delete to a pack', async () => {
+    const { tools, query } = makeTools();
+
+    await tools.handleManageFolders({
+      action: 'rename',
+      path: 'Robots',
+      newName: 'Constructs',
+      pack: 'world.my-monsters',
+    });
+    await tools.handleManageFolders({
+      action: 'move',
+      path: 'Constructs',
+      newParentPath: 'Enemies',
+      pack: 'world.my-monsters',
+    });
+    await tools.handleManageFolders({
+      action: 'delete',
+      path: 'Enemies/Constructs',
+      pack: 'world.my-monsters',
+    });
+
+    expect(query).toHaveBeenNthCalledWith(1, 'foundry-mcp-bridge.renameFolder', {
+      segments: ['Robots'],
+      newName: 'Constructs',
+      pack: 'world.my-monsters',
+    });
+    expect(query).toHaveBeenNthCalledWith(2, 'foundry-mcp-bridge.moveFolder', {
+      segments: ['Constructs'],
+      newParentSegments: ['Enemies'],
+      pack: 'world.my-monsters',
+    });
+    expect(query).toHaveBeenNthCalledWith(3, 'foundry-mcp-bridge.deleteFolder', {
+      segments: ['Enemies', 'Constructs'],
+      pack: 'world.my-monsters',
+      deleteContents: false,
+    });
+  });
+});
+
 describe('FolderManagementTools list, rename and move', () => {
   it('lists folders for a document type', async () => {
     const { tools, query } = makeTools();

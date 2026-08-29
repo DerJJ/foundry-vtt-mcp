@@ -14,6 +14,8 @@ import { ActorCreationTools } from './tools/actor-creation.js';
 import { ActorManagementTools } from './tools/actor-management.js';
 import { FolderManagementTools } from './tools/folder-management.js';
 import { SceneManagementTools } from './tools/scene-management.js';
+import { CompendiumManagementTools } from './tools/compendium-management.js';
+import { CompendiumEntryTools } from './tools/compendium-entries.js';
 import { QuestCreationTools } from './tools/quest-creation.js';
 import { DiceRollTools } from './tools/dice-roll.js';
 import { CampaignManagementTools } from './tools/campaign-management.js';
@@ -1180,6 +1182,8 @@ async function startBackend(): Promise<void> {
   const actorManagementTools = new ActorManagementTools({ foundryClient, logger, systemRegistry });
   const folderManagementTools = new FolderManagementTools({ foundryClient, logger });
   const sceneManagementTools = new SceneManagementTools({ foundryClient, logger });
+  const compendiumManagementTools = new CompendiumManagementTools({ foundryClient, logger });
+  const compendiumEntryTools = new CompendiumEntryTools({ foundryClient, logger });
 
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
 
@@ -1416,6 +1420,8 @@ async function startBackend(): Promise<void> {
     ...actorManagementTools.getToolDefinitions(),
     ...folderManagementTools.getToolDefinitions(),
     ...sceneManagementTools.getToolDefinitions(),
+    ...compendiumManagementTools.getToolDefinitions(),
+    ...compendiumEntryTools.getToolDefinitions(),
 
     ...dsa5CharacterCreator.getToolDefinitions(),
 
@@ -1611,6 +1617,20 @@ async function startBackend(): Promise<void> {
 
                 case 'manage-scenes':
                   result = await sceneManagementTools.handleManageScenes(args);
+
+                  break;
+
+                // Compendium management (list / create / delete packs)
+
+                case 'manage-compendiums':
+                  result = await compendiumManagementTools.handleManageCompendiums(args);
+
+                  break;
+
+                // Compendium entry management (list / create / update / delete / copy)
+
+                case 'manage-compendium-entries':
+                  result = await compendiumEntryTools.handleManageCompendiumEntries(args);
 
                   break;
 

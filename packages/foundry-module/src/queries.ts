@@ -141,6 +141,18 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.moveFolder`] = this.handleMoveFolder.bind(this);
     CONFIG.queries[`${modulePrefix}.deleteFolder`] = this.handleDeleteFolder.bind(this);
 
+    // Compendium pack CRUD (world packs only)
+    CONFIG.queries[`${modulePrefix}.listPacks`] = this.handleListPacks.bind(this);
+    CONFIG.queries[`${modulePrefix}.createPack`] = this.handleCreatePack.bind(this);
+    CONFIG.queries[`${modulePrefix}.deletePack`] = this.handleDeletePack.bind(this);
+
+    // Compendium entry CRUD + copy-by-UUID
+    CONFIG.queries[`${modulePrefix}.listPackEntries`] = this.handleListPackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.createPackEntries`] = this.handleCreatePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.updatePackEntries`] = this.handleUpdatePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.deletePackEntries`] = this.handleDeletePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.copyPackEntry`] = this.handleCopyPackEntry.bind(this);
+
     // Scene CRUD (create / update / delete / activate)
     CONFIG.queries[`${modulePrefix}.createScene`] = this.handleCreateScene.bind(this);
     CONFIG.queries[`${modulePrefix}.updateScene`] = this.handleUpdateScene.bind(this);
@@ -2196,16 +2208,20 @@ export class QueryHandlers {
 
   // ===== FOLDER HANDLERS =====
 
-  private async handleListFolders(data: { documentType: FolderableType }): Promise<any> {
+  private async handleListFolders(data: {
+    documentType: FolderableType;
+    pack?: string;
+  }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
     this.dataAccess.validateFoundryState();
-    return this.dataAccess.listFolders({ documentType: data.documentType });
+    return this.dataAccess.listFolders(data);
   }
 
   private async handleCreateFolder(data: {
     segments: string[];
     documentType: FolderableType;
+    pack?: string;
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
@@ -2220,6 +2236,7 @@ export class QueryHandlers {
     segments: string[];
     documentType: FolderableType;
     newName: string;
+    pack?: string;
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
@@ -2234,6 +2251,7 @@ export class QueryHandlers {
     segments: string[];
     documentType: FolderableType;
     newParentSegments: string[] | null;
+    pack?: string;
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
@@ -2245,11 +2263,113 @@ export class QueryHandlers {
     segments: string[];
     documentType: FolderableType;
     deleteContents: boolean;
+    pack?: string;
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
     this.dataAccess.validateFoundryState();
     return this.dataAccess.deleteFolderPath(data);
+  }
+
+  // ===== COMPENDIUM PACK / ENTRY HANDLERS =====
+
+  private async handleListPacks(): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.listPacks();
+  }
+
+  private async handleCreatePack(data: {
+    label: string;
+    type: string;
+    name: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.label || !data?.type || !data?.name) {
+      throw new Error('label, type and name are required');
+    }
+    return this.dataAccess.createPack(data);
+  }
+
+  private async handleDeletePack(data: { identifier: string }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.identifier) {
+      throw new Error('identifier is required');
+    }
+    return this.dataAccess.deletePack(data);
+  }
+
+  private async handleListPackEntries(data: {
+    pack: string;
+    nameFilter?: string;
+    type?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack) {
+      throw new Error('pack is required');
+    }
+    return this.dataAccess.listPackEntries(data);
+  }
+
+  private async handleCreatePackEntries(data: {
+    pack: string;
+    entries: any[];
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.entries) || data.entries.length === 0) {
+      throw new Error('pack and a non-empty entries array are required');
+    }
+    return this.dataAccess.createPackEntries(data);
+  }
+
+  private async handleUpdatePackEntries(data: {
+    pack: string;
+    updates: any[];
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.updates) || data.updates.length === 0) {
+      throw new Error('pack and a non-empty updates array are required');
+    }
+    return this.dataAccess.updatePackEntries(data);
+  }
+
+  private async handleDeletePackEntries(data: {
+    pack: string;
+    identifiers: string[];
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.identifiers) || data.identifiers.length === 0) {
+      throw new Error('pack and a non-empty identifiers array are required');
+    }
+    return this.dataAccess.deletePackEntries(data);
+  }
+
+  private async handleCopyPackEntry(data: {
+    pack: string;
+    source: string;
+    folderSegments?: string[];
+    newName?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !data?.source) {
+      throw new Error('pack and source are required');
+    }
+    return this.dataAccess.copyPackEntry(data);
   }
 
   // ===== SCENE HANDLERS =====

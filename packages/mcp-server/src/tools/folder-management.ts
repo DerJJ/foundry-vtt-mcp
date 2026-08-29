@@ -30,6 +30,15 @@ const DOCUMENT_TYPES = [
 
 const documentTypeSchema = z.enum(DOCUMENT_TYPES).default('Actor');
 
+/**
+ * Folders live either in the world sidebar (scoped by document type) or inside a
+ * compendium pack (scoped by pack id). When a pack is given its own document type
+ * is fixed, so documentType is dropped from the request.
+ */
+function folderScope(documentType: string, pack: string | undefined) {
+  return pack !== undefined ? { pack } : { documentType };
+}
+
 export interface FolderManagementToolsOptions {
   foundryClient: FoundryClient;
   logger: Logger;
@@ -58,6 +67,8 @@ export class FolderManagementTools {
           '- "move": Reparent the folder at the given path under newParentPath (null moves it to the root).\n' +
           '- "delete": Delete the folder. By default its contents are kept and moved up to the parent; ' +
           'destroying the contents requires BOTH deleteContents and confirmDelete.\n' +
+          'Pass "pack" (a compendium pack id like "world.my-monsters") to manage folders inside that ' +
+          'compendium instead of the world sidebar; documentType is then ignored.\n' +
           'To file an actor into a folder, use manage-actors → update with the "folder" field.',
         inputSchema: {
           type: 'object',
@@ -75,8 +86,15 @@ export class FolderManagementTools {
             },
             documentType: {
               type: 'string',
-              description: 'Which document type the folder holds. Defaults to "Actor".',
+              description:
+                'Which document type the folder holds. Defaults to "Actor". Ignored when "pack" is set.',
               enum: [...DOCUMENT_TYPES],
+            },
+            pack: {
+              type: 'string',
+              description:
+                'Compendium pack id (e.g. "world.my-monsters"). When set, folders are managed inside ' +
+                'that compendium instead of the world sidebar, and documentType is ignored.',
             },
             newName: {
               type: 'string',
@@ -132,81 +150,93 @@ export class FolderManagementTools {
   // ── list ──────────────────────────────────────────────────────────────────
 
   private async handleList(args: any): Promise<any> {
-    const { documentType } = z.object({ documentType: documentTypeSchema }).parse(args);
+    const { documentType, pack } = z
+      .object({ documentType: documentTypeSchema, pack: z.string().min(1).optional() })
+      .parse(args);
 
-    this.logger.info('Listing folders', { documentType });
+    this.logger.info('Listing folders', { documentType, pack });
 
-    return this.foundryClient.query('foundry-mcp-bridge.listFolders', { documentType });
+    return this.foundryClient.query('foundry-mcp-bridge.listFolders', folderScope(documentType, pack));
   }
 
   // ── create ────────────────────────────────────────────────────────────────
 
   private async handleCreate(args: any): Promise<any> {
-    const { path, documentType } = z
-      .object({ path: z.string(), documentType: documentTypeSchema })
-      .parse(args);
-
-    const segments = parseFolderPath(path);
-
-    this.logger.info('Creating folder', { segments, documentType });
-
-    return this.foundryClient.query('foundry-mcp-bridge.createFolder', { segments, documentType });
-  }
-
-  // ── rename ────────────────────────────────────────────────────────────────
-
-  private async handleRename(args: any): Promise<any> {
-    const { path, documentType, newName } = z
+    const { path, documentType, pack } = z
       .object({
         path: z.string(),
         documentType: documentTypeSchema,
-        newName: z.string().min(1),
+        pack: z.string().min(1).optional(),
       })
       .parse(args);
 
     const segments = parseFolderPath(path);
 
-    this.logger.info('Renaming folder', { segments, documentType, newName });
+    this.logger.info('Creating folder', { segments, documentType, pack });
+
+    return this.foundryClient.query('foundry-mcp-bridge.createFolder', {
+      segments,
+      ...folderScope(documentType, pack),
+    });
+  }
+
+  // ── rename ────────────────────────────────────────────────────────────────
+
+  private async handleRename(args: any): Promise<any> {
+    const { path, documentType, newName, pack } = z
+      .object({
+        path: z.string(),
+        documentType: documentTypeSchema,
+        newName: z.string().min(1),
+        pack: z.string().min(1).optional(),
+      })
+      .parse(args);
+
+    const segments = parseFolderPath(path);
+
+    this.logger.info('Renaming folder', { segments, documentType, newName, pack });
 
     return this.foundryClient.query('foundry-mcp-bridge.renameFolder', {
       segments,
-      documentType,
       newName,
+      ...folderScope(documentType, pack),
     });
   }
 
   // ── move ──────────────────────────────────────────────────────────────────
 
   private async handleMove(args: any): Promise<any> {
-    const { path, documentType, newParentPath } = z
+    const { path, documentType, newParentPath, pack } = z
       .object({
         path: z.string(),
         documentType: documentTypeSchema,
         newParentPath: z.string().nullable(),
+        pack: z.string().min(1).optional(),
       })
       .parse(args);
 
     const segments = parseFolderPath(path);
     const newParentSegments = newParentPath === null ? null : parseFolderPath(newParentPath);
 
-    this.logger.info('Moving folder', { segments, documentType, newParentSegments });
+    this.logger.info('Moving folder', { segments, documentType, newParentSegments, pack });
 
     return this.foundryClient.query('foundry-mcp-bridge.moveFolder', {
       segments,
-      documentType,
       newParentSegments,
+      ...folderScope(documentType, pack),
     });
   }
 
   // ── delete ────────────────────────────────────────────────────────────────
 
   private async handleDelete(args: any): Promise<any> {
-    const { path, documentType, deleteContents, confirmDelete } = z
+    const { path, documentType, deleteContents, confirmDelete, pack } = z
       .object({
         path: z.string(),
         documentType: documentTypeSchema,
         deleteContents: z.boolean().default(false),
         confirmDelete: z.boolean().default(false),
+        pack: z.string().min(1).optional(),
       })
       .parse(args);
 
@@ -220,12 +250,12 @@ export class FolderManagementTools {
       );
     }
 
-    this.logger.info('Deleting folder', { segments, documentType, deleteContents });
+    this.logger.info('Deleting folder', { segments, documentType, deleteContents, pack });
 
     return this.foundryClient.query('foundry-mcp-bridge.deleteFolder', {
       segments,
-      documentType,
       deleteContents,
+      ...folderScope(documentType, pack),
     });
   }
 }
