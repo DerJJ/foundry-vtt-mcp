@@ -66,3 +66,32 @@ describe('ActorManagementTools update — folder', () => {
     expect(query).not.toHaveBeenCalledWith('foundry-mcp-bridge.updateActors', expect.anything());
   });
 });
+
+describe('ActorManagementTools update — tokenImg', () => {
+  it('passes a data-directory tokenImg path through to the bridge', async () => {
+    const { tools, query } = makeTools();
+
+    await tools.handleManageActors({
+      action: 'update',
+      updates: [{ id: 'actor1', tokenImg: 'worlds/iron-gods/mcp-art/gearsman.webp' }],
+    });
+
+    const call = query.mock.calls.find(c => c[0] === 'foundry-mcp-bridge.updateActors');
+    expect(call?.[1]).toEqual({
+      updates: [{ id: 'actor1', tokenImg: 'worlds/iron-gods/mcp-art/gearsman.webp' }],
+    });
+  });
+
+  it('rejects a remote tokenImg URL before touching the world — art from an unreachable host would not load for players', async () => {
+    const { tools, query } = makeTools();
+
+    await expect(
+      tools.handleManageActors({
+        action: 'update',
+        updates: [{ id: 'actor1', tokenImg: 'https://example.com/gearsman.webp' }],
+      })
+    ).rejects.toThrow(/not a remote URL/i);
+
+    expect(query).not.toHaveBeenCalledWith('foundry-mcp-bridge.updateActors', expect.anything());
+  });
+});

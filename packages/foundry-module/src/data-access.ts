@@ -10054,6 +10054,7 @@ export class FoundryDataAccess {
       id: string;
       name?: string;
       img?: string;
+      tokenImg?: string;
       folderSegments?: string[] | null;
       system?: Record<string, any>;
     }>
@@ -10067,6 +10068,9 @@ export class FoundryDataAccess {
       const patch: Record<string, any> = {};
       if (u.name !== undefined) patch.name = u.name;
       if (u.img !== undefined) patch.img = u.img;
+      // The actor's default artwork for tokens placed from now on. Foundry stores
+      // it at prototypeToken.texture.src, mirroring a placed token's texture.src.
+      if (u.tokenImg !== undefined) patch['prototypeToken.texture.src'] = u.tokenImg;
       if (u.folderSegments !== undefined) {
         // null files the actor at the root; a path creates missing folders on the way.
         patch.folder = u.folderSegments
