@@ -1182,7 +1182,11 @@ async function startBackend(): Promise<void> {
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
 
   const dnd5eAddFeatureTool = new DnD5eAddFeatureTool({ foundryClient, logger });
-  const dnd5eNpcTools = new DnD5eNpcTools({ foundryClient, logger });
+  const dnd5eNpcTools = new DnD5eNpcTools({
+    foundryClient,
+    logger,
+    addFeatureTool: dnd5eAddFeatureTool,
+  });
   const dnd5eFeaturesFromCompendiumTools = new DnD5eFeaturesFromCompendiumTools({
     foundryClient,
     logger,

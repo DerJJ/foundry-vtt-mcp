@@ -3,6 +3,17 @@ import { FoundryClient } from '../../foundry-client.js';
 import { Logger } from '../../logger.js';
 import { ErrorHandler } from '../../utils/error-handler.js';
 import { detectGameSystem, getCachedSystemId } from '../../utils/system-detection.js';
+import { DnD5eAddFeatureTool } from './add-feature.js';
+
+const FEATURE_TYPES = [
+  'passive',
+  'save',
+  'attack',
+  'attack-with-save',
+  'aura',
+  'spellcasting',
+  'spells',
+] as const;
 
 // ---------------------------------------------------------------------------
 // Canonical value sets for soft validation (warnings, not errors)
@@ -73,9 +84,20 @@ function formatCR(value: number): string {
 // Options interface
 // ---------------------------------------------------------------------------
 
+interface FeatureOutcome {
+  featureType: string;
+  featureName?: string;
+}
+
 export interface DnD5eNpcToolsOptions {
   foundryClient: FoundryClient;
   logger: Logger;
+  /**
+   * Used to apply the optional `features` array after the NPC is created.
+   * Injected by the backend so both tools share one instance; falls back to a
+   * fresh one (same client/logger) when omitted, e.g. in tests.
+   */
+  addFeatureTool?: DnD5eAddFeatureTool;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,11 +108,13 @@ export class DnD5eNpcTools {
   private foundryClient: FoundryClient;
   private logger: Logger;
   private errorHandler: ErrorHandler;
+  private addFeatureTool: DnD5eAddFeatureTool;
 
-  constructor({ foundryClient, logger }: DnD5eNpcToolsOptions) {
+  constructor({ foundryClient, logger, addFeatureTool }: DnD5eNpcToolsOptions) {
     this.foundryClient = foundryClient;
     this.logger = logger.child({ component: 'DnD5eNpcTools' });
     this.errorHandler = new ErrorHandler(this.logger);
+    this.addFeatureTool = addFeatureTool ?? new DnD5eAddFeatureTool({ foundryClient, logger });
   }
 
   getToolDefinitions() {
@@ -102,9 +126,10 @@ export class DnD5eNpcTools {
           'identity (name, type, size, alignment, CR), ability scores, saving throw proficiencies, ' +
           'HP (average + formula), AC (default or flat), movement speeds, senses, skill proficiencies, ' +
           'damage immunities/resistances/vulnerabilities, condition immunities, languages, and biography. ' +
-          'Items, actions, features, and spells are NOT added by this tool — use dnd5e-add-feature ' +
-          '(featureType: "passive", "save", "attack", "attack-with-save", "aura", "spellcasting", or "spells") ' +
-          'to add them after creation. The actor is placed in the "Foundry MCP Creatures" folder.',
+          'Pass the optional "features" array to add passives, attacks, auras, and spellcasting in the ' +
+          'same call — each entry is a dnd5e-add-feature payload without actorIdentifier. Anything not ' +
+          'covered there can still be added afterwards with dnd5e-add-feature. ' +
+          'The actor is placed in the "Foundry MCP Creatures" folder.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -382,6 +407,29 @@ export class DnD5eNpcTools {
               description: 'Rules edition',
               default: '2014',
             },
+            // --- Features (applied after creation) ---
+            features: {
+              type: 'array',
+              description:
+                'Optional. Features/attacks/auras/spellcasting to add immediately after the NPC is ' +
+                'created. Each item is a dnd5e-add-feature payload WITHOUT actorIdentifier: a ' +
+                'featureType plus that mode\'s own fields (see the dnd5e-add-feature tool for the ' +
+                'per-mode requirements). Applied in array order — when using "spellcasting" and ' +
+                '"spells" together, list "spellcasting" first. A feature that fails to apply does not ' +
+                'undo the NPC or the other features; the response lists what succeeded and what failed.',
+              items: {
+                type: 'object',
+                properties: {
+                  featureType: {
+                    type: 'string',
+                    enum: [...FEATURE_TYPES],
+                    description: 'Which add-feature mode this entry uses.',
+                  },
+                },
+                required: ['featureType'],
+              },
+              default: [],
+            },
           },
           required: [
             'name',
@@ -502,6 +550,11 @@ export class DnD5eNpcTools {
         sourceBook: z.string().default(''),
         sourcePage: z.string().default(''),
         sourceRules: z.enum(['2014', '2024']).default('2014'),
+        // Features applied after creation. Only featureType is checked here — the
+        // rest of each entry is validated by the matching dnd5e-add-feature handler.
+        features: z
+          .array(z.object({ featureType: z.enum(FEATURE_TYPES) }).passthrough())
+          .default([]),
       })
       .superRefine((data, ctx) => {
         if (data.acMode === 'flat' && data.acValue === undefined) {
@@ -556,20 +609,58 @@ export class DnD5eNpcTools {
         );
       }
 
-      const result = await this.foundryClient.query('foundry-mcp-bridge.createNpcActor', parsed);
+      const { features, ...npcParams } = parsed;
+      const result = await this.foundryClient.query(
+        'foundry-mcp-bridge.createNpcActor',
+        npcParams
+      );
 
       this.logger.info('NPC created successfully', {
         actorId: result.actor?.id,
         actorName: result.actor?.name,
       });
 
-      return this.formatResponse(result, parsed, warnings);
+      const featuresAdded: FeatureOutcome[] = [];
+      const featuresFailed: Array<FeatureOutcome & { error: string }> = [];
+
+      if (features.length > 0) {
+        const actorId = result.actor?.id;
+        if (!actorId) {
+          throw new Error(
+            'NPC was created but no actor id came back, so the "features" list could not be applied. ' +
+              'Add the features manually with dnd5e-add-feature.'
+          );
+        }
+
+        for (const feature of features) {
+          const outcome: FeatureOutcome = { featureType: feature.featureType };
+          if (typeof feature.featureName === 'string') {
+            outcome.featureName = feature.featureName;
+          }
+          try {
+            await this.addFeatureTool.handleAddFeature({ ...feature, actorIdentifier: actorId });
+            featuresAdded.push(outcome);
+          } catch (err) {
+            const error = err instanceof Error ? err.message : String(err);
+            this.logger.warn('Feature failed to apply to newly created NPC', { ...outcome, error });
+            featuresFailed.push({ ...outcome, error });
+          }
+        }
+      }
+
+      return this.formatResponse(result, parsed, warnings, featuresAdded, featuresFailed);
     } catch (error) {
       this.errorHandler.handleToolError(error, 'dnd5e-create-npc', 'NPC creation');
     }
   }
 
-  private formatResponse(result: any, params: any, warnings: string[]): any {
+  private formatResponse(
+    result: any,
+    params: any,
+    warnings: string[],
+    featuresAdded: FeatureOutcome[] = [],
+    featuresFailed: Array<FeatureOutcome & { error: string }> = []
+  ): any {
     const crStr = result.actor?.cr ?? formatCR(normalizeCR(params.cr));
 
     const abilityLine = (['str', 'dex', 'con', 'int', 'wis', 'cha'] as const)
@@ -596,12 +687,34 @@ export class DnD5eNpcTools {
         ? `\n\n⚠️ **Warnings (${warnings.length}):**\n${warnings.map(w => `- ${w}`).join('\n')}`
         : '';
 
+    const label = (f: FeatureOutcome) => f.featureName ?? `(${f.featureType})`;
+
+    let featureSection = '';
+    if (featuresAdded.length > 0) {
+      featureSection += `\n\n**Features added (${featuresAdded.length}):**\n${featuresAdded
+        .map(f => `- ${label(f)} [${f.featureType}]`)
+        .join('\n')}`;
+    }
+    if (featuresFailed.length > 0) {
+      featureSection += `\n\n❌ **Features that FAILED (${featuresFailed.length}) — add these manually with dnd5e-add-feature:**\n${featuresFailed
+        .map(f => `- ${label(f)} [${f.featureType}]: ${f.error}`)
+        .join('\n')}`;
+    }
+
+    const partialFailure = featuresFailed.length > 0;
+    const finalSummary = partialFailure
+      ? `${summary} — but ${featuresFailed.length} of ${featuresAdded.length + featuresFailed.length} features failed to apply`
+      : summary;
+
     return {
-      summary,
+      summary: finalSummary,
       success: true,
+      partialFailure,
       actor: result.actor,
       warnings,
-      message: `${summary}\n\n${lines.join('\n')}${warningSection}`,
+      featuresAdded,
+      featuresFailed,
+      message: `${finalSummary}\n\n${lines.join('\n')}${warningSection}${featureSection}`,
     };
   }
 }
