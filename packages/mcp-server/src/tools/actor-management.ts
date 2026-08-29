@@ -137,6 +137,14 @@ export class ActorManagementTools {
                     type: 'string',
                     description: 'New icon/portrait path.',
                   },
+                  tokenImg: {
+                    type: 'string',
+                    description:
+                      "The actor's prototype-token artwork (its default for tokens placed from " +
+                      'now on), as a path inside Foundry\'s data directory (e.g. ' +
+                      '"worlds/iron-gods/mcp-art/gearsman.webp"). Remote http(s) URLs are rejected. ' +
+                      'Distinct from a placed token\'s own image, which update-token sets.',
+                  },
                   folder: {
                     type: ['string', 'null'],
                     description:
@@ -337,6 +345,7 @@ export class ActorManagementTools {
             id: z.string().min(1),
             name: z.string().optional(),
             img: z.string().optional(),
+            tokenImg: z.string().optional(),
             folder: z.string().nullable().optional(),
             system: z.record(z.any()).optional(),
           })
@@ -345,6 +354,16 @@ export class ActorManagementTools {
     });
 
     const { updates } = schema.parse(args);
+
+    for (const u of updates) {
+      if (u.tokenImg !== undefined && /^https?:\/\//i.test(u.tokenImg)) {
+        throw new Error(
+          `tokenImg must be a path inside Foundry's data directory, not a remote URL ` +
+            `(got "${u.tokenImg}"). Remote artwork fails to load for players if the host ` +
+            `is unreachable. Use the upload-image tool to bring a local file into the world first.`
+        );
+      }
+    }
 
     // "folder" is a user-facing path; the bridge resolves segments against game.folders.
     // Parsing here means a malformed path fails before any actor is touched.
