@@ -1,5 +1,5 @@
 import { MODULE_ID } from './constants.js';
-import { FoundryDataAccess } from './data-access.js';
+import { FoundryDataAccess, FolderableType } from './data-access.js';
 import { ComfyUIManager } from './comfyui-manager.js';
 
 export class QueryHandlers {
@@ -132,6 +132,13 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.deleteActors`] = this.handleDeleteActors.bind(this);
     CONFIG.queries[`${modulePrefix}.updateActorItems`] = this.handleUpdateActorItems.bind(this);
     CONFIG.queries[`${modulePrefix}.deleteActorItems`] = this.handleDeleteActorItems.bind(this);
+
+    // Folder CRUD (any folderable document type)
+    CONFIG.queries[`${modulePrefix}.listFolders`] = this.handleListFolders.bind(this);
+    CONFIG.queries[`${modulePrefix}.createFolder`] = this.handleCreateFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.renameFolder`] = this.handleRenameFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.moveFolder`] = this.handleMoveFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.deleteFolder`] = this.handleDeleteFolder.bind(this);
 
     // Phase 7: Token manipulation queries
     CONFIG.queries[`${modulePrefix}.move-token`] = this.handleMoveToken.bind(this);
@@ -2070,6 +2077,64 @@ export class QueryHandlers {
       throw new Error('ids array is required');
     }
     return this.dataAccess.deleteActors(data.ids);
+  }
+
+  // ===== FOLDER HANDLERS =====
+
+  private async handleListFolders(data: { documentType: FolderableType }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.listFolders({ documentType: data.documentType });
+  }
+
+  private async handleCreateFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!Array.isArray(data?.segments) || data.segments.length === 0) {
+      throw new Error('segments array is required');
+    }
+    return this.dataAccess.createFolderPath(data);
+  }
+
+  private async handleRenameFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    newName: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.newName) {
+      throw new Error('newName is required');
+    }
+    return this.dataAccess.renameFolderPath(data);
+  }
+
+  private async handleMoveFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    newParentSegments: string[] | null;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.moveFolderPath(data);
+  }
+
+  private async handleDeleteFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    deleteContents: boolean;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.deleteFolderPath(data);
   }
 
   private async handleUpdateActorItems(data: {

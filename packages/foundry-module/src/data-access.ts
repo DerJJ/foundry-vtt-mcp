@@ -1,4 +1,16 @@
 import { MODULE_ID, ERROR_MESSAGES, TOKEN_DISPOSITIONS } from './constants.js';
+
+/** Document types Foundry allows folders for. Mirrors the MCP server's enum. */
+export type FolderableType =
+  | 'Actor'
+  | 'Cards'
+  | 'Item'
+  | 'JournalEntry'
+  | 'Macro'
+  | 'Playlist'
+  | 'RollTable'
+  | 'Scene';
+
 import { permissionManager } from './permissions.js';
 import { transactionManager } from './transaction-manager.js';
 // Local type definitions to avoid shared package import issues
@@ -7132,13 +7144,203 @@ export class FoundryDataAccess {
     }
   }
 
+  // ===== FOLDER PATH OPERATIONS =====
+  //
+  // (FolderableType is declared at module scope, below the imports.)
+  //
+  // Folders are addressed by segment arrays ("Iron Gods" / "Book 1" / "Torch"),
+  // parsed and validated on the MCP server. getOrCreateFolder above matches on name
+  // alone and so cannot distinguish two folders with the same name under different
+  // parents; these walk the parent chain instead.
+
+  /** Find a folder by path segments. Returns null if any segment is missing. */
+  private findFolderByPath(segments: string[], type: FolderableType): any | null {
+    let parentId: string | null = null;
+    let found: any = null;
+
+    for (const segment of segments) {
+      found = (game as any).folders?.find(
+        (f: any) => f.name === segment && f.type === type && (f.folder?.id ?? null) === parentId
+      );
+      if (!found) return null;
+      parentId = found.id;
+    }
+
+    return found;
+  }
+
+  /** Find a folder by path, creating any missing folders along the way. */
+  private async createFolderByPath(segments: string[], type: FolderableType): Promise<any> {
+    let parentId: string | null = null;
+    let current: any = null;
+
+    for (const segment of segments) {
+      let folder = (game as any).folders?.find(
+        (f: any) => f.name === segment && f.type === type && (f.folder?.id ?? null) === parentId
+      );
+
+      if (!folder) {
+        folder = await (globalThis as any).Folder.create({
+          name: segment,
+          type,
+          folder: parentId,
+        });
+        if (!folder) {
+          throw new Error(`Failed to create folder "${segment}" (${type})`);
+        }
+      }
+
+      current = folder;
+      parentId = folder.id;
+    }
+
+    return current;
+  }
+
+  /** Full "A/B/C" path for a folder, used so listings are unambiguous. */
+  private folderPathOf(folder: any): string {
+    const names: string[] = [];
+    let cursor: any = folder;
+
+    // Bounded by the server's MAX_FOLDER_DEPTH; the guard is against cyclic data.
+    for (let i = 0; cursor && i < 32; i++) {
+      names.unshift(cursor.name);
+      cursor = cursor.folder;
+    }
+
+    return names.join('/');
+  }
+
+  private requireFolder(segments: string[], type: FolderableType): any {
+    const folder = this.findFolderByPath(segments, type);
+    if (!folder) {
+      throw new Error(`No ${type} folder found at path "${segments.join('/')}"`);
+    }
+    return folder;
+  }
+
+  async listFolders(params: { documentType: FolderableType }): Promise<any> {
+    this.validateFoundryState();
+    const type = params.documentType;
+
+    const folders = ((game as any).folders?.contents ?? [])
+      .filter((f: any) => f.type === type)
+      .map((f: any) => ({
+        id: f.id,
+        name: f.name,
+        path: this.folderPathOf(f),
+        parentId: f.folder?.id ?? null,
+        contentCount: f.contents?.length ?? 0,
+        subfolderCount: f.children?.length ?? 0,
+      }))
+      .sort((a: any, b: any) => a.path.localeCompare(b.path));
+
+    return { documentType: type, total: folders.length, folders };
+  }
+
+  async createFolderPath(params: { segments: string[]; documentType: FolderableType }): Promise<any> {
+    this.validateFoundryState();
+
+    const existing = this.findFolderByPath(params.segments, params.documentType);
+    const folder = await this.createFolderByPath(params.segments, params.documentType);
+
+    this.auditLog('createFolderPath', params, 'success');
+
+    return {
+      success: true,
+      created: !existing,
+      id: folder.id,
+      path: this.folderPathOf(folder),
+      documentType: params.documentType,
+    };
+  }
+
+  async renameFolderPath(params: {
+    segments: string[];
+    documentType: FolderableType;
+    newName: string;
+  }): Promise<any> {
+    this.validateFoundryState();
+
+    const folder = this.requireFolder(params.segments, params.documentType);
+    await folder.update({ name: params.newName });
+
+    this.auditLog('renameFolderPath', params, 'success');
+
+    return { success: true, id: folder.id, path: this.folderPathOf(folder) };
+  }
+
+  async moveFolderPath(params: {
+    segments: string[];
+    documentType: FolderableType;
+    newParentSegments: string[] | null;
+  }): Promise<any> {
+    this.validateFoundryState();
+
+    const folder = this.requireFolder(params.segments, params.documentType);
+
+    let newParentId: string | null = null;
+    if (params.newParentSegments) {
+      const parent = await this.createFolderByPath(
+        params.newParentSegments,
+        params.documentType
+      );
+
+      // Foundry silently accepts a cycle here and the sidebar then cannot render it.
+      let cursor: any = parent;
+      while (cursor) {
+        if (cursor.id === folder.id) {
+          throw new Error(
+            `Cannot move "${this.folderPathOf(folder)}" into its own descendant ` +
+              `"${this.folderPathOf(parent)}"`
+          );
+        }
+        cursor = cursor.folder;
+      }
+
+      newParentId = parent.id;
+    }
+
+    await folder.update({ folder: newParentId });
+
+    this.auditLog('moveFolderPath', params, 'success');
+
+    return { success: true, id: folder.id, path: this.folderPathOf(folder) };
+  }
+
+  async deleteFolderPath(params: {
+    segments: string[];
+    documentType: FolderableType;
+    deleteContents: boolean;
+  }): Promise<any> {
+    this.validateFoundryState();
+
+    const folder = this.requireFolder(params.segments, params.documentType);
+    const path = this.folderPathOf(folder);
+    const contentCount = folder.contents?.length ?? 0;
+    const subfolderCount = folder.children?.length ?? 0;
+
+    await folder.delete({
+      deleteSubfolders: params.deleteContents,
+      deleteContents: params.deleteContents,
+    });
+
+    this.auditLog('deleteFolderPath', params, 'success');
+
+    return {
+      success: true,
+      path,
+      documentType: params.documentType,
+      contentsDeleted: params.deleteContents ? contentCount : 0,
+      subfoldersDeleted: params.deleteContents ? subfolderCount : 0,
+      contentsKept: params.deleteContents ? 0 : contentCount,
+    };
+  }
+
   /**
    * Get or create a folder for organizing MCP-generated content
    */
-  private async getOrCreateFolder(
-    folderName: string,
-    type: 'Actor' | 'JournalEntry'
-  ): Promise<string | null> {
+  private async getOrCreateFolder(folderName: string, type: FolderableType): Promise<string | null> {
     try {
       // Look for existing folder
       const existingFolder = game.folders?.find(
@@ -9861,7 +10063,13 @@ export class FoundryDataAccess {
    * Merges supplied fields into the actor (top-level keys overwrite).
    */
   async updateActors(
-    updates: Array<{ id: string; name?: string; img?: string; system?: Record<string, any> }>
+    updates: Array<{
+      id: string;
+      name?: string;
+      img?: string;
+      folderSegments?: string[] | null;
+      system?: Record<string, any>;
+    }>
   ): Promise<{ updated: Array<{ id: string; name: string }>; total: number }> {
     const updatedActors: Array<{ id: string; name: string }> = [];
 
@@ -9872,6 +10080,12 @@ export class FoundryDataAccess {
       const patch: Record<string, any> = {};
       if (u.name !== undefined) patch.name = u.name;
       if (u.img !== undefined) patch.img = u.img;
+      if (u.folderSegments !== undefined) {
+        // null files the actor at the root; a path creates missing folders on the way.
+        patch.folder = u.folderSegments
+          ? (await this.createFolderByPath(u.folderSegments, 'Actor')).id
+          : null;
+      }
       if (u.system !== undefined) {
         // Build a single patch.system nested object so Foundry deep-merges everything
         // in one pass without flat-key vs nested-key conflicts.

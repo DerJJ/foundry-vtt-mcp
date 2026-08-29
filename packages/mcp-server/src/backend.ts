@@ -1,55 +1,37 @@
 import * as fs from 'fs';
-
 import * as os from 'os';
-
 import * as path from 'path';
-
 import * as net from 'net';
-
 import { spawn, ChildProcess } from 'child_process';
-
 import { evaluateLockFile } from './lock.js';
-
 import { config } from './config.js';
-
 import { Logger } from './logger.js';
-
 import { FoundryClient } from './foundry-client.js';
-
 import { CharacterTools } from './tools/character.js';
-
 import { CompendiumTools } from './tools/compendium.js';
-
 import { SceneTools } from './tools/scene.js';
-
 import { ActorCreationTools } from './tools/actor-creation.js';
 import { ActorManagementTools } from './tools/actor-management.js';
-
+import { FolderManagementTools } from './tools/folder-management.js';
 import { QuestCreationTools } from './tools/quest-creation.js';
-
 import { DiceRollTools } from './tools/dice-roll.js';
-
 import { CampaignManagementTools } from './tools/campaign-management.js';
-
 import { OwnershipTools } from './tools/ownership.js';
 import { WFRP4eUpdateActorTools } from './tools/wfrp4e/update-actor.js';
 import { WFRP4eAddItemsTools } from './tools/wfrp4e/add-items.js';
-
 import { MapGenerationTools } from './tools/map-generation.js';
-
 import { TokenManipulationTools } from './tools/token-manipulation.js';
-
 import { DSA5CharacterCreator } from './systems/dsa5/character-creator.js';
-
 import { DnD5eAddFeatureTool } from './tools/dnd5e/add-feature.js';
 import { DnD5eNpcTools } from './tools/dnd5e/npc.js';
 import { DnD5eFeaturesFromCompendiumTools } from './tools/dnd5e/features.js';
+import { resolveControlPort, resolveLockFile } from './instance.js';
 
 const CONTROL_HOST = '127.0.0.1';
 
-const CONTROL_PORT = 31414;
+const CONTROL_PORT = resolveControlPort(process.env);
 
-const LOCK_FILE = path.join(os.tmpdir(), 'foundry-mcp-backend.lock');
+const LOCK_FILE = resolveLockFile(CONTROL_PORT);
 
 function getBundledPythonPath(): string {
   // Detect installation directory based on current executable location
@@ -1194,6 +1176,7 @@ async function startBackend(): Promise<void> {
 
   const actorCreationTools = new ActorCreationTools({ foundryClient, logger });
   const actorManagementTools = new ActorManagementTools({ foundryClient, logger, systemRegistry });
+  const folderManagementTools = new FolderManagementTools({ foundryClient, logger });
 
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
 
@@ -1422,6 +1405,7 @@ async function startBackend(): Promise<void> {
 
     ...actorCreationTools.getToolDefinitions(),
     ...actorManagementTools.getToolDefinitions(),
+    ...folderManagementTools.getToolDefinitions(),
 
     ...dsa5CharacterCreator.getToolDefinitions(),
 
@@ -1601,6 +1585,13 @@ async function startBackend(): Promise<void> {
 
                 case 'manage-actors':
                   result = await actorManagementTools.handleManageActors(args);
+
+                  break;
+
+                // Folder management (list / create / rename / move / delete)
+
+                case 'manage-folders':
+                  result = await folderManagementTools.handleManageFolders(args);
 
                   break;
 
