@@ -7528,6 +7528,196 @@ export class FoundryDataAccess {
     }
   }
 
+  // ===== SCENE CRUD (manage-scenes) =====
+
+  private findSceneByIdentifier(identifier: string): any {
+    const scenes = game.scenes?.contents || [];
+    return scenes.find(
+      (s: any) => s.id === identifier || s.name?.toLowerCase() === identifier.toLowerCase()
+    );
+  }
+
+  /**
+   * Set a scene's background image, coping with the Foundry v13→v14 change.
+   * v14 removed Scene#background — the image now lives on the scene's first Level
+   * embedded document (foundry.documents.Level / LevelData#background). v13 and
+   * earlier keep the flat `background.src` field, which some Scene.create() calls
+   * fail to persist, so that path is verified and repaired via update().
+   * Returns whether the background was applied.
+   */
+  private async applySceneBackground(scene: any, src: string): Promise<boolean> {
+    try {
+      const generation = (game as any).release?.generation ?? 0;
+      if (generation >= 14) {
+        const existingLevel = scene.levels?.contents?.[0];
+        if (existingLevel) {
+          if (existingLevel.background?.src !== src) {
+            await existingLevel.update({ background: { src } });
+          }
+        } else {
+          await scene.createEmbeddedDocuments('Level', [{ name: 'Base', background: { src } }]);
+        }
+      } else if (scene.background?.src !== src) {
+        await scene.update({ background: { src } });
+      }
+      return true;
+    } catch (error) {
+      console.warn(
+        `[foundry-mcp-bridge] Failed to set scene background "${src}": ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Build walls on a scene from pre-resolved Foundry wall fields (the MCP server
+   * has already mapped the friendly door/movement/sight options to integers).
+   * Returns the number of walls created.
+   */
+  private async createSceneWallsFromData(
+    scene: any,
+    walls: Array<{ c: number[]; door?: number; move?: number; sense?: number }>
+  ): Promise<number> {
+    const valid = walls.filter(
+      w =>
+        Array.isArray(w.c) &&
+        w.c.length === 4 &&
+        w.c.every(n => typeof n === 'number' && !Number.isNaN(n))
+    );
+    if (valid.length === 0) return 0;
+
+    const docs = valid.map(w => ({
+      c: w.c,
+      move: w.move ?? 20,
+      sense: w.sense ?? 20,
+      dir: 0,
+      door: w.door ?? 0,
+      ds: 0,
+      doorSound: '',
+      flags: {},
+    }));
+
+    const created = await scene.createEmbeddedDocuments('Wall', docs);
+    return Array.isArray(created) ? created.length : docs.length;
+  }
+
+  async createScene(params: {
+    name: string;
+    width?: number;
+    height?: number;
+    background?: string;
+    padding?: number;
+    navigation?: boolean;
+    activate?: boolean;
+    grid?: { type?: number; size?: number; distance?: number; units?: string };
+    walls?: Array<{ c: number[]; door?: number; move?: number; sense?: number }>;
+  }): Promise<any> {
+    this.validateFoundryState();
+
+    const SceneCls = (globalThis as any).Scene;
+    if (!SceneCls) {
+      throw new Error('Scene document class is unavailable');
+    }
+
+    const sceneData: Record<string, any> = { name: params.name };
+    if (typeof params.width === 'number') sceneData.width = params.width;
+    if (typeof params.height === 'number') sceneData.height = params.height;
+    if (typeof params.padding === 'number') sceneData.padding = params.padding;
+    if (typeof params.navigation === 'boolean') sceneData.navigation = params.navigation;
+    if (params.grid && Object.keys(params.grid).length > 0) sceneData.grid = params.grid;
+    if (params.background) sceneData.background = { src: params.background };
+
+    // Scene.create() may strip `background` while cleaning the payload (v14 has no
+    // top-level background field), so remember the intended path before the call.
+    const expectedBackgroundSrc = params.background;
+
+    const scene = await SceneCls.create(sceneData);
+    if (!scene) {
+      throw new Error(`Scene "${params.name}" was not created`);
+    }
+
+    let backgroundApplied = false;
+    if (expectedBackgroundSrc) {
+      backgroundApplied = await this.applySceneBackground(scene, expectedBackgroundSrc);
+    }
+
+    let wallsCreated = 0;
+    if (Array.isArray(params.walls) && params.walls.length > 0) {
+      wallsCreated = await this.createSceneWallsFromData(scene, params.walls);
+    }
+
+    if (params.activate) {
+      await scene.activate();
+    }
+
+    this.auditLog('createScene', { name: params.name }, 'success');
+
+    return {
+      success: true,
+      sceneId: scene.id,
+      name: scene.name,
+      active: !!scene.active,
+      backgroundApplied,
+      wallsCreated,
+    };
+  }
+
+  async updateScene(params: { identifier: string; changes: Record<string, any> }): Promise<any> {
+    this.validateFoundryState();
+
+    const scene = this.findSceneByIdentifier(params.identifier);
+    if (!scene) {
+      throw new Error(`Scene not found: "${params.identifier}"`);
+    }
+
+    const changes = { ...(params.changes || {}) };
+    const backgroundSrc = typeof changes.background === 'string' ? changes.background : undefined;
+    delete changes.background;
+
+    const changed: string[] = [];
+    if (Object.keys(changes).length > 0) {
+      await scene.update(changes);
+      changed.push(...Object.keys(changes));
+    }
+
+    let backgroundApplied = false;
+    if (backgroundSrc !== undefined) {
+      backgroundApplied = await this.applySceneBackground(scene, backgroundSrc);
+      if (backgroundApplied) changed.push('background');
+    }
+
+    this.auditLog('updateScene', { identifier: params.identifier }, 'success');
+
+    return {
+      success: true,
+      sceneId: scene.id,
+      name: scene.name,
+      changed,
+      backgroundApplied,
+    };
+  }
+
+  async deleteScene(params: { identifier: string }): Promise<any> {
+    this.validateFoundryState();
+
+    const scene = this.findSceneByIdentifier(params.identifier);
+    if (!scene) {
+      throw new Error(`Scene not found: "${params.identifier}"`);
+    }
+
+    const sceneId = scene.id;
+    const sceneName = scene.name;
+    const wasActive = !!scene.active;
+
+    await scene.delete();
+
+    this.auditLog('deleteScene', { identifier: params.identifier }, 'success');
+
+    return { success: true, sceneId, name: sceneName, wasActive };
+  }
+
   // ===== PHASE 7: CHARACTER ENTITY AND TOKEN MANIPULATION METHODS =====
 
   /**
