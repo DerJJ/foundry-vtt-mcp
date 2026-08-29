@@ -7186,6 +7186,30 @@ export class FoundryDataAccess {
     return folder;
   }
 
+  /**
+   * Count every descendant folder and every document contained in the folder or
+   * any of its descendants. `folder.contents` / `folder.children` are direct
+   * children only, but Foundry's delete with deleteContents is recursive, so the
+   * shallow counts under-report what a destructive delete actually removed.
+   * Handles both `children` shapes: v11+ FolderChildNode ({folder, ...}) and
+   * older builds that expose Folder documents directly.
+   */
+  private countFolderSubtree(folder: any): { folders: number; contents: number } {
+    let folders = 0;
+    let contents = folder.contents?.length ?? 0;
+
+    for (const child of folder.children ?? []) {
+      const childFolder = child?.folder ?? child;
+      if (!childFolder) continue;
+      folders += 1;
+      const sub = this.countFolderSubtree(childFolder);
+      folders += sub.folders;
+      contents += sub.contents;
+    }
+
+    return { folders, contents };
+  }
+
   async listFolders(params: { documentType: FolderableType }): Promise<any> {
     this.validateFoundryState();
     const type = params.documentType;
@@ -7284,8 +7308,10 @@ export class FoundryDataAccess {
 
     const folder = this.requireFolder(params.segments, params.documentType);
     const path = this.folderPathOf(folder);
-    const contentCount = folder.contents?.length ?? 0;
-    const subfolderCount = folder.children?.length ?? 0;
+    // Direct children are re-parented to this folder's parent when contents are
+    // kept; the whole subtree is destroyed when they are not.
+    const directContentCount = folder.contents?.length ?? 0;
+    const subtree = this.countFolderSubtree(folder);
 
     await folder.delete({
       deleteSubfolders: params.deleteContents,
@@ -7298,9 +7324,9 @@ export class FoundryDataAccess {
       success: true,
       path,
       documentType: params.documentType,
-      contentsDeleted: params.deleteContents ? contentCount : 0,
-      subfoldersDeleted: params.deleteContents ? subfolderCount : 0,
-      contentsKept: params.deleteContents ? 0 : contentCount,
+      contentsDeleted: params.deleteContents ? subtree.contents : 0,
+      subfoldersDeleted: params.deleteContents ? subtree.folders : 0,
+      contentsKept: params.deleteContents ? 0 : directContentCount,
     };
   }
 
