@@ -3,6 +3,7 @@ import { FoundryDataAccess, FolderableType } from './data-access.js';
 import { ComfyUIManager } from './comfyui-manager.js';
 import { guardQueryHandler } from './query-guard.js';
 import * as table from './table-actions.js';
+import * as scriptRunner from './script-runner.js';
 
 export class QueryHandlers {
   public dataAccess: FoundryDataAccess;
@@ -163,7 +164,8 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.creatureCard`] = table.creatureCard;
 
     // Script execution queries
-    CONFIG.queries[`${modulePrefix}.executeScript`] = this.handleExecuteScript.bind(this);
+    CONFIG.queries[`${modulePrefix}.executeScript`] = scriptRunner.executeScript;
+    CONFIG.queries[`${modulePrefix}.manageMacros`] = scriptRunner.manageMacros;
 
     // Folder CRUD (any folderable document type)
     CONFIG.queries[`${modulePrefix}.listFolders`] = this.handleListFolders.bind(this);
@@ -2766,47 +2768,6 @@ export class QueryHandlers {
         };
       default:
         throw new Error(`Unknown action: ${data.action}`);
-    }
-  }
-
-  /**
-   * Handle execute arbitrary script request
-   */
-  private async handleExecuteScript(data: any): Promise<any> {
-    try {
-      const gmCheck = this.validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      this.dataAccess.validateFoundryState();
-
-      if (!data.code || typeof data.code !== 'string') {
-        throw new Error('code is required and must be a string');
-      }
-
-      // Execute the script in Foundry context using AsyncFunction
-      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-      const fn = new AsyncFunction('game', 'canvas', 'CONFIG', 'foundry', 'ui', data.code);
-      const result = await fn(game, canvas, CONFIG, foundry, ui);
-
-      // Serialize the result safely
-      let serializedResult: any;
-      try {
-        serializedResult = JSON.parse(JSON.stringify(result));
-      } catch {
-        serializedResult = String(result);
-      }
-
-      return {
-        success: true,
-        result: serializedResult,
-        message: 'Script executed successfully',
-      };
-    } catch (error) {
-      throw new Error(
-        `Script execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
     }
   }
 }

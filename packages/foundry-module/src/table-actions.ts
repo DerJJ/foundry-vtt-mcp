@@ -4,6 +4,8 @@
  * über die Bridge und sind per query-guard auf GMs beschränkt.
  */
 
+import { assertScriptingAllowed } from './script-runner.js';
+
 const g = (): any => (globalThis as any).game;
 const cfg = (): any => (globalThis as any).CONFIG;
 const ci = (a: unknown, b: unknown) =>
@@ -532,6 +534,7 @@ export async function runMacro(data: any): Promise<any> {
         .map((m: any) => ({ name: m.name, id: m.id, type: m.type })),
     };
   }
+  assertScriptingAllowed();
   const ident = String(data.macro ?? '');
   const matches = macros.filter((m: any) => m.id === ident || ci(m.name, ident));
   if (!matches.length) throw new Error(`Makro nicht gefunden: ${ident}`);

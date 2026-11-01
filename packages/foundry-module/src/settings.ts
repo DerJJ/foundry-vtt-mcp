@@ -249,6 +249,15 @@ export class ModuleSettings {
       default: true,
     });
 
+    game.settings.register(this.moduleId, 'allowScriptExecution', {
+      name: 'Allow script and macro execution',
+      hint: 'Let the AI model run JavaScript (execute-script) and macros in this GM browser. DANGEROUS: anything the AI has read (journals, item text, chat) could try to trigger code with full GM rights. Off by default. Every run is whispered to the GM as a chat card.',
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: false,
+    });
+
     // ============================================================================
     // SECTION 3: SAFETY CONTROLS - Limits on AI model's Actions
     // ============================================================================

@@ -1668,6 +1668,11 @@ async function startBackend(): Promise<void> {
 
                   break;
 
+                case 'manage-macros':
+                  result = await scriptExecutionTools.handleManageMacros(args);
+
+                  break;
+
                 // Folder management (list / create / rename / move / delete)
 
                 case 'manage-folders':
