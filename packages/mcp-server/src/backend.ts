@@ -26,6 +26,9 @@ import { PlaylistTools } from './tools/playlist.js';
 import { ActorCreationTools } from './tools/actor-creation.js';
 import { ActorManagementTools } from './tools/actor-management.js';
 import { EffectManagementTools } from './tools/effect-management.js';
+import { SceneBuilderTools } from './tools/scene-builder.js';
+import { CalendarClockTools } from './tools/calendar-clock.js';
+import { TableTools } from './tools/table-tools.js';
 
 import { QuestCreationTools } from './tools/quest-creation.js';
 
@@ -1199,6 +1202,9 @@ async function startBackend(): Promise<void> {
   const actorCreationTools = new ActorCreationTools({ foundryClient, logger });
   const actorManagementTools = new ActorManagementTools({ foundryClient, logger, systemRegistry });
   const effectManagementTools = new EffectManagementTools({ foundryClient, logger });
+  const sceneBuilderTools = new SceneBuilderTools({ foundryClient, logger });
+  const calendarClockTools = new CalendarClockTools({ foundryClient, logger });
+  const tableTools = new TableTools({ foundryClient, logger });
 
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
   const dsa5JsonActorImporter = new DSA5JsonActorImporter({ foundryClient, logger });
@@ -1429,6 +1435,9 @@ async function startBackend(): Promise<void> {
     ...actorCreationTools.getToolDefinitions(),
     ...actorManagementTools.getToolDefinitions(),
     ...effectManagementTools.getToolDefinitions(),
+    ...sceneBuilderTools.getToolDefinitions(),
+    ...calendarClockTools.getToolDefinitions(),
+    ...tableTools.getToolDefinitions(),
 
     ...dsa5CharacterCreator.getToolDefinitions(),
     ...dsa5JsonActorImporter.getToolDefinitions(),
@@ -1482,6 +1491,8 @@ async function startBackend(): Promise<void> {
 
   const server = net.createServer(socket => {
     socket.setEncoding('utf8');
+    // Local patch: a wrapper that disconnects abruptly (ECONNRESET) must not crash the backend
+    socket.on('error', err => logger.warn('Control socket error', { error: err.message }));
 
     let buffer = '';
 
@@ -1619,6 +1630,29 @@ async function startBackend(): Promise<void> {
 
                   break;
 
+                case 'manage-scene':
+                  result = await sceneBuilderTools.handleManageScene(args);
+
+                  break;
+
+                case 'calendar-clock':
+                  result = await calendarClockTools.handleCalendarClock(args);
+
+                  break;
+
+                case 'combat':
+                case 'apply-damage':
+                case 'party-status':
+                case 'gm-roll':
+                case 'roll-table':
+                case 'post-chat':
+                case 'run-macro':
+                case 'scene-view':
+                case 'creature-card':
+                  result = await tableTools.handle(name, args);
+
+                  break;
+
                 // DSA5 character creation tools
 
                 case 'create-dsa5-character-from-archetype':
@@ -1690,6 +1724,12 @@ async function startBackend(): Promise<void> {
 
                 case 'request-player-rolls':
                   result = await diceRollTools.handleRequestPlayerRolls(args);
+
+                  break;
+
+                // Local patch: read recent chat messages / roll results
+                case 'get-chat-messages':
+                  result = await diceRollTools.handleGetChatMessages(args);
 
                   break;
 
