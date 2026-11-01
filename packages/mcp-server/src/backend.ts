@@ -29,6 +29,7 @@ import { EffectManagementTools } from './tools/effect-management.js';
 import { SceneBuilderTools } from './tools/scene-builder.js';
 import { CalendarClockTools } from './tools/calendar-clock.js';
 import { TableTools } from './tools/table-tools.js';
+import { ScriptExecutionTools } from './tools/script-execution.js';
 
 import { QuestCreationTools } from './tools/quest-creation.js';
 
@@ -1205,6 +1206,7 @@ async function startBackend(): Promise<void> {
   const sceneBuilderTools = new SceneBuilderTools({ foundryClient, logger });
   const calendarClockTools = new CalendarClockTools({ foundryClient, logger });
   const tableTools = new TableTools({ foundryClient, logger });
+  const scriptExecutionTools = new ScriptExecutionTools({ foundryClient, logger });
 
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
   const dsa5JsonActorImporter = new DSA5JsonActorImporter({ foundryClient, logger });
@@ -1438,6 +1440,7 @@ async function startBackend(): Promise<void> {
     ...sceneBuilderTools.getToolDefinitions(),
     ...calendarClockTools.getToolDefinitions(),
     ...tableTools.getToolDefinitions(),
+    ...scriptExecutionTools.getToolDefinitions(),
 
     ...dsa5CharacterCreator.getToolDefinitions(),
     ...dsa5JsonActorImporter.getToolDefinitions(),
@@ -1650,6 +1653,11 @@ async function startBackend(): Promise<void> {
                 case 'scene-view':
                 case 'creature-card':
                   result = await tableTools.handle(name, args);
+
+                  break;
+
+                case 'execute-script':
+                  result = await scriptExecutionTools.handleExecuteScript(args);
 
                   break;
 
