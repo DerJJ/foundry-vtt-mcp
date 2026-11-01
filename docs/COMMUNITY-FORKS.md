@@ -6,12 +6,12 @@ Scanned on 2026-11-01: 101 forks, 34 of them ahead of upstream.
 
 ## What was taken
 
-| Source                                                              | How                               | What                                                                                                                                                                                          |
-| ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [flownzu](https://github.com/flownzu/foundry-vtt-mcp)               | merged (full history)             | `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `scene-view`, `creature-card`, plus calendar-clock and scene-builder tools                                    |
-| [KillgoreAlpha](https://github.com/KillgoreAlpha/foundry-vtt-mcp)   | merged (full history)             | `manage-scenes`, `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`, `tokenImg` and folder paths in `manage-actors`, optional features in `dnd5e-create-npc` |
-| [ErikGenibo](https://github.com/ErikGenibo/foundry-vtt-mcp)         | ported (commits 091a025, 7dc7f14) | `execute-script`; PF2e strikes and item use run on the token's actor                                                                                                                          |
-| [khelbenlaforge](https://github.com/khelbenlaforge/foundry-vtt-mcp) | ported (commit 29a7472)           | `get-permissions`                                                                                                                                                                             |
+| Source                                                              | How                               | What                                                                                                                                                                         |
+| ------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [flownzu](https://github.com/flownzu/foundry-vtt-mcp)               | merged (full history)             | `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `scene-view`, `creature-card`, plus calendar-clock and scene-builder tools                   |
+| [KillgoreAlpha](https://github.com/KillgoreAlpha/foundry-vtt-mcp)   | merged (full history)             | `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`, `tokenImg` and folder paths in `manage-actors`, optional features in `dnd5e-create-npc` |
+| [ErikGenibo](https://github.com/ErikGenibo/foundry-vtt-mcp)         | ported (commits 091a025, 7dc7f14) | `execute-script`; PF2e strikes and item use run on the token's actor                                                                                                         |
+| [khelbenlaforge](https://github.com/khelbenlaforge/foundry-vtt-mcp) | ported (commit 29a7472)           | `get-permissions`                                                                                                                                                            |
 
 Added on top by this fork, building on the above:
 
@@ -51,7 +51,6 @@ Things still worth a look or improvement for a PF2e + D&D 5e world. Roughly in p
 ### Needs review before trusting
 
 - **Language**: flownzu's table tools use German error messages and comments. Fine for you, but translate or localise before sharing.
-- **Overlap**: KillgoreAlpha's `manage-scenes` and the existing `manage-scene` are two tools doing similar things; consider merging or cross-referencing in the tool descriptions so the agent picks the right one.
 - **Dialogs**: the handoff's PF2e pitfalls (special-ammo and ChoiceSet pickers block the GM client, PF2e Merchant `createItem` merging, kits expanding) are not handled by any fork. `execute-script` only reports a timeout.
 - **Dry-run** support for destructive tools is still missing.
 - **Docs**: README still says 49 tools and does not list the new tools. `INSTALLATION.md` needs the script-execution setting explained.
@@ -63,5 +62,7 @@ Things still worth a look or improvement for a PF2e + D&D 5e world. Roughly in p
 Builds, type checks, 293 server tests and 52 module tests pass, and the MCP schema smoke test passes. None of the merged or ported tools were run against a real Foundry instance. Before relying on them, try each in a throwaway world, starting with the script guard (setting off must refuse; setting on must run and whisper a card).
 
 ### Removed as duplicate
+
+- KillgoreAlpha's `manage-scenes` was removed: `manage-scene` already creates and updates scenes and also handles embedded documents (walls, lights, tiles, notes, tokens). Lost with it: deleting a whole scene and the friendlier wall/background validation. Activating a scene is still `switch-scene`.
 
 - flownzu's `run-macro` was removed: `manage-macros` (list / execute) does the same and returns args, logs and errors as well.

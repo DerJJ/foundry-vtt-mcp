@@ -6,8 +6,9 @@ See [docs/COMMUNITY-FORKS.md](docs/COMMUNITY-FORKS.md) for sources, credits and 
 
 - **`execute-script` and `manage-macros`** — run JavaScript or macros in the GM browser, and create/update/delete macros. Execution is **off by default**; a GM must enable "Allow script and macro execution" in the module settings. Every run is whispered to the GM. (execute-script from ErikGenibo's fork, guard rails new.)
 - **Table tools** from flownzu's fork: `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `scene-view`, `creature-card`.
-- **Scene, compendium and folder management** from KillgoreAlpha's fork: `manage-scenes`, `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`.
+- **Scene, compendium and folder management** from KillgoreAlpha's fork: `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`.
 - **`get-permissions`** from khelbenlaforge's fork.
+- **PF2e spell save DC and spell attack** now come from the spellcasting entry's computed statistic, so `get-character` reports what the sheet shows.
 - **PF2e fix** from ErikGenibo's fork: strikes and item use run on the token's actor, avoiding "This actor no longer exists!".
 
 ### New Features

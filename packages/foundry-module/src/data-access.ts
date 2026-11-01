@@ -2353,8 +2353,20 @@ export class FoundryDataAccess {
           tradition: entryData?.tradition?.value || entryData?.tradition || undefined,
           type: entryData?.prepared?.value || entryData?.prepared || 'prepared',
           ability: entryData?.ability?.value || entryData?.ability || undefined,
-          dc: entryData?.spelldc?.dc || entryData?.dc?.value || undefined,
-          attack: entryData?.spelldc?.value || entryData?.attack?.value || undefined,
+          // Current PF2e computes these on the entry's Statistic (statistic.dc.value is the
+          // spell save DC, statistic.check.mod the spell attack modifier). Older versions
+          // stored them in system.spelldc, so keep that as a fallback.
+          dc:
+            entry.statistic?.dc?.value ??
+            entryData?.spelldc?.dc ??
+            entryData?.dc?.value ??
+            undefined,
+          attack:
+            entry.statistic?.check?.mod ??
+            entry.attack?.mod ??
+            entryData?.spelldc?.value ??
+            entryData?.attack?.value ??
+            undefined,
           slots: this.extractPF2eSpellSlots(entryData),
           spells: entrySpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });
