@@ -121,7 +121,7 @@ const targetsProp = {
     'Token ids or token names on the scene (case-insensitive); player characters also by actor name.',
 };
 
-/** Werkzeuge für den Spieltisch: Kampf, Schaden, Gruppenstatus, verdeckte Würfe, Tabellen, Chat, Makros, Ansicht. */
+/** Tools for running the table: combat, damage, party status, hidden rolls, tables, chat, macros, view. */
 export class TableTools {
   private foundryClient: FoundryClient;
   private logger: Logger;

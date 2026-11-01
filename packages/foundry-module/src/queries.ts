@@ -152,7 +152,7 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.manageScene`] = this.handleManageScene.bind(this);
     CONFIG.queries[`${modulePrefix}.calendarClock`] = this.handleCalendarClock.bind(this);
 
-    // Spieltisch: Kampf, Schaden, Gruppenstatus, verdeckte Würfe, Tabellen, Chat, Makros, Ansicht
+    // Table tools: combat, damage, party status, hidden rolls, tables, chat, macros, view
     CONFIG.queries[`${modulePrefix}.combatControl`] = table.combatControl;
     CONFIG.queries[`${modulePrefix}.applyDamage`] = table.applyDamage;
     CONFIG.queries[`${modulePrefix}.partyStatus`] = table.partyStatus;

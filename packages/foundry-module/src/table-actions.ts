@@ -1,7 +1,7 @@
 /**
- * Werkzeuge für den Spieltisch: Kampf, Schaden/Heilung, Gruppenstatus, verdeckte Würfe,
- * Zufallstabellen, Chat, Makros und Ansicht. Läuft im Browser des GM; die Aufrufe kommen
- * über die Bridge und sind per query-guard auf GMs beschränkt.
+ * Tools for running the table: combat, damage/healing, party status, hidden rolls,
+ * roll tables, chat, macros and view controls. Runs in the GM browser; calls arrive
+ * through the bridge and are restricted to GMs by the query guard.
  */
 
 import { assertScriptingAllowed } from './script-runner.js';
@@ -26,11 +26,11 @@ function resolveScene(ident?: string): any {
   const scenes = g().scenes;
   if (ident) {
     const scene = scenes.get(ident) ?? scenes.find((s: any) => ci(s.name, ident));
-    if (!scene) throw new Error(`Szene nicht gefunden: ${ident}`);
+    if (!scene) throw new Error(`Scene not found: ${ident}`);
     return scene;
   }
   const scene = scenes.active ?? scenes.viewed;
-  if (!scene) throw new Error('Keine aktive Szene');
+  if (!scene) throw new Error('No active scene');
   return scene;
 }
 
@@ -51,9 +51,9 @@ interface Target {
 }
 
 /**
- * Löst Ziele auf: Token-ID, Token-Name oder Actor-Name auf der Szene; mit `actorFallback`
- * auch Actors ohne Token (SC, die nicht auf der Szene stehen). Mehrdeutige Namen werfen,
- * außer `allMatches` ist gesetzt.
+ * Resolves targets: token id, token name or actor name on the scene; with `actorFallback`
+ * also actors without a token (PCs not on the scene). Ambiguous names throw,
+ * unless `allMatches` is set.
  */
 function resolveTargets(
   scene: any,
@@ -70,13 +70,13 @@ function resolveTargets(
       const actor = opts.actorFallback
         ? (g().actors.get(t) ?? g().actors.find((a: any) => ci(a.name, t)))
         : null;
-      if (!actor) throw new Error(`Ziel nicht gefunden: ${t} (Szene ${scene.name})`);
+      if (!actor) throw new Error(`Target not found: ${t} (scene ${scene.name})`);
       out.push({ token: null, actor, name: actor.name });
       continue;
     }
     if (matches.length > 1 && !opts.allMatches) {
       throw new Error(
-        `„${t}“ ist mehrdeutig: ${matches.map(tokenLabel).join('; ')}. Token-ID angeben oder allMatches setzen.`
+        `"${t}" is ambiguous: ${matches.map(tokenLabel).join('; ')}. Give a token id or set allMatches.`
       );
     }
     for (const tok of matches) {
@@ -87,7 +87,7 @@ function resolveTargets(
   return out;
 }
 
-// ══════════ Kampf ══════════
+// ══════════ Combat ══════════
 
 function findCombat(scene: any): any {
   const combats: any[] = g().combats.contents;
@@ -151,7 +151,7 @@ export async function combatControl(data: any): Promise<any> {
             ? all.filter(t => t.actor.hasPlayerOwner)
             : all;
     } else {
-      throw new Error('add braucht targets oder include');
+      throw new Error('add needs targets or include');
     }
     if (!combat) {
       const Combat = cfg().Combat.documentClass;
@@ -169,13 +169,13 @@ export async function combatControl(data: any): Promise<any> {
     return combatStatus(scene, combat);
   }
 
-  if (!combat) throw new Error(`Kein Kampf auf der Szene ${scene.name}`);
+  if (!combat) throw new Error(`No combat on scene ${scene.name}`);
 
   const combatantsOf = (targets: string[] | undefined) => {
     if (!targets?.length) throw new Error(`${action} braucht targets`);
     return resolveTargets(scene, targets, { allMatches: true }).map(t => {
       const c = combat.combatants.find((cb: any) => cb.tokenId === t.token?.id);
-      if (!c) throw new Error(`${t.name} ist nicht im Kampf`);
+      if (!c) throw new Error(`${t.name} is not in the combat`);
       return c;
     });
   };
@@ -238,7 +238,7 @@ export async function combatControl(data: any): Promise<any> {
   return combatStatus(scene, g().combats.get(combat.id) ?? combat);
 }
 
-// ══════════ Schaden und Heilung ══════════
+// ══════════ Damage and healing ══════════
 
 export async function applyDamage(data: any): Promise<any> {
   requireGM();
@@ -258,7 +258,7 @@ export async function applyDamage(data: any): Promise<any> {
   for (const e of entries) {
     const before = hpOf(e.actor);
     if (!before) {
-      results.push({ name: e.name, error: 'hat keine TP' });
+      results.push({ name: e.name, error: 'has no HP' });
       continue;
     }
     const damages = type ? [{ value: data.amount, type, properties: new Set() }] : data.amount;
@@ -282,7 +282,7 @@ export async function applyDamage(data: any): Promise<any> {
   };
 }
 
-// ══════════ Gruppenstatus ══════════
+// ══════════ Party status ══════════
 
 function partyActors(): any[] {
   const assigned = g()
@@ -348,7 +348,7 @@ export async function partyStatus(data: any): Promise<any> {
   return { success: true, party };
 }
 
-// ══════════ Verdeckte Würfe ══════════
+// ══════════ Hidden rolls ══════════
 
 const ROLL_MODES: Record<string, string> = {
   public: 'publicroll',
@@ -383,7 +383,7 @@ export async function gmRoll(data: any): Promise<any> {
   }
 
   if (!data.rollType || !data.targets?.length)
-    throw new Error('formula oder rollType + targets angeben');
+    throw new Error('Give formula, or rollType + targets');
   const dnd = cfg().DND5E;
   const key = String(data.key ?? '');
   const isSkill = data.rollType === 'skill' || data.rollType === 'passive';
@@ -421,7 +421,7 @@ export async function gmRoll(data: any): Promise<any> {
   return { success: true, rollType: data.rollType, key, results };
 }
 
-// ══════════ Zufallstabellen ══════════
+// ══════════ Roll tables ══════════
 
 async function tableEntries(search?: string) {
   const out: { name: string; id: string; source: string }[] = [];
@@ -460,11 +460,11 @@ export async function rollTable(data: any): Promise<any> {
     if (!pick) {
       throw new Error(
         hits.length
-          ? `Mehrere Tabellen passen: ${hits
+          ? `Several tables match: ${hits
               .slice(0, 10)
               .map(h => `${h.name} (${h.id})`)
               .join('; ')}`
-          : `Tabelle nicht gefunden: ${ident}`
+          : `Table not found: ${ident}`
       );
     }
     table = await (globalThis as any).fromUuid(pick.id);
@@ -504,7 +504,7 @@ export async function postChat(data: any): Promise<any> {
   const whisper: string[] = [];
   for (const w of data.whisperTo ?? []) {
     const user = g().users.find((u: any) => ci(u.name, w) || ci(u.character?.name, w));
-    if (!user) throw new Error(`Spieler nicht gefunden: ${w}`);
+    if (!user) throw new Error(`Player not found: ${w}`);
     whisper.push(user.id);
   }
   const style = styles[(data.style ?? (data.speaker ? 'ic' : 'ooc')).toUpperCase()];
@@ -520,7 +520,7 @@ export async function postChat(data: any): Promise<any> {
   };
 }
 
-// ══════════ Makros ══════════
+// ══════════ Macros ══════════
 
 export async function runMacro(data: any): Promise<any> {
   requireGM();
@@ -537,9 +537,11 @@ export async function runMacro(data: any): Promise<any> {
   assertScriptingAllowed();
   const ident = String(data.macro ?? '');
   const matches = macros.filter((m: any) => m.id === ident || ci(m.name, ident));
-  if (!matches.length) throw new Error(`Makro nicht gefunden: ${ident}`);
+  if (!matches.length) throw new Error(`Macro not found: ${ident}`);
   if (matches.length > 1)
-    throw new Error(`Mehrere Makros heißen ${ident}: ${matches.map((m: any) => m.id).join(', ')}`);
+    throw new Error(
+      `Several macros are named ${ident}: ${matches.map((m: any) => m.id).join(', ')}`
+    );
   const result = await matches[0].execute();
   let safe: unknown = null;
   try {
@@ -550,7 +552,7 @@ export async function runMacro(data: any): Promise<any> {
   return { success: true, macro: matches[0].name, result: safe };
 }
 
-// ══════════ Ansicht: Ping, Spieler holen, Nebel, Wetter ══════════
+// ══════════ View: ping, pull players, fog, weather ══════════
 
 export async function sceneView(data: any): Promise<any> {
   requireGM();
@@ -568,7 +570,7 @@ export async function sceneView(data: any): Promise<any> {
     const scene = resolveScene(data.sceneIdentifier);
     const weather = data.weather ?? '';
     if (weather && !(weather in (cfg().weatherEffects ?? {}))) {
-      throw new Error(`Unbekanntes Wetter ${weather}. list-weather zeigt die Auswahl.`);
+      throw new Error(`Unknown weather ${weather}. list-weather shows the options.`);
     }
     await scene.update({ weather });
     return { success: true, scene: scene.name, weather };
@@ -576,15 +578,13 @@ export async function sceneView(data: any): Promise<any> {
 
   const canvas = (globalThis as any).canvas;
   const scene = canvas?.scene;
-  if (!scene) throw new Error('Der GM-Browser zeigt gerade keine Szene');
+  if (!scene) throw new Error('The GM browser is not showing a scene');
   if (
     data.sceneIdentifier &&
     scene.id !== data.sceneIdentifier &&
     !ci(scene.name, data.sceneIdentifier)
   ) {
-    throw new Error(
-      `Die GM-Ansicht zeigt ${scene.name}; erst dorthin wechseln (switch-scene mode view)`
-    );
+    throw new Error(`The GM view shows ${scene.name}; switch there first (switch-scene mode view)`);
   }
 
   if (data.action === 'reset-fog') {
@@ -603,20 +603,20 @@ export async function sceneView(data: any): Promise<any> {
   } else if (typeof data.x === 'number' && typeof data.y === 'number') {
     point = { x: data.x, y: data.y };
   } else {
-    throw new Error(`${data.action} braucht target oder x/y`);
+    throw new Error(`${data.action} needs target or x/y`);
   }
   const pull = data.action === 'pull-players';
   const types = cfg().Canvas.pings.types;
   const ok = await canvas.ping(point, { pull, style: pull ? types.PULL : types.PULSE });
-  if (ok === false) throw new Error('Punkt liegt außerhalb der Szene');
+  if (ok === false) throw new Error('Point is outside the scene');
   return { success: true, scene: scene.name, point, pull };
 }
 
-// ══════════ Kreaturen-Karte ══════════
+// ══════════ Creature card ══════════
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : String(n));
 
-/** Kompakter Werteblock mit abgeleiteten Werten (Trefferbonus, Schaden, SG) für Token oder Actor. */
+/** Compact stat block with derived values (to-hit, damage, DC) for a token or actor. */
 export async function creatureCard(data: any): Promise<any> {
   requireGM();
   let actor: any = null;
@@ -629,7 +629,7 @@ export async function creatureCard(data: any): Promise<any> {
     if (!actor && String(data.actor).includes('.'))
       actor = await (globalThis as any).fromUuid(data.actor);
   }
-  if (!actor) throw new Error('target (Token) oder actor (Name, ID, UUID) angeben');
+  if (!actor) throw new Error('Give target (token) or actor (name, id, UUID)');
 
   const dnd = cfg().DND5E;
   const sys = actor.system ?? {};
@@ -666,7 +666,7 @@ export async function creatureCard(data: any): Promise<any> {
     const uses = item.system?.uses;
     const recharge = uses?.recovery?.find((r: any) => r.period === 'recharge');
     const usesText = recharge
-      ? `Aufladen ${recharge.formula}${recharge.formula === '6' ? '' : '–6'}${uses.value ? '' : ' (leer)'}`
+      ? `Recharge ${recharge.formula}${recharge.formula === '6' ? '' : '–6'}${uses.value ? '' : ' (empty)'}`
       : uses?.max > 0
         ? `${uses.value}/${uses.max}`
         : '';
@@ -676,7 +676,7 @@ export async function creatureCard(data: any): Promise<any> {
     }
     const parts = activities.map((act: any) => {
       const bits: string[] = [];
-      if (act.labels?.toHit) bits.push(`${act.labels.toHit} zum Treffen`);
+      if (act.labels?.toHit) bits.push(`${act.labels.toHit} to hit`);
       if (act.labels?.save) bits.push(act.labels.save);
       const dmg = (act.labels?.damage ?? []).map((d: any) => d.label ?? d.formula).filter(Boolean);
       if (dmg.length) bits.push(dmg.join(' + '));
