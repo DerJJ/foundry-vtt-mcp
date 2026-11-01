@@ -28,6 +28,14 @@ const manageMacrosSchema = z
   })
   .strict();
 
+/**
+ * How long the connector waits for the module's answer: the script's own timeout plus a
+ * margin, so the module's structured "timed out" result arrives before the connector gives up.
+ */
+function waitForScript(timeoutMs: number | undefined): number {
+  return (timeoutMs ?? 30000) + 5000;
+}
+
 export class ScriptExecutionTools {
   private foundryClient: FoundryClient;
   private logger: Logger;
@@ -107,7 +115,9 @@ export class ScriptExecutionTools {
     this.logger.info('Executing script', { codeLength: parsed.code.length });
 
     try {
-      return await this.foundryClient.query('foundry-mcp-bridge.executeScript', parsed);
+      return await this.foundryClient.query('foundry-mcp-bridge.executeScript', parsed, {
+        timeoutMs: waitForScript(parsed.timeoutMs),
+      });
     } catch (error) {
       this.logger.error('Failed to execute script', error);
       throw new Error(
@@ -121,7 +131,9 @@ export class ScriptExecutionTools {
     this.logger.info('manage-macros', { action: parsed.action });
 
     try {
-      return await this.foundryClient.query('foundry-mcp-bridge.manageMacros', parsed);
+      return await this.foundryClient.query('foundry-mcp-bridge.manageMacros', parsed, {
+        timeoutMs: parsed.action === 'execute' ? waitForScript(parsed.timeoutMs) : undefined,
+      });
     } catch (error) {
       this.logger.error('manage-macros failed', error);
       throw new Error(

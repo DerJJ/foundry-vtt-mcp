@@ -356,7 +356,11 @@ export class FoundryConnector {
     }
   }
 
-  async query(method: string, data?: any): Promise<any> {
+  async query(
+    method: string,
+    data?: any,
+    options?: { timeoutMs?: number | undefined }
+  ): Promise<any> {
     // Check connection based on active connection type
     const isConnected =
       this.activeConnectionType === 'webrtc'
@@ -379,7 +383,7 @@ export class FoundryConnector {
       const timeout = setTimeout(() => {
         this.pendingQueries.delete(queryId);
         reject(new Error(`Query timeout: ${method}`));
-      }, 10000); // 10 second timeout
+      }, options?.timeoutMs ?? 10000); // 10 second default; long-running tools pass their own
 
       this.pendingQueries.set(queryId, { resolve, reject, timeout });
 

@@ -477,17 +477,22 @@ export class CharacterTools {
     });
 
     try {
-      const result = await this.foundryClient.query('foundry-mcp-bridge.useItem', {
-        actorIdentifier,
-        itemIdentifier,
-        targets,
-        options: {
-          consume: consume ?? true,
-          spellLevel,
-          skipDialog: skipDialog ?? true, // Default to skipping dialogs for MCP automation
-          waitMs,
+      const result = await this.foundryClient.query(
+        'foundry-mcp-bridge.useItem',
+        {
+          actorIdentifier,
+          itemIdentifier,
+          targets,
+          options: {
+            consume: consume ?? true,
+            spellLevel,
+            skipDialog: skipDialog ?? true, // Default to skipping dialogs for MCP automation
+            waitMs,
+          },
         },
-      });
+        // The module waits up to waitMs (default 3000) for chat messages before answering
+        { timeoutMs: 10000 + (waitMs ?? 3000) }
+      );
 
       this.logger.debug('Successfully used item', {
         actorName: result.actorName,
