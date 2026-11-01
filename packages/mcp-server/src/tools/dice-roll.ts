@@ -2,6 +2,24 @@ import { z } from 'zod';
 import { FoundryClient } from '../foundry-client.js';
 import { Logger } from '../logger.js';
 
+const CHAT_KINDS = [
+  'spell-cast',
+  'item-use',
+  'attack',
+  'damage',
+  'damage-applied',
+  'saving-throw',
+  'skill-check',
+  'perception-check',
+  'ability-check',
+  'initiative',
+  'flat-check',
+  'death-save',
+  'roll',
+  'chat',
+  'other',
+] as const;
+
 interface DiceRollToolsOptions {
   foundryClient: FoundryClient;
   logger: Logger;
@@ -79,25 +97,43 @@ export class DiceRollTools {
           ],
         },
       },
-      // Local patch: read recent chat messages / roll results
       {
         name: 'get-chat-messages',
         description:
-          'Read the most recent Foundry chat messages (GM view, includes whispers), oldest first. Each message has author, speaker/actor, flavor, plain-text content, visibility and roll results (formula, total, individual dice). Use rollsOnly to get only roll messages, e.g. to see the result of a roll requested with request-player-rolls.',
+          'Read the Foundry chat log as structured events (GM view, includes whispers), oldest first, so you can tell what happened and who did it. ' +
+          'Every event has a kind (spell-cast, item-use, attack, damage, damage-applied, saving-throw, skill-check, perception-check, ability-check, initiative, flat-check, death-save, roll, chat, other), ' +
+          'a one-line summary, who (user, actor), the item or spell involved (name, type, level), targets, DC, outcome (success/failure/critical) and the dice. ' +
+          'Works for dnd5e and pf2e. Filter by actor, kinds or since; page backwards with beforeId (use oldestId from the previous result). ' +
+          'Text is included for plain chat and applied damage; set includeText=all to add the description of item and spell cards.',
         inputSchema: {
           type: 'object',
           properties: {
             limit: {
               type: 'number',
-              description: 'Number of most recent messages to return (1-50, default 10)',
+              description: 'Number of most recent matching events (1-100, default 20)',
               minimum: 1,
-              maximum: 50,
-              default: 10,
+              maximum: 100,
             },
-            rollsOnly: {
-              type: 'boolean',
-              description: 'Only return messages that contain dice rolls',
-              default: false,
+            since: { type: 'string', description: 'Only events after this ISO timestamp' },
+            beforeId: {
+              type: 'string',
+              description: 'Only events older than this message id (paging)',
+            },
+            actor: { type: 'string', description: 'Actor name (substring) or id of the speaker' },
+            kinds: {
+              type: 'array',
+              items: { type: 'string', enum: CHAT_KINDS },
+              description: 'Only these kinds of event',
+            },
+            rollsOnly: { type: 'boolean', description: 'Only messages that contain dice rolls' },
+            includeText: {
+              type: 'string',
+              enum: ['auto', 'all', 'none'],
+              description: 'auto (default), all, none',
+            },
+            textLength: {
+              type: 'number',
+              description: 'Max characters of text per event (default 300)',
             },
           },
         },
@@ -154,11 +190,16 @@ export class DiceRollTools {
     }
   }
 
-  // Local patch: read recent chat messages / roll results
   async handleGetChatMessages(args: any) {
     const schema = z.object({
-      limit: z.number().min(1).max(50).default(10),
-      rollsOnly: z.boolean().default(false),
+      limit: z.number().min(1).max(100).optional(),
+      since: z.string().optional(),
+      beforeId: z.string().optional(),
+      actor: z.string().optional(),
+      kinds: z.array(z.enum(CHAT_KINDS)).optional(),
+      rollsOnly: z.boolean().optional(),
+      includeText: z.enum(['auto', 'all', 'none']).optional(),
+      textLength: z.number().min(0).max(5000).optional(),
     });
     const params = schema.parse(args ?? {});
     const response = await this.foundryClient.query('foundry-mcp-bridge.getChatMessages', params);

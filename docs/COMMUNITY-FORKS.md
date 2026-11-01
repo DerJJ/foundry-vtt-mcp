@@ -35,7 +35,7 @@ Things still worth a look or improvement for a PF2e + D&D 5e world. Roughly in p
 ### Port by hand
 
 1. **LudoBermejoES `a93a103`: compressed JSON wire format and no per-document ceiling.** Likely fixes large-actor transfers.
-2. **LudoBermejoES `233ab3b`: `callModuleApi`, chat-message reads, Combat lifecycle.** Chat reads are in the handoff's gap list. flownzu already has a chat read for `post-chat`; compare before porting.
+2. **LudoBermejoES `233ab3b`: `callModuleApi` and Combat lifecycle.** Chat reads are done: `get-chat-messages` was rewritten here.
 3. **LudoBermejoES `7658e3c`: callers can put flags on items they create.** Needed for PF2e Merchant flags.
 4. **khelbenlaforge `656756f`, `76a803d`: `get-character` and `get-character-entity` timeout fixes for large actors.** Upstream may already have fixed this since; test with a big PF2e actor first.
 5. **khelbenlaforge `6a082d2`: `set-token` / `refresh-from-source` for `manage-actors`.**
@@ -66,3 +66,9 @@ Builds, type checks, 293 server tests and 52 module tests pass, and the MCP sche
 - KillgoreAlpha's `manage-scenes` was removed: `manage-scene` already creates and updates scenes and also handles embedded documents (walls, lights, tiles, notes, tokens). Lost with it: deleting a whole scene and the friendlier wall/background validation. Activating a scene is still `switch-scene`.
 
 - flownzu's `run-macro` was removed: `manage-macros` (list / execute) does the same and returns args, logs and errors as well.
+
+### Open after the chat rewrite
+
+- `use-item` is still fire-and-forget and does not return the chat message it created. On PF2e it posts the item card but, as far as the code shows, does not cast the spell, spend a slot or roll a strike.
+- `request-player-rolls` has dnd5e-specific parts that were not reviewed.
+- The chat log was tested against fake messages shaped like the PF2e and dnd5e flags, not against a live world; check the `pf2e` and `dnd5e` flag names on a real spell cast.

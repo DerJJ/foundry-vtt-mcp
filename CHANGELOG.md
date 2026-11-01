@@ -8,6 +8,8 @@ See [docs/COMMUNITY-FORKS.md](docs/COMMUNITY-FORKS.md) for sources, credits and 
 - **Table tools** from flownzu's fork: `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `scene-view`, `creature-card`.
 - **Scene, compendium and folder management** from KillgoreAlpha's fork: `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`.
 - **`get-permissions`** from khelbenlaforge's fork.
+- **PF2e support for `apply-damage`, `party-status` and `gm-roll`** — the table tools now work on pf2e as well as dnd5e. `gm-roll` rolls skills, perception and saves and reports the degree of success; ability checks and advantage do not exist in PF2e.
+- **`get-chat-messages` rewritten** — returns structured events instead of stripped text: kind (spell-cast, item-use, attack, damage, damage-applied, saving-throw, skill-check, ...), a one-line summary, who, the item or spell, targets, DC, outcome and dice, for dnd5e and pf2e. Filter by actor, kind or time; page backwards with `beforeId`.
 - **PF2e spell save DC and spell attack** now come from the spellcasting entry's computed statistic, so `get-character` reports what the sheet shows.
 - **PF2e fix** from ErikGenibo's fork: strikes and item use run on the token's actor, avoiding "This actor no longer exists!".
 
