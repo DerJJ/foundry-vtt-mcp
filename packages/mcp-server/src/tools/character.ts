@@ -850,10 +850,10 @@ export class CharacterTools {
       }
 
       // Include DC and attack bonus
-      if (entry.dc) {
+      if (entry.dc !== undefined && entry.dc !== null) {
         formatted.dc = entry.dc;
       }
-      if (entry.attack) {
+      if (entry.attack !== undefined && entry.attack !== null) {
         formatted.attack = entry.attack;
       }
 

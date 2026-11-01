@@ -20,7 +20,6 @@ import { CalendarClockTools } from './tools/calendar-clock.js';
 import { TableTools } from './tools/table-tools.js';
 import { ScriptExecutionTools } from './tools/script-execution.js';
 import { FolderManagementTools } from './tools/folder-management.js';
-import { SceneManagementTools } from './tools/scene-management.js';
 import { CompendiumManagementTools } from './tools/compendium-management.js';
 import { CompendiumEntryTools } from './tools/compendium-entries.js';
 import { QuestCreationTools } from './tools/quest-creation.js';
@@ -1197,7 +1196,6 @@ async function startBackend(): Promise<void> {
   const tableTools = new TableTools({ foundryClient, logger });
   const scriptExecutionTools = new ScriptExecutionTools({ foundryClient, logger });
   const folderManagementTools = new FolderManagementTools({ foundryClient, logger });
-  const sceneManagementTools = new SceneManagementTools({ foundryClient, logger });
   const compendiumManagementTools = new CompendiumManagementTools({ foundryClient, logger });
   const compendiumEntryTools = new CompendiumEntryTools({ foundryClient, logger });
 
@@ -1442,7 +1440,6 @@ async function startBackend(): Promise<void> {
     ...tableTools.getToolDefinitions(),
     ...scriptExecutionTools.getToolDefinitions(),
     ...folderManagementTools.getToolDefinitions(),
-    ...sceneManagementTools.getToolDefinitions(),
     ...compendiumManagementTools.getToolDefinitions(),
     ...compendiumEntryTools.getToolDefinitions(),
 
@@ -1676,13 +1673,6 @@ async function startBackend(): Promise<void> {
 
                 case 'manage-folders':
                   result = await folderManagementTools.handleManageFolders(args);
-
-                  break;
-
-                // Scene management (create / update / delete / activate)
-
-                case 'manage-scenes':
-                  result = await sceneManagementTools.handleManageScenes(args);
 
                   break;
 

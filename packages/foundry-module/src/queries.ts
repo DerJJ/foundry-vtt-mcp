@@ -186,10 +186,6 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.copyPackEntry`] = this.handleCopyPackEntry.bind(this);
 
     // Scene CRUD (create / update / delete / activate)
-    CONFIG.queries[`${modulePrefix}.createScene`] = this.handleCreateScene.bind(this);
-    CONFIG.queries[`${modulePrefix}.updateScene`] = this.handleUpdateScene.bind(this);
-    CONFIG.queries[`${modulePrefix}.deleteScene`] = this.handleDeleteScene.bind(this);
-    CONFIG.queries[`${modulePrefix}.activateScene`] = this.handleActivateScene.bind(this);
 
     // Phase 7: Token manipulation queries
     CONFIG.queries[`${modulePrefix}.move-token`] = this.handleMoveToken.bind(this);
@@ -2626,49 +2622,6 @@ export class QueryHandlers {
       throw new Error('pack and source are required');
     }
     return this.dataAccess.copyPackEntry(data);
-  }
-
-  // ===== SCENE HANDLERS =====
-
-  private async handleCreateScene(data: any): Promise<any> {
-    const gmCheck = this.validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    if (!data?.name) {
-      throw new Error('name is required');
-    }
-    return this.dataAccess.createScene(data);
-  }
-
-  private async handleUpdateScene(data: any): Promise<any> {
-    const gmCheck = this.validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    if (!data?.identifier) {
-      throw new Error('identifier is required');
-    }
-    return this.dataAccess.updateScene(data);
-  }
-
-  private async handleDeleteScene(data: any): Promise<any> {
-    const gmCheck = this.validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    if (!data?.identifier) {
-      throw new Error('identifier is required');
-    }
-    return this.dataAccess.deleteScene(data);
-  }
-
-  private async handleActivateScene(data: any): Promise<any> {
-    const gmCheck = this.validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    if (!data?.scene_identifier) {
-      throw new Error('scene_identifier is required');
-    }
-    // manage-scenes "activate" is the same operation as switch-scene.
-    return this.dataAccess.switchScene(data);
   }
 
   private async handleUpdateActorItems(data: {
