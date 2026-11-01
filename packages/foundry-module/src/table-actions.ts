@@ -4,6 +4,8 @@
  * through the bridge and are restricted to GMs by the query guard.
  */
 
+import { applyDamagePf2e, gmRollPf2e, partyStatusPf2e } from './table-actions-pf2e.js';
+
 const g = (): any => (globalThis as any).game;
 const cfg = (): any => (globalThis as any).CONFIG;
 const ci = (a: unknown, b: unknown) =>
@@ -238,7 +240,7 @@ export async function combatControl(data: any): Promise<any> {
 
 // ══════════ Damage and healing ══════════
 
-export async function applyDamage(data: any): Promise<any> {
+async function applyDamage5e(data: any): Promise<any> {
   requireGM();
   const scene = resolveScene(data.sceneIdentifier);
   const dnd = cfg().DND5E;
@@ -296,7 +298,7 @@ function statusName(id: string): string {
   return effect ? g().i18n.localize(effect.name ?? effect.label ?? id) : id;
 }
 
-export async function partyStatus(data: any): Promise<any> {
+async function partyStatus5e(data: any): Promise<any> {
   requireGM();
   const players = g().users.filter((u: any) => !u.isGM);
   const party = partyActors().map((a: any) => {
@@ -359,7 +361,7 @@ const natural = (roll: any): number | null => {
   return d20 ? d20.total : null;
 };
 
-export async function gmRoll(data: any): Promise<any> {
+async function gmRoll5e(data: any): Promise<any> {
   requireGM();
   const visibility = data.visibility ?? 'blind';
   const rollMode = ROLL_MODES[visibility];
@@ -689,4 +691,44 @@ export async function creatureCard(data: any): Promise<any> {
     actions,
     conditions: [...(actor.statuses ?? [])].map(statusName),
   };
+}
+
+// ══════════ System dispatch: dnd5e (default) and pf2e ══════════
+
+/** Helpers handed to the PF2e implementations in table-actions-pf2e.ts. */
+export interface TableHelpers {
+  requireGM: typeof requireGM;
+  resolveScene: typeof resolveScene;
+  resolveTargets: typeof resolveTargets;
+  hpOf: typeof hpOf;
+  partyActors: typeof partyActors;
+  statusName: typeof statusName;
+  natural: typeof natural;
+  rollModes: Record<string, string>;
+}
+
+const helpers = (): TableHelpers => ({
+  requireGM,
+  resolveScene,
+  resolveTargets,
+  hpOf,
+  partyActors,
+  statusName,
+  natural,
+  rollModes: ROLL_MODES,
+});
+
+const isPf2e = (): boolean => g().system?.id === 'pf2e';
+
+export async function applyDamage(data: any): Promise<any> {
+  return isPf2e() ? applyDamagePf2e(data, helpers()) : applyDamage5e(data);
+}
+
+export async function partyStatus(data: any): Promise<any> {
+  return isPf2e() ? partyStatusPf2e(data, helpers()) : partyStatus5e(data);
+}
+
+export async function gmRoll(data: any): Promise<any> {
+  // A plain formula is system-neutral, so the dnd5e function handles it for every system.
+  return !data.formula && isPf2e() ? gmRollPf2e(data, helpers()) : gmRoll5e(data);
 }

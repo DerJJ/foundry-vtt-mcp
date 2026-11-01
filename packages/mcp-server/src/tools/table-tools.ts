@@ -168,9 +168,9 @@ export class TableTools {
       {
         name: 'apply-damage',
         description:
-          'Apply damage or healing to tokens through dnd5e (resistances, immunities, vulnerabilities, temp HP and concentration checks apply). ' +
+          'Apply damage or healing to tokens (dnd5e or pf2e). Resistances, immunities and weaknesses apply when a type is given; dnd5e also handles temp HP and concentration, pf2e reports dying and wounded. ' +
           'type: a damage type (bludgeoning, fire, ...), "healing" or "temphp"; without type the damage is untyped and ignores resistances. ' +
-          'multiplier 0.5 for half damage on a save. Names that match several tokens fail unless allMatches=true. Returns HP before and after.',
+          'multiplier 0.5 for half damage on a save (pf2e: rounded down). Names that match several tokens fail unless allMatches=true. pf2e needs a token on the scene. Returns HP before and after.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -187,15 +187,18 @@ export class TableTools {
       {
         name: 'party-status',
         description:
-          'Compact live status of all player characters in one call: HP, temp HP, AC, spell slots, concentration, conditions, exhaustion, ' +
-          'hit dice, inspiration, death saves, passive perception/insight/investigation. includeFeatures adds features and items with limited uses.',
+          'Compact live status of all player characters in one call (dnd5e or pf2e). dnd5e: HP, temp HP, AC, spell slots, concentration, conditions, exhaustion, ' +
+          'hit dice, inspiration, death saves, passive perception/insight/investigation. pf2e: HP, AC, dying/wounded, perception, saves, class DC, spellcasting entries ' +
+          '(DC, attack, slots), focus and hero points, conditions. includeFeatures adds features and items with limited uses.',
         inputSchema: { type: 'object', properties: { includeFeatures: { type: 'boolean' } } },
       },
       {
         name: 'gm-roll',
         description:
-          'Roll hidden from the players. Either a formula ("1d20+5", "2d6") or a dnd5e roll for tokens: rollType skill|save|ability with key ' +
-          '(skill: ste, prc, ins, ...; save/ability: str, dex, con, int, wis, cha), or rollType passive (no roll, reads the passive skill value). ' +
+          'Roll hidden from the players. Either a formula ("1d20+5", "2d6", any system) or a roll for tokens. ' +
+          'dnd5e: rollType skill|save|ability with key (skill: ste, prc, ins, ...; save/ability: str, dex, con, int, wis, cha), or rollType passive (no roll, reads the passive skill value). ' +
+          'pf2e: rollType skill|save with key (skill slug such as acrobatics or perception; save: fortitude, reflex, will), or rollType passive (returns modifier and DC, since pf2e has no passive scores); ' +
+          'results include the degree of success; ability and advantageMode do not apply. ' +
           'visibility: blind (default, only GM sees it in chat), gm (GM roll, roller and GM), none (no chat message). Returns totals and natural d20.',
         inputSchema: {
           type: 'object',
