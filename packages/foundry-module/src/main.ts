@@ -232,7 +232,7 @@ class FoundryMCPBridge {
 
           if (!lastShown || new Date(lastShown).getTime() < thirtySecondsAgo) {
             ui.notifications?.warn(
-              'MCP Server not found. Install it from https://github.com/KillgoreAlpha/foundry-vtt-mcp'
+              'MCP Server not found. Install it from https://github.com/DerJJ/foundry-vtt-mcp'
             );
 
             // Remember when we showed this notification
