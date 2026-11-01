@@ -2454,6 +2454,9 @@ export class FoundryDataAccess {
             name: `${className} Spellcasting`,
             type: classSystem?.spellcasting?.type || 'prepared',
             ability: classSystem?.spellcasting?.ability || undefined,
+            // dnd5e keeps one spell save DC / spell attack per actor, not per class
+            dc: actorAny.system?.attributes?.spell?.dc ?? undefined,
+            attack: actorAny.system?.attributes?.spell?.attack ?? undefined,
             slots: this.extractDnD5eSpellSlots(spellSlots),
             spells: classSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
           });
@@ -2482,6 +2485,8 @@ export class FoundryDataAccess {
           id: 'spellcasting',
           name: 'Spellcasting',
           type: 'prepared',
+          dc: actorAny.system?.attributes?.spell?.dc ?? undefined,
+          attack: actorAny.system?.attributes?.spell?.attack ?? undefined,
           slots: this.extractDnD5eSpellSlots(spellSlots),
           spells: allSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });

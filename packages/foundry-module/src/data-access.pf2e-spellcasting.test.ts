@@ -70,3 +70,33 @@ describe('PF2e spellcasting DC and attack', () => {
     expect(entry.attack).toBe(14);
   });
 });
+
+describe('D&D 5e spellcasting DC and attack', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+    vi.stubGlobal('game', { system: { id: 'dnd5e' } });
+  });
+
+  it('reports the actor-level spell save DC and attack on the class entry', () => {
+    const da = Object.create(FoundryDataAccess.prototype) as any;
+    const wizard = {
+      id: 'c1',
+      name: 'Wizard',
+      type: 'class',
+      system: { spellcasting: { progression: 'full', type: 'prepared', ability: 'int' } },
+    };
+    const actor = {
+      items: Object.assign([wizard], {
+        filter(fn: (i: any) => boolean) {
+          return Array.prototype.filter.call(this, fn);
+        },
+      }),
+      system: { spells: {}, attributes: { spell: { dc: 15, attack: 7 } } },
+    } as any;
+
+    const [entry] = da.extractSpellcastingData(actor);
+
+    expect(entry.dc).toBe(15);
+    expect(entry.attack).toBe(7);
+  });
+});

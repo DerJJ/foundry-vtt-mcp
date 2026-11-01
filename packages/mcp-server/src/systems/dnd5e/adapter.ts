@@ -265,6 +265,33 @@ export class DnD5eAdapter implements SystemAdapter {
       }
     }
 
+    // Saving throws live on the abilities. Older dnd5e stores the total as a number in
+    // `save`, newer as `save.value`.
+    if (system.abilities) {
+      const saves: Record<string, { modifier: number; proficient: boolean }> = {};
+      for (const [key, ability] of Object.entries(system.abilities)) {
+        const abilityData = ability as any;
+        const save = abilityData.save;
+        const total = typeof save === 'number' ? save : save?.value;
+        if (typeof total === 'number') {
+          saves[key] = { modifier: total, proficient: Number(abilityData.proficient) > 0 };
+        }
+      }
+      if (Object.keys(saves).length > 0) {
+        stats.saves = saves;
+      }
+    }
+
+    const proficiencyBonus = system.attributes?.prof;
+    if (typeof proficiencyBonus === 'number') {
+      stats.proficiencyBonus = proficiencyBonus;
+    }
+
+    const initiative = system.attributes?.init?.total;
+    if (typeof initiative === 'number') {
+      stats.initiative = initiative;
+    }
+
     // Creature-specific info
     if (actorData.type === 'npc') {
       const creatureType = system.details?.type?.value ?? system.details?.type;

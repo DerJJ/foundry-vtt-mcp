@@ -39,7 +39,7 @@ const hpOf = (actor: any) => {
 
 const tokenLabel = (t: any) => {
   const hp = hpOf(t.actor);
-  return `${t.name} (${t.id}${hp ? `, ${hp.value}/${hp.max} TP` : ''})`;
+  return `${t.name} (${t.id}${hp ? `, ${hp.value}/${hp.max} HP` : ''})`;
 };
 
 interface Target {
@@ -231,7 +231,7 @@ export async function combatControl(data: any): Promise<any> {
       await combat.delete();
       return combatStatus(scene, null);
     default:
-      throw new Error(`Unbekannte Aktion: ${action}`);
+      throw new Error(`Unknown action: ${action}`);
   }
   return combatStatus(scene, g().combats.get(combat.id) ?? combat);
 }
@@ -245,7 +245,7 @@ export async function applyDamage(data: any): Promise<any> {
   const type: string | undefined = data.type || undefined;
   if (type && !(type in dnd.damageTypes) && !(type in dnd.healingTypes)) {
     throw new Error(
-      `Unbekannter Typ ${type}. Erlaubt: ${[...Object.keys(dnd.damageTypes), ...Object.keys(dnd.healingTypes)].join(', ')}`
+      `Unknown type ${type}. Allowed: ${[...Object.keys(dnd.damageTypes), ...Object.keys(dnd.healingTypes)].join(', ')}`
     );
   }
   const entries = resolveTargets(scene, data.targets, {
@@ -368,7 +368,7 @@ export async function gmRoll(data: any): Promise<any> {
   if (data.formula) {
     const Roll = (globalThis as any).Roll;
     const roll = await new Roll(data.formula).evaluate();
-    if (toChat) await roll.toMessage({ flavor: data.flavor ?? 'Verdeckter Wurf' }, { rollMode });
+    if (toChat) await roll.toMessage({ flavor: data.flavor ?? 'Hidden roll' }, { rollMode });
     return {
       success: true,
       formula: roll.formula,
@@ -386,11 +386,9 @@ export async function gmRoll(data: any): Promise<any> {
   const key = String(data.key ?? '');
   const isSkill = data.rollType === 'skill' || data.rollType === 'passive';
   if (isSkill && !(key in dnd.skills))
-    throw new Error(`Unbekannte Fertigkeit ${key}. Erlaubt: ${Object.keys(dnd.skills).join(', ')}`);
+    throw new Error(`Unknown skill ${key}. Allowed: ${Object.keys(dnd.skills).join(', ')}`);
   if (!isSkill && !(key in dnd.abilities))
-    throw new Error(
-      `Unbekanntes Attribut ${key}. Erlaubt: ${Object.keys(dnd.abilities).join(', ')}`
-    );
+    throw new Error(`Unknown ability ${key}. Allowed: ${Object.keys(dnd.abilities).join(', ')}`);
 
   const scene = resolveScene(data.sceneIdentifier);
   const entries = resolveTargets(scene, data.targets, { allMatches: true, actorFallback: true });
