@@ -281,7 +281,7 @@ FunctionEnd
 ;--------------------------------
 ; Helper Functions
 Function OpenGitHub
-  ExecShell "open" "https://github.com/adambdooley/foundry-vtt-mcp"
+  ExecShell "open" "https://github.com/KillgoreAlpha/foundry-vtt-mcp"
 FunctionEnd
 
 Function DownloadComfyUIModels

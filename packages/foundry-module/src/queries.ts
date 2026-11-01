@@ -1,5 +1,5 @@
 import { MODULE_ID } from './constants.js';
-import { FoundryDataAccess } from './data-access.js';
+import { FoundryDataAccess, FolderableType } from './data-access.js';
 import { ComfyUIManager } from './comfyui-manager.js';
 import { guardQueryHandler } from './query-guard.js';
 import * as table from './table-actions.js';
@@ -118,6 +118,7 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.cancel-map-job`] = this.handleCancelMapJob.bind(this);
     CONFIG.queries[`${modulePrefix}.upload-generated-map`] =
       this.handleUploadGeneratedMap.bind(this);
+    CONFIG.queries[`${modulePrefix}.upload-image`] = this.handleUploadImage.bind(this);
 
     // Item usage queries
     CONFIG.queries[`${modulePrefix}.useItem`] = this.handleUseItem.bind(this);
@@ -160,6 +161,31 @@ export class QueryHandlers {
 
     // Script execution queries
     CONFIG.queries[`${modulePrefix}.executeScript`] = this.handleExecuteScript.bind(this);
+
+    // Folder CRUD (any folderable document type)
+    CONFIG.queries[`${modulePrefix}.listFolders`] = this.handleListFolders.bind(this);
+    CONFIG.queries[`${modulePrefix}.createFolder`] = this.handleCreateFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.renameFolder`] = this.handleRenameFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.moveFolder`] = this.handleMoveFolder.bind(this);
+    CONFIG.queries[`${modulePrefix}.deleteFolder`] = this.handleDeleteFolder.bind(this);
+
+    // Compendium pack CRUD (world packs only)
+    CONFIG.queries[`${modulePrefix}.listPacks`] = this.handleListPacks.bind(this);
+    CONFIG.queries[`${modulePrefix}.createPack`] = this.handleCreatePack.bind(this);
+    CONFIG.queries[`${modulePrefix}.deletePack`] = this.handleDeletePack.bind(this);
+
+    // Compendium entry CRUD + copy-by-UUID
+    CONFIG.queries[`${modulePrefix}.listPackEntries`] = this.handleListPackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.createPackEntries`] = this.handleCreatePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.updatePackEntries`] = this.handleUpdatePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.deletePackEntries`] = this.handleDeletePackEntries.bind(this);
+    CONFIG.queries[`${modulePrefix}.copyPackEntry`] = this.handleCopyPackEntry.bind(this);
+
+    // Scene CRUD (create / update / delete / activate)
+    CONFIG.queries[`${modulePrefix}.createScene`] = this.handleCreateScene.bind(this);
+    CONFIG.queries[`${modulePrefix}.updateScene`] = this.handleUpdateScene.bind(this);
+    CONFIG.queries[`${modulePrefix}.deleteScene`] = this.handleDeleteScene.bind(this);
+    CONFIG.queries[`${modulePrefix}.activateScene`] = this.handleActivateScene.bind(this);
 
     // Phase 7: Token manipulation queries
     CONFIG.queries[`${modulePrefix}.move-token`] = this.handleMoveToken.bind(this);
@@ -1555,6 +1581,108 @@ export class QueryHandlers {
     }
   }
 
+  /**
+   * Handle a generic image upload: base64 in, written under
+   * worlds/<world>/<subfolder>/, Foundry-relative path out. Used for token /
+   * portrait art brought in from the machine running the MCP server. Shares the
+   * FilePicker.upload mechanism with map upload but not its map-specific path,
+   * MIME, or filename rules.
+   */
+  private async handleUploadImage(data: {
+    filename: string;
+    subfolder: string;
+    mimeType?: string;
+    imageData: string;
+  }): Promise<any> {
+    try {
+      const gmCheck = this.validateGMAccess();
+      if (!gmCheck.allowed) {
+        console.error(`[${MODULE_ID}] Image upload denied - not GM`);
+        return { error: 'Access denied', success: false };
+      }
+
+      if (!data?.filename || typeof data.filename !== 'string') {
+        throw new Error('filename is required and must be a string');
+      }
+      if (!data?.imageData || typeof data.imageData !== 'string') {
+        throw new Error('imageData is required and must be a base64 string');
+      }
+
+      const ALLOWED = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.avif'];
+      const safeFilename = data.filename.replace(/[^a-zA-Z0-9_\-.]/g, '_');
+      const dot = safeFilename.lastIndexOf('.');
+      const ext = dot >= 0 ? safeFilename.slice(dot).toLowerCase() : '';
+      if (!ALLOWED.includes(ext)) {
+        throw new Error(`Unsupported image type "${ext}". Allowed: ${ALLOWED.join(', ')}`);
+      }
+
+      const mimeType =
+        typeof data.mimeType === 'string' && data.mimeType.startsWith('image/')
+          ? data.mimeType
+          : 'application/octet-stream';
+
+      // base64 -> Blob -> File, matching the map-upload path.
+      const byteCharacters = atob(data.imageData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      const file = new File([blob], safeFilename, { type: mimeType });
+
+      const worldId = (game as any).world?.id || 'unknown-world';
+      const subfolder = (data.subfolder || 'mcp-art')
+        .split('/')
+        .map((s: string) => s.trim().replace(/[^a-zA-Z0-9_\-.]/g, '_'))
+        // drop "", ".", ".." — a segment that would climb out of the world dir
+        .filter((s: string) => s !== '' && !/^\.+$/.test(s))
+        .join('/');
+      if (!subfolder) {
+        throw new Error('subfolder resolved to an empty path');
+      }
+      const uploadPath = `worlds/${worldId}/${subfolder}`;
+
+      const FilePickerAPI =
+        (globalThis as any).foundry?.applications?.apps?.FilePicker?.implementation ||
+        (globalThis as any).FilePicker;
+
+      // FilePicker.createDirectory is not recursive; walk each level below the
+      // (already-existing) world directory.
+      let acc = `worlds/${worldId}`;
+      for (const segment of subfolder.split('/')) {
+        acc = `${acc}/${segment}`;
+        try {
+          await FilePickerAPI.createDirectory('data', acc, { bucket: null });
+        } catch (dirError: any) {
+          if (
+            !dirError?.message?.includes('EEXIST') &&
+            !dirError?.message?.includes('already exists')
+          ) {
+            console.warn(`[${MODULE_ID}] createDirectory("${acc}") warning:`, dirError?.message);
+          }
+        }
+      }
+
+      const response = await FilePickerAPI.upload('data', uploadPath, file, {}, { notify: false });
+
+      console.log(`[${MODULE_ID}] Uploaded image to:`, response.path);
+
+      return {
+        success: true,
+        path: response.path,
+        filename: safeFilename,
+        message: `Image uploaded to ${response.path}`,
+      };
+    } catch (error: any) {
+      console.error(`[${MODULE_ID}] Failed to upload image:`, error);
+      return {
+        error: error.message || 'Failed to upload image',
+        success: false,
+      };
+    }
+  }
+
   // ===== PHASE 7: TOKEN MANIPULATION HANDLERS =====
 
   /**
@@ -2316,6 +2444,209 @@ export class QueryHandlers {
       throw new Error('ids array is required');
     }
     return this.dataAccess.deleteActors(data.ids);
+  }
+
+  // ===== FOLDER HANDLERS =====
+
+  private async handleListFolders(data: {
+    documentType: FolderableType;
+    pack?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.listFolders(data);
+  }
+
+  private async handleCreateFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    pack?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!Array.isArray(data?.segments) || data.segments.length === 0) {
+      throw new Error('segments array is required');
+    }
+    return this.dataAccess.createFolderPath(data);
+  }
+
+  private async handleRenameFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    newName: string;
+    pack?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.newName) {
+      throw new Error('newName is required');
+    }
+    return this.dataAccess.renameFolderPath(data);
+  }
+
+  private async handleMoveFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    newParentSegments: string[] | null;
+    pack?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.moveFolderPath(data);
+  }
+
+  private async handleDeleteFolder(data: {
+    segments: string[];
+    documentType: FolderableType;
+    deleteContents: boolean;
+    pack?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.deleteFolderPath(data);
+  }
+
+  // ===== COMPENDIUM PACK / ENTRY HANDLERS =====
+
+  private async handleListPacks(): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    return this.dataAccess.listPacks();
+  }
+
+  private async handleCreatePack(data: {
+    label: string;
+    type: string;
+    name: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.label || !data?.type || !data?.name) {
+      throw new Error('label, type and name are required');
+    }
+    return this.dataAccess.createPack(data);
+  }
+
+  private async handleDeletePack(data: { identifier: string }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.identifier) {
+      throw new Error('identifier is required');
+    }
+    return this.dataAccess.deletePack(data);
+  }
+
+  private async handleListPackEntries(data: {
+    pack: string;
+    nameFilter?: string;
+    type?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack) {
+      throw new Error('pack is required');
+    }
+    return this.dataAccess.listPackEntries(data);
+  }
+
+  private async handleCreatePackEntries(data: { pack: string; entries: any[] }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.entries) || data.entries.length === 0) {
+      throw new Error('pack and a non-empty entries array are required');
+    }
+    return this.dataAccess.createPackEntries(data);
+  }
+
+  private async handleUpdatePackEntries(data: { pack: string; updates: any[] }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.updates) || data.updates.length === 0) {
+      throw new Error('pack and a non-empty updates array are required');
+    }
+    return this.dataAccess.updatePackEntries(data);
+  }
+
+  private async handleDeletePackEntries(data: {
+    pack: string;
+    identifiers: string[];
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !Array.isArray(data?.identifiers) || data.identifiers.length === 0) {
+      throw new Error('pack and a non-empty identifiers array are required');
+    }
+    return this.dataAccess.deletePackEntries(data);
+  }
+
+  private async handleCopyPackEntry(data: {
+    pack: string;
+    source: string;
+    folderSegments?: string[];
+    newName?: string;
+  }): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.pack || !data?.source) {
+      throw new Error('pack and source are required');
+    }
+    return this.dataAccess.copyPackEntry(data);
+  }
+
+  // ===== SCENE HANDLERS =====
+
+  private async handleCreateScene(data: any): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.name) {
+      throw new Error('name is required');
+    }
+    return this.dataAccess.createScene(data);
+  }
+
+  private async handleUpdateScene(data: any): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.identifier) {
+      throw new Error('identifier is required');
+    }
+    return this.dataAccess.updateScene(data);
+  }
+
+  private async handleDeleteScene(data: any): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.identifier) {
+      throw new Error('identifier is required');
+    }
+    return this.dataAccess.deleteScene(data);
+  }
+
+  private async handleActivateScene(data: any): Promise<any> {
+    const gmCheck = this.validateGMAccess();
+    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
+    this.dataAccess.validateFoundryState();
+    if (!data?.scene_identifier) {
+      throw new Error('scene_identifier is required');
+    }
+    // manage-scenes "activate" is the same operation as switch-scene.
+    return this.dataAccess.switchScene(data);
   }
 
   private async handleUpdateActorItems(data: {

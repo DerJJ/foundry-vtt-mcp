@@ -105,6 +105,11 @@ export class TokenManipulationTools {
                   type: 'boolean',
                   description: 'Whether to lock the rotation',
                 },
+                img: {
+                  type: 'string',
+                  description:
+                    'New artwork for this token, as a path inside Foundry\'s data directory (e.g. "worlds/iron-gods/art/gearsman.webp"). Remote http(s) URLs are rejected. Changes only this placed token, not the actor\'s prototype token.',
+                },
               },
             },
           },
@@ -231,6 +236,7 @@ export class TokenManipulationTools {
         name: z.string().optional(),
         elevation: z.number().optional(),
         lockRotation: z.boolean().optional(),
+        img: z.string().optional(),
       }),
     });
 
@@ -238,10 +244,25 @@ export class TokenManipulationTools {
 
     this.logger.info('Updating token', { tokenId, updates });
 
+    // Foundry stores token artwork at texture.src, not as a flat img field
+    const { img, ...rest } = updates;
+
+    if (img !== undefined && /^https?:\/\//i.test(img)) {
+      throw new Error(
+        `Token image must be a path inside Foundry's data directory, not a remote URL (got "${img}"). ` +
+          `Remote artwork fails to load for players if the host is unreachable.`
+      );
+    }
+
+    const bridgeUpdates = {
+      ...rest,
+      ...(img !== undefined ? { 'texture.src': img } : {}),
+    };
+
     try {
       const result = await this.foundryClient.query('foundry-mcp-bridge.update-token', {
         tokenId,
-        updates,
+        updates: bridgeUpdates,
       });
 
       this.logger.debug('Token updated successfully', { tokenId, result });

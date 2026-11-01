@@ -19,10 +19,11 @@ import * as os from 'os';
 import * as fs from 'fs';
 
 import * as path from 'path';
+import { resolveControlPort } from './instance.js';
 
 const CONTROL_HOST = '127.0.0.1';
 
-const CONTROL_PORT = 31414;
+const CONTROL_PORT = resolveControlPort(process.env);
 
 type BackendReq = { id: string; method: string; params?: any };
 

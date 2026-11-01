@@ -1,25 +1,14 @@
 import * as fs from 'fs';
-
 import * as os from 'os';
-
 import * as path from 'path';
-
 import * as net from 'net';
-
 import { spawn, ChildProcess } from 'child_process';
-
 import { evaluateLockFile } from './lock.js';
-
 import { config } from './config.js';
-
 import { Logger } from './logger.js';
-
 import { FoundryClient } from './foundry-client.js';
-
 import { CharacterTools } from './tools/character.js';
-
 import { CompendiumTools } from './tools/compendium.js';
-
 import { SceneTools } from './tools/scene.js';
 import { PlaylistTools } from './tools/playlist.js';
 
@@ -30,33 +19,32 @@ import { SceneBuilderTools } from './tools/scene-builder.js';
 import { CalendarClockTools } from './tools/calendar-clock.js';
 import { TableTools } from './tools/table-tools.js';
 import { ScriptExecutionTools } from './tools/script-execution.js';
-
+import { FolderManagementTools } from './tools/folder-management.js';
+import { SceneManagementTools } from './tools/scene-management.js';
+import { CompendiumManagementTools } from './tools/compendium-management.js';
+import { CompendiumEntryTools } from './tools/compendium-entries.js';
 import { QuestCreationTools } from './tools/quest-creation.js';
-
 import { DiceRollTools } from './tools/dice-roll.js';
-
 import { CampaignManagementTools } from './tools/campaign-management.js';
-
 import { OwnershipTools } from './tools/ownership.js';
 import { WFRP4eUpdateActorTools } from './tools/wfrp4e/update-actor.js';
 import { WFRP4eAddItemsTools } from './tools/wfrp4e/add-items.js';
-
 import { MapGenerationTools } from './tools/map-generation.js';
-
 import { TokenManipulationTools } from './tools/token-manipulation.js';
-
+import { ImageUploadTools } from './tools/image-upload.js';
 import { DSA5CharacterCreator } from './systems/dsa5/character-creator.js';
 import { DSA5JsonActorImporter } from './systems/dsa5/json-actor-importer.js';
 
 import { DnD5eAddFeatureTool } from './tools/dnd5e/add-feature.js';
 import { DnD5eNpcTools } from './tools/dnd5e/npc.js';
 import { DnD5eFeaturesFromCompendiumTools } from './tools/dnd5e/features.js';
+import { resolveControlPort, resolveLockFile } from './instance.js';
 
 const CONTROL_HOST = '127.0.0.1';
 
-const CONTROL_PORT = 31414;
+const CONTROL_PORT = resolveControlPort(process.env);
 
-const LOCK_FILE = path.join(os.tmpdir(), 'foundry-mcp-backend.lock');
+const LOCK_FILE = resolveLockFile(CONTROL_PORT);
 
 function getBundledPythonPath(): string {
   // Detect installation directory based on current executable location
@@ -1207,12 +1195,20 @@ async function startBackend(): Promise<void> {
   const calendarClockTools = new CalendarClockTools({ foundryClient, logger });
   const tableTools = new TableTools({ foundryClient, logger });
   const scriptExecutionTools = new ScriptExecutionTools({ foundryClient, logger });
+  const folderManagementTools = new FolderManagementTools({ foundryClient, logger });
+  const sceneManagementTools = new SceneManagementTools({ foundryClient, logger });
+  const compendiumManagementTools = new CompendiumManagementTools({ foundryClient, logger });
+  const compendiumEntryTools = new CompendiumEntryTools({ foundryClient, logger });
 
   const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
   const dsa5JsonActorImporter = new DSA5JsonActorImporter({ foundryClient, logger });
 
   const dnd5eAddFeatureTool = new DnD5eAddFeatureTool({ foundryClient, logger });
-  const dnd5eNpcTools = new DnD5eNpcTools({ foundryClient, logger });
+  const dnd5eNpcTools = new DnD5eNpcTools({
+    foundryClient,
+    logger,
+    addFeatureTool: dnd5eAddFeatureTool,
+  });
   const dnd5eFeaturesFromCompendiumTools = new DnD5eFeaturesFromCompendiumTools({
     foundryClient,
     logger,
@@ -1227,6 +1223,8 @@ async function startBackend(): Promise<void> {
   const ownershipTools = new OwnershipTools({ foundryClient, logger });
 
   const tokenManipulationTools = new TokenManipulationTools({ foundryClient, logger });
+
+  const imageUploadTools = new ImageUploadTools({ foundryClient, logger });
 
   const wfrp4eUpdateActorTools = new WFRP4eUpdateActorTools({ foundryClient, logger });
   const wfrp4eAddItemsTools = new WFRP4eAddItemsTools({ foundryClient, logger });
@@ -1441,6 +1439,10 @@ async function startBackend(): Promise<void> {
     ...calendarClockTools.getToolDefinitions(),
     ...tableTools.getToolDefinitions(),
     ...scriptExecutionTools.getToolDefinitions(),
+    ...folderManagementTools.getToolDefinitions(),
+    ...sceneManagementTools.getToolDefinitions(),
+    ...compendiumManagementTools.getToolDefinitions(),
+    ...compendiumEntryTools.getToolDefinitions(),
 
     ...dsa5CharacterCreator.getToolDefinitions(),
     ...dsa5JsonActorImporter.getToolDefinitions(),
@@ -1462,6 +1464,8 @@ async function startBackend(): Promise<void> {
     ...wfrp4eAddItemsTools.getToolDefinitions(),
 
     ...tokenManipulationTools.getToolDefinitions(),
+
+    ...imageUploadTools.getToolDefinitions(),
 
     ...mapGenerationTools.getToolDefinitions(),
 
@@ -1661,6 +1665,34 @@ async function startBackend(): Promise<void> {
 
                   break;
 
+                // Folder management (list / create / rename / move / delete)
+
+                case 'manage-folders':
+                  result = await folderManagementTools.handleManageFolders(args);
+
+                  break;
+
+                // Scene management (create / update / delete / activate)
+
+                case 'manage-scenes':
+                  result = await sceneManagementTools.handleManageScenes(args);
+
+                  break;
+
+                // Compendium management (list / create / delete packs)
+
+                case 'manage-compendiums':
+                  result = await compendiumManagementTools.handleManageCompendiums(args);
+
+                  break;
+
+                // Compendium entry management (list / create / update / delete / copy)
+
+                case 'manage-compendium-entries':
+                  result = await compendiumEntryTools.handleManageCompendiumEntries(args);
+
+                  break;
+
                 // DSA5 character creation tools
 
                 case 'create-dsa5-character-from-archetype':
@@ -1794,6 +1826,11 @@ async function startBackend(): Promise<void> {
 
                 case 'get-available-conditions':
                   result = await tokenManipulationTools.handleGetAvailableConditions(args);
+
+                  break;
+
+                case 'upload-image':
+                  result = await imageUploadTools.handleUploadImage(args);
 
                   break;
 
