@@ -159,7 +159,6 @@ export class QueryHandlers {
     CONFIG.queries[`${modulePrefix}.gmRoll`] = table.gmRoll;
     CONFIG.queries[`${modulePrefix}.rollTable`] = table.rollTable;
     CONFIG.queries[`${modulePrefix}.postChat`] = table.postChat;
-    CONFIG.queries[`${modulePrefix}.runMacro`] = table.runMacro;
     CONFIG.queries[`${modulePrefix}.sceneView`] = table.sceneView;
     CONFIG.queries[`${modulePrefix}.creatureCard`] = table.creatureCard;
 

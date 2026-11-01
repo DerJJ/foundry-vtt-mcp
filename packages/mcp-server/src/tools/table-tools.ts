@@ -74,13 +74,6 @@ const schemas = {
       style: z.enum(['ic', 'ooc', 'emote']).optional(),
     })
     .strict(),
-  'run-macro': z
-    .object({
-      action: z.enum(['list', 'run']),
-      macro: z.string().optional(),
-      search: z.string().optional(),
-    })
-    .strict(),
   'scene-view': z
     .object({
       action: z.enum(['ping', 'pull-players', 'reset-fog', 'weather', 'list-weather']),
@@ -105,7 +98,6 @@ const queryNames: Record<ToolName, string> = {
   'gm-roll': 'gmRoll',
   'roll-table': 'rollTable',
   'post-chat': 'postChat',
-  'run-macro': 'runMacro',
   'scene-view': 'sceneView',
   'creature-card': 'creatureCard',
 };
@@ -249,20 +241,6 @@ export class TableTools {
             style: { type: 'string', enum: ['ic', 'ooc', 'emote'] },
           },
           required: ['content'],
-        },
-      },
-      {
-        name: 'run-macro',
-        description:
-          'List or run an existing macro of the world by name or id. Runs in the GM browser. Only existing macros, no free code.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            action: { type: 'string', enum: ['list', 'run'] },
-            macro: { type: 'string' },
-            search: { type: 'string' },
-          },
-          required: ['action'],
         },
       },
       {

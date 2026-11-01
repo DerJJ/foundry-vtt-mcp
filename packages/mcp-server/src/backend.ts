@@ -1656,7 +1656,6 @@ async function startBackend(): Promise<void> {
                 case 'gm-roll':
                 case 'roll-table':
                 case 'post-chat':
-                case 'run-macro':
                 case 'scene-view':
                 case 'creature-card':
                   result = await tableTools.handle(name, args);

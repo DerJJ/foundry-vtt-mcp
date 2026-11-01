@@ -1,10 +1,8 @@
 /**
  * Tools for running the table: combat, damage/healing, party status, hidden rolls,
- * roll tables, chat, macros and view controls. Runs in the GM browser; calls arrive
+ * roll tables, chat and view controls. Runs in the GM browser; calls arrive
  * through the bridge and are restricted to GMs by the query guard.
  */
-
-import { assertScriptingAllowed } from './script-runner.js';
 
 const g = (): any => (globalThis as any).game;
 const cfg = (): any => (globalThis as any).CONFIG;
@@ -518,38 +516,6 @@ export async function postChat(data: any): Promise<any> {
     speaker: speaker.alias ?? null,
     whisperTo: whisper.map(id => g().users.get(id)?.name),
   };
-}
-
-// ══════════ Macros ══════════
-
-export async function runMacro(data: any): Promise<any> {
-  requireGM();
-  const macros = g().macros;
-  if (data.action === 'list') {
-    const s = data.search?.toLowerCase();
-    return {
-      success: true,
-      macros: macros
-        .filter((m: any) => !s || m.name.toLowerCase().includes(s))
-        .map((m: any) => ({ name: m.name, id: m.id, type: m.type })),
-    };
-  }
-  assertScriptingAllowed();
-  const ident = String(data.macro ?? '');
-  const matches = macros.filter((m: any) => m.id === ident || ci(m.name, ident));
-  if (!matches.length) throw new Error(`Macro not found: ${ident}`);
-  if (matches.length > 1)
-    throw new Error(
-      `Several macros are named ${ident}: ${matches.map((m: any) => m.id).join(', ')}`
-    );
-  const result = await matches[0].execute();
-  let safe: unknown = null;
-  try {
-    safe = result === undefined ? null : JSON.parse(JSON.stringify(result));
-  } catch {
-    safe = String(result);
-  }
-  return { success: true, macro: matches[0].name, result: safe };
 }
 
 // ══════════ View: ping, pull players, fog, weather ══════════

@@ -8,7 +8,7 @@ Scanned on 2026-11-01: 101 forks, 34 of them ahead of upstream.
 
 | Source                                                              | How                               | What                                                                                                                                                                                          |
 | ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [flownzu](https://github.com/flownzu/foundry-vtt-mcp)               | merged (full history)             | `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `run-macro`, `scene-view`, `creature-card`, plus calendar-clock and scene-builder tools                       |
+| [flownzu](https://github.com/flownzu/foundry-vtt-mcp)               | merged (full history)             | `combat`, `apply-damage`, `party-status`, `gm-roll`, `roll-table`, `post-chat`, `scene-view`, `creature-card`, plus calendar-clock and scene-builder tools                                    |
 | [KillgoreAlpha](https://github.com/KillgoreAlpha/foundry-vtt-mcp)   | merged (full history)             | `manage-scenes`, `manage-compendiums`, `manage-compendium-entries`, `manage-folders`, `upload-image`, `tokenImg` and folder paths in `manage-actors`, optional features in `dnd5e-create-npc` |
 | [ErikGenibo](https://github.com/ErikGenibo/foundry-vtt-mcp)         | ported (commits 091a025, 7dc7f14) | `execute-script`; PF2e strikes and item use run on the token's actor                                                                                                                          |
 | [khelbenlaforge](https://github.com/khelbenlaforge/foundry-vtt-mcp) | ported (commit 29a7472)           | `get-permissions`                                                                                                                                                                             |
@@ -16,7 +16,7 @@ Scanned on 2026-11-01: 101 forks, 34 of them ahead of upstream.
 Added on top by this fork, building on the above:
 
 - `manage-macros` (list / get / create / update / delete / execute).
-- Guard rails for everything that runs code: the world setting **Allow script and macro execution** (off by default) gates `execute-script`, `manage-macros execute` and `run-macro run`. Runs have a timeout, return captured console output, notifications and errors, and are whispered to the GM as a chat card. See `packages/foundry-module/src/script-runner.ts`.
+- Guard rails for everything that runs code: the world setting **Allow script and macro execution** (off by default) gates `execute-script` and `manage-macros execute`. Runs have a timeout, return captured console output, notifications and errors, and are whispered to the GM as a chat card. See `packages/foundry-module/src/script-runner.ts`.
 
 ## What was looked at and not taken
 
@@ -61,3 +61,7 @@ Things still worth a look or improvement for a PF2e + D&D 5e world. Roughly in p
 ### Not tested in a live Foundry
 
 Builds, type checks, 293 server tests and 52 module tests pass, and the MCP schema smoke test passes. None of the merged or ported tools were run against a real Foundry instance. Before relying on them, try each in a throwaway world, starting with the script guard (setting off must refuse; setting on must run and whisper a card).
+
+### Removed as duplicate
+
+- flownzu's `run-macro` was removed: `manage-macros` (list / execute) does the same and returns args, logs and errors as well.
