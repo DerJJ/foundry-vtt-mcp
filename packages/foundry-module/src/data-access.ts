@@ -9841,11 +9841,41 @@ export class FoundryDataAccess {
     this.validateFoundryState();
 
     const { actorIdentifier, itemIdentifier, targets, options = {} } = params;
+    const systemId = (game.system as any).id;
 
     // Find the actor
-    const actor = this.findActorByIdentifier(actorIdentifier);
+    let actor = this.findActorByIdentifier(actorIdentifier);
     if (!actor) {
       throw new Error(`Actor not found: ${actorIdentifier}`);
+    }
+
+    // For PF2e, we need to use a token's actor for strikes to work properly
+    // The world actor doesn't have the right context for rolling
+    if (systemId === 'pf2e') {
+      const scene = (game.scenes as any)?.active;
+      if (scene) {
+        // Find a live (non-defeated) token for this actor on the scene
+        const token = scene.tokens.find((t: any) => {
+          if (t.actorId !== actor.id && t.actor?.id !== actor.id) return false;
+          // Skip defeated/dead tokens
+          const tokenActor = t.actor;
+          if (!tokenActor) return false;
+          const isDead =
+            tokenActor.hasCondition?.('dead') || tokenActor.system?.attributes?.hp?.value <= 0;
+          return !isDead;
+        });
+
+        if (token?.actor) {
+          console.log(
+            `[foundry-mcp-bridge] PF2e: Using token actor for "${actor.name}" (token: ${token.name})`
+          );
+          actor = token.actor;
+        } else {
+          console.warn(
+            `[foundry-mcp-bridge] PF2e: No live token found for "${actor.name}", using world actor`
+          );
+        }
+      }
     }
 
     // Find the item on the actor
@@ -9858,7 +9888,6 @@ export class FoundryDataAccess {
     }
 
     const itemAny = item;
-    const systemId = (game.system as any).id;
 
     const { targeting, warnings } = await this.applyItemTargets(actor, targets);
     const resolvedTargetNames = targeting.applied.map(target => target.tokenName);
