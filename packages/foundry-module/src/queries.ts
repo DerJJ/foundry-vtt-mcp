@@ -851,6 +851,8 @@ export class QueryHandlers {
     isPublic: boolean;
     rollModifier: string;
     flavor: string;
+    advantageMode?: 'normal' | 'advantage' | 'disadvantage';
+    dc?: number;
   }): Promise<any> {
     try {
       // SECURITY: Silent GM validation
@@ -1836,6 +1838,7 @@ export class QueryHandlers {
       configureDialog?: boolean;
       spellLevel?: number;
       versatile?: boolean;
+      waitMs?: number;
     };
   }): Promise<any> {
     try {

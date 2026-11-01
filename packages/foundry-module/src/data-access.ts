@@ -12,6 +12,12 @@ export type FolderableType =
   | 'Scene';
 
 import { permissionManager } from './permissions.js';
+import { pf2eModifier, pf2eStatistic } from './pf2e-rolls.js';
+import {
+  describeMessage as describeChatMessage,
+  liveChatEnv,
+  startCollectingMessages,
+} from './chat-log.js';
 import { transactionManager } from './transaction-manager.js';
 // Local type definitions to avoid shared package import issues
 interface CharacterInfo {
@@ -6008,6 +6014,7 @@ export class FoundryDataAccess {
     rollModifier: string;
     flavor: string;
     advantageMode?: 'normal' | 'advantage' | 'disadvantage';
+    dc?: number;
   }): Promise<{ success: boolean; message: string; error?: string }> {
     this.validateFoundryState();
 
@@ -6023,6 +6030,19 @@ export class FoundryDataAccess {
           success: false,
           message: '',
           error: errorMessage,
+        };
+      }
+
+      if (
+        (game.system as any)?.id === 'pf2e' &&
+        playerInfo.character &&
+        ['skill', 'save', 'ability'].includes(data.rollType) &&
+        pf2eModifier(playerInfo.character, data.rollType, data.rollTarget) === null
+      ) {
+        return {
+          success: false,
+          message: '',
+          error: `${playerInfo.character.name} has no ${data.rollType} "${data.rollTarget}" in PF2e. Skills are named like acrobatics or stealth (or perception), saves are fortitude, reflex or will.`,
         };
       }
 
@@ -6059,6 +6079,7 @@ export class FoundryDataAccess {
                     data-roll-type="${data.rollType}"
                     data-roll-target="${String(data.rollTarget).replace(/"/g, '&quot;')}"
                     data-advantage-mode="${data.advantageMode || 'normal'}"
+                    data-dc="${typeof data.dc === 'number' ? data.dc : ''}"
                     data-roll-modifier="${String(data.rollModifier || '').replace(/"/g, '&quot;')}"
                     data-target-user-id="${playerInfo.user?.id || ''}">
               🎲 ${buttonLabel}
@@ -6319,7 +6340,17 @@ export class FoundryDataAccess {
   ): string {
     let baseFormula = '1d20';
 
-    if (character) {
+    const pf2eMod =
+      character && (game.system as any)?.id === 'pf2e' && rollType !== 'custom'
+        ? pf2eModifier(character, rollType, rollTarget)
+        : undefined;
+
+    if (character && (game.system as any)?.id === 'pf2e' && rollType !== 'custom') {
+      // PF2e keeps modifiers on Statistics, not in the dnd5e roll data
+      if (pf2eMod !== null && pf2eMod !== undefined) {
+        baseFormula = `1d20${pf2eMod >= 0 ? '+' : '-'}${Math.abs(pf2eMod)}`;
+      }
+    } else if (character) {
       // Use Foundry's getRollData() to get calculated modifiers including active effects
       const rollData = character.getRollData() as any; // Type assertion for Foundry's dynamic roll data
 
@@ -6456,6 +6487,20 @@ export class FoundryDataAccess {
       .toLowerCase()
       .trim();
     const modifier = String(button.data('roll-modifier') || '').trim();
+
+    if (character && game.system?.id === 'pf2e' && !modifier && ['skill', 'save'].includes(type)) {
+      // Roll through the PF2e statistic: the player gets PF2e's own roll dialog and the
+      // chat card carries the check context (outcome, DC) that get-chat-messages reads.
+      const statistic = pf2eStatistic(character, type, target);
+      if (!statistic || typeof statistic.roll !== 'function') return 'skip';
+      const dc = Number(button.data('dc'));
+      const result = await statistic.roll({
+        rollMode: isPublic ? 'publicroll' : 'gmroll',
+        ...(Number.isFinite(dc) && button.data('dc') !== '' ? { dc: { value: dc } } : {}),
+      });
+      return result ? 'rolled' : 'cancelled';
+    }
+
     if (
       !character ||
       game.system?.id !== 'dnd5e' ||
@@ -9842,11 +9887,13 @@ export class FoundryDataAccess {
           skipDialog?: boolean | undefined; // Skip confirmation dialogs (default: true for MCP)
           spellLevel?: number | undefined; // For spells: cast at higher level
           versatile?: boolean | undefined; // For versatile weapons: use versatile damage
+          waitMs?: number | undefined; // How long to wait for the chat messages the action creates
         }
       | undefined;
   }): Promise<{
     success: boolean;
     status?: string;
+    chatMessages?: any[];
     message: string;
     itemName?: string;
     actorName?: string;
@@ -9909,13 +9956,39 @@ export class FoundryDataAccess {
     const { targeting, warnings } = await this.applyItemTargets(actor, targets);
     const resolvedTargetNames = targeting.applied.map(target => target.tokenName);
 
+    // Listen for the chat messages this action creates, so the result can say what happened.
+    const waitMs = Math.min(Math.max(Number(options.waitMs ?? 3000), 0), 20000);
+    const collector = startCollectingMessages(m => m.speaker?.actor === actor.id);
+    let useError: string | undefined;
+
     try {
       // For items that may show dialogs (spells with choices, etc.),
       // we fire-and-forget to avoid timeout issues. The GM will interact
       // with the dialog in Foundry, and the result appears in chat.
 
-      // Check if item has a use() method (common in D&D 5e, PF2e)
-      if (typeof itemAny.use === 'function') {
+      const pf2eEntry = systemId === 'pf2e' && item.type === 'spell' ? itemAny.spellcasting : null;
+      if (pf2eEntry && typeof pf2eEntry.cast === 'function') {
+        // PF2e: cast through the spellcasting entry so the slot, focus point or charge is spent.
+        // A prepared spell needs the index of the slot it was prepared in.
+        const rank = options.spellLevel ?? itemAny.rank ?? itemAny.system?.level?.value ?? 1;
+        const castOptions: Record<string, any> = {
+          rank,
+          consume: options.consume ?? true,
+          message: true,
+        };
+        if (pf2eEntry.system?.prepared?.value === 'prepared') {
+          const prepared = pf2eEntry.system?.slots?.['slot' + rank]?.prepared ?? {};
+          const slotId = Object.entries<any>(prepared).find(
+            ([, p]) => p?.id === item.id && !p.expended
+          )?.[0];
+          if (slotId !== undefined) castOptions.slotId = Number(slotId);
+        }
+        pf2eEntry.cast(itemAny, castOptions).catch((err: Error) => {
+          useError = err.message;
+          console.error(`[foundry-mcp-bridge] Error casting ${item.name}:`, err);
+        });
+      } else if (typeof itemAny.use === 'function') {
+        // Check if item has a use() method (common in D&D 5e, PF2e)
         // D&D 5e and similar systems
         // Only pass options that D&D 5e's item.use() expects
         const useOptions: Record<string, any> = {
@@ -10012,6 +10085,11 @@ export class FoundryDataAccess {
         'success'
       );
 
+      const created = await collector.finish(waitMs);
+      const chatMessages = created.map(m =>
+        describeChatMessage(m, liveChatEnv(), { includeText: 'all', textLength: 500 })
+      );
+
       const targetInfo =
         resolvedTargetNames.length > 0 ? ` targeting ${resolvedTargetNames.join(', ')}` : '';
       const targetingWarningInfo =
@@ -10024,13 +10102,17 @@ export class FoundryDataAccess {
         itemName?: string;
         actorName?: string;
         targets?: string[];
+        chatMessages?: any[];
         targeting: ItemTargetingResult;
         warnings?: string[];
         requiresGMInteraction?: boolean;
       } = {
         success: true,
         status: 'initiated',
-        message: `Item use initiated for ${actor.name} using ${item.name}${targetInfo}.${targetingWarningInfo} If a dialog appeared in Foundry VTT, the GM should select options and confirm. The result will appear in chat.`,
+        message:
+          chatMessages.length > 0
+            ? `${actor.name} used ${item.name}${targetInfo}.${targetingWarningInfo} ${chatMessages.length} chat message(s) were created, see chatMessages.`
+            : `Item use initiated for ${actor.name} using ${item.name}${targetInfo}.${targetingWarningInfo} No chat message appeared within ${waitMs} ms, so a dialog is probably open in Foundry VTT: the GM should select options and confirm. Read the result afterwards with get-chat-messages.`,
         itemName: item.name,
         actorName: actor.name,
         targeting,
@@ -10040,12 +10122,17 @@ export class FoundryDataAccess {
       if (resolvedTargetNames.length > 0) {
         result.targets = resolvedTargetNames;
       }
-      if (warnings.length > 0) {
-        result.warnings = warnings;
+      if (chatMessages.length > 0) {
+        result.chatMessages = chatMessages;
+      }
+      const allWarnings = useError ? [...warnings, `Casting failed: ${useError}`] : warnings;
+      if (allWarnings.length > 0) {
+        result.warnings = allWarnings;
       }
 
       return result;
     } catch (error) {
+      collector.stop();
       this.auditLog(
         'useItem',
         {

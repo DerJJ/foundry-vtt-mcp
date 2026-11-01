@@ -52,7 +52,7 @@ export class DiceRollTools {
             rollTarget: {
               type: 'string',
               description:
-                'Target for the roll - can be ability name (str, dex, con, int, wis, cha), skill name (perception, insight, stealth, etc.), or custom roll formula',
+                'Target for the roll. dnd5e: ability (str, dex, con, int, wis, cha) or skill (perception, insight, stealth, ...). pf2e: skill (acrobatics, stealth, ... or perception), save (fortitude, reflex, will) or initiative; pf2e has no ability checks. custom: a roll formula.',
             },
             targetPlayer: {
               type: 'string',
@@ -68,6 +68,11 @@ export class DiceRollTools {
               const: true,
               description:
                 'REQUIRED: Must be set to true to confirm the roll visibility has been determined. This can happen in two ways: 1) User explicitly specified "public" or "private" in their original request (e.g., "public stealth check"), or 2) You asked the clarifying question and received their answer. Only set this to true when you are confident about the visibility preference, either from their original request or from a direct answer to your question.',
+            },
+            dc: {
+              type: 'number',
+              description:
+                'Optional DC for the check. Used on pf2e, where the roll then reports its degree of success in the chat; ignored on dnd5e.',
             },
             rollModifier: {
               type: 'string',
@@ -151,6 +156,7 @@ export class DiceRollTools {
       rollModifier: z.string().default(''),
       flavor: z.string().default(''),
       advantageMode: z.enum(['normal', 'advantage', 'disadvantage']).default('normal'),
+      dc: z.number().optional(),
     });
 
     try {

@@ -373,3 +373,53 @@ export async function getChatLog(data: ChatLogQuery): Promise<any> {
   };
   return buildChatLog(g.messages.contents, data ?? {}, env);
 }
+
+/** Environment backed by the live game, for callers inside the bridge. */
+export function liveChatEnv(): ChatEnv {
+  const g = (globalThis as any).game;
+  return {
+    systemId: g.system?.id ?? '',
+    users: g.users,
+    actors: g.actors,
+    fromUuidSync: (uuid: string) => (globalThis as any).fromUuidSync(uuid),
+  };
+}
+
+const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+/**
+ * Collect the chat messages created while an action runs. Start it before the action;
+ * `finish(waitMs)` waits for the first matching message (then a short moment for follow-ups
+ * such as a damage card) or until the time is up, and always stops listening.
+ */
+export function startCollectingMessages(match: (message: any) => boolean) {
+  const Hooks = (globalThis as any).Hooks;
+  const found: any[] = [];
+  // Without Hooks (outside Foundry) there is nothing to listen to; finish() returns at once.
+  if (!Hooks?.on) return { stop: () => {}, finish: async () => found };
+  const hookId = Hooks.on('createChatMessage', (message: any) => {
+    try {
+      if (match(message)) found.push(message);
+    } catch {
+      // a broken matcher must not break chat
+    }
+  });
+  // Hooks.on returns an id in Foundry; without one there is nothing to wait for.
+  if (hookId === undefined) return { stop: () => {}, finish: async () => found };
+  let stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    Hooks.off?.('createChatMessage', hookId);
+  };
+  return {
+    stop,
+    async finish(waitMs: number): Promise<any[]> {
+      const started = Date.now();
+      while (Date.now() - started < waitMs && found.length === 0) await sleep(100);
+      if (found.length > 0) await sleep(400);
+      stop();
+      return found;
+    },
+  };
+}

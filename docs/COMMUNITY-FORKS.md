@@ -69,6 +69,8 @@ Builds, type checks, 293 server tests and 52 module tests pass, and the MCP sche
 
 ### Open after the chat rewrite
 
-- `use-item` is still fire-and-forget and does not return the chat message it created. On PF2e it posts the item card but, as far as the code shows, does not cast the spell, spend a slot or roll a strike.
-- `request-player-rolls` has dnd5e-specific parts that were not reviewed.
-- The chat log was tested against fake messages shaped like the PF2e and dnd5e flags, not against a live world; check the `pf2e` and `dnd5e` flag names on a real spell cast.
+- `use-item` and `request-player-rolls` were fixed for PF2e (see the changelog) but only against fake actors. Check on a live world: casting a prepared and a spontaneous spell (slot spent, card posted), and a requested Stealth check with a DC.
+- `use-item` still opens D&D 5e's item dialog every time, although the server defaults `skipDialog` to true; the module ignores it. `waitMs` only helps once the GM confirms.
+- `request-player-rolls` with rollType `attack` rolls a flat d20 on both systems; initiative on PF2e uses the initiative statistic or perception.
+- `request-player-rolls` puts the agent-supplied flavor and labels into chat HTML without escaping.
+- Not verified: PF2e `SpellcastingEntry#cast` options (`rank`, `slotId`, `consume`, `message`), and whether `createMessage: false` is honoured by `Statistic#roll` for `gm-roll` with visibility none.

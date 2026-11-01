@@ -111,7 +111,7 @@ export class CharacterTools {
       {
         name: 'use-item',
         description:
-          'Use an item on a character (cast spell, use ability, activate feature, consume item). Opens the item dialog in Foundry VTT for the GM to configure options and confirm. Optionally specify targets by name. Returns immediately with status "initiated" - tell the user to check Foundry for any dialogs. Works across systems: D&D 5e, PF2e, DSA5. Use get-character or search-character-items first to see available items/spells.',
+          'Use an item on a character (cast spell, use ability, activate feature, consume item). Optionally specify targets by name. Waits up to waitMs for the chat messages the action creates and returns them as chatMessages (same structure as get-chat-messages: kind, item, targets, DC, outcome, dice). If none appear, a dialog is probably open in Foundry for the GM to confirm (D&D 5e opens the item dialog); read the outcome afterwards with get-chat-messages. PF2e spells are cast through their spellcasting entry, which spends the slot, focus point or charge (consume=false to skip). Works across systems: D&D 5e, PF2e, DSA5. Use get-character or search-character-items first to see available items/spells.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -135,7 +135,13 @@ export class CharacterTools {
             },
             spellLevel: {
               type: 'number',
-              description: 'For spells: cast at a higher level than base (D&D 5e upcasting)',
+              description:
+                'For spells: cast at a higher level than base (D&D 5e slot level, PF2e rank)',
+            },
+            waitMs: {
+              type: 'number',
+              description:
+                'How long to wait for the resulting chat messages, in milliseconds (default 3000, max 20000). Raise it when the GM has to confirm a dialog.',
             },
           },
           required: ['actorIdentifier', 'itemIdentifier'],
@@ -455,9 +461,10 @@ export class CharacterTools {
       consume: z.boolean().optional(),
       spellLevel: z.number().optional(),
       skipDialog: z.boolean().optional(),
+      waitMs: z.number().min(0).max(20000).optional(),
     });
 
-    const { actorIdentifier, itemIdentifier, targets, consume, spellLevel, skipDialog } =
+    const { actorIdentifier, itemIdentifier, targets, consume, spellLevel, skipDialog, waitMs } =
       schema.parse(args);
 
     this.logger.info('Using item', {
@@ -478,6 +485,7 @@ export class CharacterTools {
           consume: consume ?? true,
           spellLevel,
           skipDialog: skipDialog ?? true, // Default to skipping dialogs for MCP automation
+          waitMs,
         },
       });
 
