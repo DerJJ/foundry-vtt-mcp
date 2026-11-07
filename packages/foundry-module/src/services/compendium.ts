@@ -11,19 +11,11 @@ import type {
 import { PersistentCreatureIndex } from './creature-index.js';
 import { sanitizeData, validateFoundryState } from './support.js';
 
-// dnd5e stores short size keys (sm/med/lg/grg); normalize both sides for filtering
-const DND5E_SIZE: Record<string, string> = {
-  tiny: 'tiny',
-  sm: 'small',
-  small: 'small',
-  med: 'medium',
-  medium: 'medium',
-  lg: 'large',
-  large: 'large',
-  huge: 'huge',
-  grg: 'gargantuan',
-  gargantuan: 'gargantuan',
-};
+import { passesMGT2eCriteria } from '../systems/mgt2e/creature-criteria.js';
+import { passesCosmereRpgCriteria } from '../systems/cosmere-rpg/creature-criteria.js';
+import { passesDnD5eCriteria } from '../systems/dnd5e/creature-criteria.js';
+import { passesPF2eCriteria } from '../systems/pf2e/creature-criteria.js';
+
 export class CompendiumService {
   private persistentIndex: PersistentCreatureIndex = new PersistentCreatureIndex();
 
@@ -648,234 +640,15 @@ export class CompendiumService {
    */
   private passesEnhancedCriteria(creature: EnhancedCreatureIndex, criteria: any): boolean {
     if ('hits' in creature && 'hasPsionics' in creature) {
-      return this.passesMGT2eCriteria(creature as MGT2eCreatureIndex, criteria);
+      return passesMGT2eCriteria(creature as MGT2eCreatureIndex, criteria);
     }
     if ('tier' in creature) {
-      return this.passesCosmereRpgCriteria(creature, criteria);
+      return passesCosmereRpgCriteria(creature, criteria);
     }
     if ('level' in creature) {
-      return this.passesPF2eCriteria(creature, criteria);
+      return passesPF2eCriteria(creature, criteria);
     }
-    return this.passesDnD5eCriteria(creature, criteria);
-  }
-
-  /**
-   * MGT2e criteria filter — minHits/maxHits, hasPsionics, creatureType, actorType.
-   */
-  private passesMGT2eCriteria(creature: MGT2eCreatureIndex, criteria: any): boolean {
-    if (criteria.minHits !== undefined && creature.hits < criteria.minHits) return false;
-    if (criteria.maxHits !== undefined && creature.hits > criteria.maxHits) return false;
-    if (criteria.hasPsionics !== undefined && creature.hasPsionics !== criteria.hasPsionics)
-      return false;
-    if (criteria.creatureType && creature.creatureType !== criteria.creatureType) return false;
-    if (criteria.actorType && creature.type !== criteria.actorType) return false;
-    return true;
-  }
-
-  /**
-   * Cosmere RPG criteria filter — tier, role, creatureType, size,
-   * hasInvestiture, hitPoints range, defenses minimums, deflect minimum.
-   */
-  private passesCosmereRpgCriteria(
-    creature: CosmereRpgCreatureIndex,
-    criteria: {
-      tier?: number | { min?: number; max?: number };
-      role?: string;
-      creatureType?: string;
-      size?: string;
-      hasInvestiture?: boolean;
-      hitPoints?: number | { min?: number; max?: number };
-      health?: number | { min?: number; max?: number };
-      defensesMin?: { phy?: number; cog?: number; spi?: number };
-      deflectMin?: number;
-    }
-  ): boolean {
-    if (criteria.tier !== undefined) {
-      if (typeof criteria.tier === 'number') {
-        if (creature.tier !== criteria.tier) return false;
-      } else {
-        const { min, max } = criteria.tier;
-        if (min !== undefined && creature.tier < min) return false;
-        if (max !== undefined && creature.tier > max) return false;
-      }
-    }
-
-    if (criteria.role && creature.role.toLowerCase() !== criteria.role.toLowerCase()) {
-      return false;
-    }
-
-    if (
-      criteria.creatureType &&
-      creature.creatureType.toLowerCase() !== criteria.creatureType.toLowerCase()
-    ) {
-      return false;
-    }
-
-    if (criteria.size && creature.size.toLowerCase() !== criteria.size.toLowerCase()) {
-      return false;
-    }
-
-    if (
-      criteria.hasInvestiture !== undefined &&
-      creature.hasInvestiture !== criteria.hasInvestiture
-    ) {
-      return false;
-    }
-
-    // Accept either `hitPoints` or `health` from callers — they're synonyms
-    // here (hitPoints is the cross-system convention; health is the cosmere-
-    // native term).
-    const hpRange = criteria.hitPoints ?? criteria.health;
-    if (hpRange !== undefined) {
-      if (typeof hpRange === 'number') {
-        if (creature.hitPoints !== hpRange) return false;
-      } else {
-        const { min, max } = hpRange;
-        if (min !== undefined && creature.hitPoints < min) return false;
-        if (max !== undefined && creature.hitPoints > max) return false;
-      }
-    }
-
-    if (criteria.defensesMin) {
-      const { phy, cog, spi } = criteria.defensesMin;
-      if (phy !== undefined && creature.defensePhysical < phy) return false;
-      if (cog !== undefined && creature.defenseCognitive < cog) return false;
-      if (spi !== undefined && creature.defenseSpiritual < spi) return false;
-    }
-
-    if (criteria.deflectMin !== undefined && creature.deflect < criteria.deflectMin) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Check if D&D 5e creature passes all specified criteria
-   */
-  private passesDnD5eCriteria(
-    creature: DnD5eCreatureIndex,
-    criteria: {
-      challengeRating?: number | { min?: number; max?: number };
-      creatureType?: string;
-      size?: string;
-      hasSpells?: boolean;
-      hasLegendaryActions?: boolean;
-    }
-  ): boolean {
-    // Challenge Rating filter
-    if (criteria.challengeRating !== undefined) {
-      if (typeof criteria.challengeRating === 'number') {
-        if (creature.challengeRating !== criteria.challengeRating) {
-          return false;
-        }
-      } else if (typeof criteria.challengeRating === 'object') {
-        const { min, max } = criteria.challengeRating;
-        if (min !== undefined && creature.challengeRating < min) {
-          return false;
-        }
-        if (max !== undefined && creature.challengeRating > max) {
-          return false;
-        }
-      }
-    }
-
-    // Creature Type filter
-    if (criteria.creatureType) {
-      if (creature.creatureType.toLowerCase() !== criteria.creatureType.toLowerCase()) {
-        return false;
-      }
-    }
-
-    // Size filter
-    if (criteria.size) {
-      if (
-        DND5E_SIZE[creature.size.toLowerCase()] !==
-        (DND5E_SIZE[criteria.size.toLowerCase()] ?? criteria.size.toLowerCase())
-      ) {
-        return false;
-      }
-    }
-
-    // Spellcaster filter
-    if (criteria.hasSpells !== undefined) {
-      if (creature.hasSpells !== criteria.hasSpells) {
-        return false;
-      }
-    }
-
-    // Legendary Actions filter
-    if (criteria.hasLegendaryActions !== undefined) {
-      if (creature.hasLegendaryActions !== criteria.hasLegendaryActions) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Check if PF2e creature passes all specified criteria
-   */
-  private passesPF2eCriteria(
-    creature: PF2eCreatureIndex,
-    criteria: {
-      level?: number | { min?: number; max?: number };
-      traits?: string[];
-      rarity?: string;
-      creatureType?: string;
-      size?: string;
-      hasSpells?: boolean;
-    }
-  ): boolean {
-    // Level filter
-    if (criteria.level !== undefined) {
-      if (typeof criteria.level === 'number') {
-        if (creature.level !== criteria.level) {
-          return false;
-        }
-      } else if (typeof criteria.level === 'object') {
-        const { min = -1, max = 25 } = criteria.level;
-        if (creature.level < min || creature.level > max) {
-          return false;
-        }
-      }
-    }
-
-    // Traits filter (creature must have ALL specified traits)
-    if (criteria.traits && criteria.traits.length > 0) {
-      const hasAllTraits = criteria.traits.every(requiredTrait =>
-        creature.traits.some(t => t.toLowerCase() === requiredTrait.toLowerCase())
-      );
-      if (!hasAllTraits) {
-        return false;
-      }
-    }
-
-    // Rarity filter
-    if (criteria.rarity && creature.rarity !== criteria.rarity) {
-      return false;
-    }
-
-    // Creature type filter
-    if (
-      criteria.creatureType &&
-      creature.creatureType.toLowerCase() !== criteria.creatureType.toLowerCase()
-    ) {
-      return false;
-    }
-
-    // Size filter
-    if (criteria.size && creature.size.toLowerCase() !== criteria.size.toLowerCase()) {
-      return false;
-    }
-
-    // Spellcasting filter
-    if (criteria.hasSpells !== undefined && creature.hasSpells !== criteria.hasSpells) {
-      return false;
-    }
-
-    return true;
+    return passesDnD5eCriteria(creature, criteria);
   }
 
   /**

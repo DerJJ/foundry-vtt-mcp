@@ -2,6 +2,17 @@ import { MODULE_ID, ERROR_MESSAGES } from '../constants.js';
 import type { CharacterInfo, SpellcastingEntry, SpellInfo } from './types.js';
 import { sanitizeData, validateFoundryState, auditLog } from './support.js';
 
+import {
+  formatPF2eActionCost,
+  extractPF2eSpellSlots,
+  extractPF2eSpellTargeting,
+} from '../systems/pf2e/spellcasting.js';
+import {
+  extractDnD5eSpellSlots,
+  extractDnD5eSpellTargeting,
+} from '../systems/dnd5e/spellcasting.js';
+import { extractDSA5SpellTargeting } from '../systems/dsa5/spellcasting.js';
+
 export class CharacterService {
   /**
    * Get character/actor information by name or ID
@@ -325,20 +336,20 @@ export class CharacterService {
 
         // Get targeting info
         if (systemId === 'pf2e') {
-          const targeting = this.extractPF2eSpellTargeting(itemSystem);
+          const targeting = extractPF2eSpellTargeting(itemSystem);
           if (targeting.range) result.range = targeting.range;
           if (targeting.target) result.target = targeting.target;
           if (targeting.area) result.area = targeting.area;
-          result.actionCost = this.formatPF2eActionCost(itemSystem?.time?.value);
+          result.actionCost = formatPF2eActionCost(itemSystem?.time?.value);
           result.traits = itemSystem?.traits?.value || [];
         } else if (systemId === 'dnd5e') {
-          const targeting = this.extractDnD5eSpellTargeting(itemSystem);
+          const targeting = extractDnD5eSpellTargeting(itemSystem);
           if (targeting.range) result.range = targeting.range;
           if (targeting.target) result.target = targeting.target;
           if (targeting.area) result.area = targeting.area;
           result.actionCost = itemSystem?.activation?.type;
         } else if (systemId === 'dsa5') {
-          const targeting = this.extractDSA5SpellTargeting(itemSystem);
+          const targeting = extractDSA5SpellTargeting(itemSystem);
           if (targeting.range) result.range = targeting.range;
           if (targeting.target) result.target = targeting.target;
           if (targeting.area) result.area = targeting.area;
@@ -400,7 +411,7 @@ export class CharacterService {
         if (systemId === 'pf2e') {
           result.traits = itemSystem?.traits?.value || [];
           result.level = itemSystem?.level?.value ?? undefined;
-          result.actionCost = this.formatPF2eActionCost(itemSystem?.actionType?.value);
+          result.actionCost = formatPF2eActionCost(itemSystem?.actionType?.value);
         }
       }
 
@@ -408,7 +419,7 @@ export class CharacterService {
       if (item.type === 'action') {
         if (systemId === 'pf2e') {
           result.traits = itemSystem?.traits?.value || [];
-          result.actionCost = this.formatPF2eActionCost(
+          result.actionCost = formatPF2eActionCost(
             itemSystem?.actionType?.value || itemSystem?.actions?.value
           );
         }
@@ -439,7 +450,7 @@ export class CharacterService {
 
         if (systemId === 'pf2e') {
           result.traits = action.traits || [];
-          result.actionCost = this.formatPF2eActionCost(action.actionCost?.value || action.actions);
+          result.actionCost = formatPF2eActionCost(action.actionCost?.value || action.actions);
         }
 
         matches.push(result);
@@ -554,7 +565,7 @@ export class CharacterService {
 
         for (const spell of associatedSpells) {
           const spellSystem = spell.system as any;
-          const targeting = this.extractPF2eSpellTargeting(spellSystem);
+          const targeting = extractPF2eSpellTargeting(spellSystem);
           entrySpells.push({
             id: spell.id || '',
             name: spell.name || '',
@@ -562,7 +573,7 @@ export class CharacterService {
             prepared: spellSystem?.location?.prepared ?? true,
             expended: spellSystem?.location?.expended ?? false,
             traits: spellSystem?.traits?.value || [],
-            actionCost: this.formatPF2eActionCost(spellSystem?.time?.value),
+            actionCost: formatPF2eActionCost(spellSystem?.time?.value),
             range: targeting.range,
             target: targeting.target,
             area: targeting.area,
@@ -581,7 +592,7 @@ export class CharacterService {
                 const spellItem = actor.items.get(spellRef.id || spellRef);
                 if (spellItem) {
                   const spellSystem = spellItem.system as any;
-                  const targeting = this.extractPF2eSpellTargeting(spellSystem);
+                  const targeting = extractPF2eSpellTargeting(spellSystem);
                   entrySpells.push({
                     id: spellItem.id || '',
                     name: spellItem.name || '',
@@ -590,7 +601,7 @@ export class CharacterService {
                     prepared: spellRef.prepared ?? true,
                     expended: spellRef.expended ?? false,
                     traits: spellSystem?.traits?.value || [],
-                    actionCost: this.formatPF2eActionCost(spellSystem?.time?.value),
+                    actionCost: formatPF2eActionCost(spellSystem?.time?.value),
                     range: targeting.range,
                     target: targeting.target,
                     area: targeting.area,
@@ -609,7 +620,7 @@ export class CharacterService {
           ability: entryData?.ability?.value || entryData?.ability || undefined,
           dc: entryData?.spelldc?.dc || entryData?.dc?.value || undefined,
           attack: entryData?.spelldc?.value || entryData?.attack?.value || undefined,
-          slots: this.extractPF2eSpellSlots(entryData),
+          slots: extractPF2eSpellSlots(entryData),
           spells: entrySpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });
       }
@@ -629,13 +640,13 @@ export class CharacterService {
           type: 'focus',
           spells: focusSpells.map((spell: any) => {
             const spellSystem = spell.system;
-            const targeting = this.extractPF2eSpellTargeting(spellSystem);
+            const targeting = extractPF2eSpellTargeting(spellSystem);
             return {
               id: spell.id || '',
               name: spell.name || '',
               level: spellSystem?.level?.value || 0,
               traits: spellSystem?.traits?.value || [],
-              actionCost: this.formatPF2eActionCost(spellSystem?.time?.value),
+              actionCost: formatPF2eActionCost(spellSystem?.time?.value),
               range: targeting.range,
               target: targeting.target,
               area: targeting.area,
@@ -666,7 +677,7 @@ export class CharacterService {
           spellsByClass[sourceClass] = [];
         }
 
-        const targeting = this.extractDnD5eSpellTargeting(spellSystem);
+        const targeting = extractDnD5eSpellTargeting(spellSystem);
         spellsByClass[sourceClass].push({
           id: spell.id || '',
           name: spell.name || '',
@@ -696,7 +707,7 @@ export class CharacterService {
             name: `${className} Spellcasting`,
             type: classSystem?.spellcasting?.type || 'prepared',
             ability: classSystem?.spellcasting?.ability || undefined,
-            slots: this.extractDnD5eSpellSlots(spellSlots),
+            slots: extractDnD5eSpellSlots(spellSlots),
             spells: classSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
           });
         }
@@ -707,7 +718,7 @@ export class CharacterService {
         const allSpells: SpellInfo[] = [];
         for (const spell of spellItems) {
           const spellSystem = spell.system as any;
-          const targeting = this.extractDnD5eSpellTargeting(spellSystem);
+          const targeting = extractDnD5eSpellTargeting(spellSystem);
           allSpells.push({
             id: spell.id || '',
             name: spell.name || '',
@@ -724,7 +735,7 @@ export class CharacterService {
           id: 'spellcasting',
           name: 'Spellcasting',
           type: 'prepared',
-          slots: this.extractDnD5eSpellSlots(spellSlots),
+          slots: extractDnD5eSpellSlots(spellSlots),
           spells: allSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });
       }
@@ -752,7 +763,7 @@ export class CharacterService {
           spells: astralSpells
             .map((spell: any) => {
               const spellSystem = spell.system;
-              const targeting = this.extractDSA5SpellTargeting(spellSystem);
+              const targeting = extractDSA5SpellTargeting(spellSystem);
               return {
                 id: spell.id || '',
                 name: spell.name || '',
@@ -782,7 +793,7 @@ export class CharacterService {
           spells: karmaSpells
             .map((spell: any) => {
               const spellSystem = spell.system;
-              const targeting = this.extractDSA5SpellTargeting(spellSystem);
+              const targeting = extractDSA5SpellTargeting(spellSystem);
               return {
                 id: spell.id || '',
                 name: spell.name || '',
@@ -807,7 +818,7 @@ export class CharacterService {
           spells: rituals
             .map((spell: any) => {
               const spellSystem = spell.system;
-              const targeting = this.extractDSA5SpellTargeting(spellSystem);
+              const targeting = extractDSA5SpellTargeting(spellSystem);
               return {
                 id: spell.id || '',
                 name: spell.name || '',
@@ -882,203 +893,6 @@ export class CharacterService {
     }
 
     return entries;
-  }
-
-  /**
-   * Format PF2e action cost to human-readable string
-   */
-  private formatPF2eActionCost(actionValue: any): string | undefined {
-    if (!actionValue) return undefined;
-    if (typeof actionValue === 'number') {
-      return actionValue === 1 ? '1 action' : `${actionValue} actions`;
-    }
-    if (actionValue === 'reaction') return 'reaction';
-    if (actionValue === 'free') return 'free action';
-    return String(actionValue);
-  }
-
-  /**
-   * Extract PF2e spell slots from spellcasting entry data
-   */
-  private extractPF2eSpellSlots(
-    entryData: any
-  ): Record<string, { value: number; max: number }> | undefined {
-    const slots: Record<string, { value: number; max: number }> = {};
-
-    // PF2e stores slots per rank
-    for (let rank = 1; rank <= 10; rank++) {
-      const slotKey = `slot${rank}`;
-      const slotData = entryData?.slots?.[slotKey] || entryData?.[slotKey];
-      if (slotData && (slotData.max > 0 || slotData.value > 0)) {
-        slots[`rank${rank}`] = {
-          value: slotData.value ?? 0,
-          max: slotData.max ?? 0,
-        };
-      }
-    }
-
-    return Object.keys(slots).length > 0 ? slots : undefined;
-  }
-
-  /**
-   * Extract D&D 5e spell slots from actor system data
-   */
-  private extractDnD5eSpellSlots(
-    spellsData: any
-  ): Record<string, { value: number; max: number }> | undefined {
-    const slots: Record<string, { value: number; max: number }> = {};
-
-    // D&D 5e stores slots as spell1, spell2, etc.
-    for (let level = 1; level <= 9; level++) {
-      const slotKey = `spell${level}`;
-      const slotData = spellsData?.[slotKey];
-      if (slotData && (slotData.max > 0 || slotData.value > 0)) {
-        slots[`level${level}`] = {
-          value: slotData.value ?? 0,
-          max: slotData.max ?? 0,
-        };
-      }
-    }
-
-    // Also check for pact slots (warlock)
-    const pactSlot = spellsData?.pact;
-    if (pactSlot && (pactSlot.max > 0 || pactSlot.value > 0)) {
-      slots['pact'] = {
-        value: pactSlot.value ?? 0,
-        max: pactSlot.max ?? 0,
-      };
-    }
-
-    return Object.keys(slots).length > 0 ? slots : undefined;
-  }
-
-  /**
-   * Extract spell targeting info for D&D 5e
-   * D&D 5e spells have: target.type ("self", "creature", "point", etc.), range.value, range.units
-   */
-  private extractDnD5eSpellTargeting(spellSystem: any): {
-    range?: string;
-    target?: string;
-    area?: string;
-  } {
-    const result: { range?: string; target?: string; area?: string } = {};
-
-    // Range (e.g., "60 feet", "Self", "Touch")
-    const rangeValue = spellSystem?.range?.value;
-    const rangeUnits = spellSystem?.range?.units;
-    if (rangeUnits === 'self') {
-      result.range = 'Self';
-    } else if (rangeUnits === 'touch') {
-      result.range = 'Touch';
-    } else if (rangeUnits === 'spec') {
-      result.range = spellSystem?.range?.special || 'Special';
-    } else if (rangeValue && rangeUnits) {
-      result.range = `${rangeValue} ${rangeUnits}`;
-    }
-
-    // Target type (e.g., "1 creature", "self", "area")
-    const targetType = spellSystem?.target?.type;
-    const targetValue = spellSystem?.target?.value;
-    if (targetType === 'self') {
-      result.target = 'self';
-    } else if (targetType === 'creature' || targetType === 'ally' || targetType === 'enemy') {
-      result.target = targetValue
-        ? `${targetValue} ${targetType}${targetValue > 1 ? 's' : ''}`
-        : targetType;
-    } else if (targetType === 'object') {
-      result.target = targetValue ? `${targetValue} object${targetValue > 1 ? 's' : ''}` : 'object';
-    } else if (targetType === 'space' || targetType === 'point') {
-      result.target = 'point';
-    } else if (targetType) {
-      result.target = targetType;
-    }
-
-    // Area (for AoE spells - e.g., "20-foot radius", "30-foot cone")
-    const areaType = spellSystem?.target?.template?.type;
-    const areaSize = spellSystem?.target?.template?.size;
-    const areaUnits = spellSystem?.target?.template?.units || 'ft';
-    if (areaType && areaSize) {
-      result.area = `${areaSize}-${areaUnits} ${areaType}`;
-      // If spell has area, target is usually "area"
-      if (!result.target || result.target === 'point') {
-        result.target = 'area';
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Extract spell targeting info for PF2e
-   * PF2e spells have: target (string), range.value, area.type, area.value
-   */
-  private extractPF2eSpellTargeting(spellSystem: any): {
-    range?: string;
-    target?: string;
-    area?: string;
-  } {
-    const result: { range?: string; target?: string; area?: string } = {};
-
-    // Range (e.g., "30 feet", "touch")
-    const rangeValue = spellSystem?.range?.value;
-    if (rangeValue) {
-      result.range = String(rangeValue);
-    }
-
-    // Target (PF2e has a descriptive target string)
-    const targetValue = spellSystem?.target?.value;
-    if (targetValue) {
-      result.target = String(targetValue);
-    }
-
-    // Area (e.g., "15-foot emanation", "30-foot cone")
-    const areaType = spellSystem?.area?.type;
-    const areaValue = spellSystem?.area?.value;
-    if (areaType) {
-      if (areaValue) {
-        result.area = `${areaValue}-foot ${areaType}`;
-      } else {
-        result.area = areaType;
-      }
-      // If has area but no explicit target, it's an area spell
-      if (!result.target) {
-        result.target = 'area';
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Extract spell targeting info for DSA5
-   * DSA5 spells have: targetCategory, range, etc.
-   */
-  private extractDSA5SpellTargeting(spellSystem: any): {
-    range?: string;
-    target?: string;
-    area?: string;
-  } {
-    const result: { range?: string; target?: string; area?: string } = {};
-
-    // Range
-    const rangeValue = spellSystem?.range?.value || spellSystem?.Reichweite;
-    if (rangeValue) {
-      result.range = String(rangeValue);
-    }
-
-    // Target category
-    const targetCategory = spellSystem?.targetCategory?.value || spellSystem?.Zielkategorie;
-    if (targetCategory) {
-      result.target = String(targetCategory);
-    }
-
-    // Area (Wirkungsbereich)
-    const areaValue = spellSystem?.effectRadius?.value || spellSystem?.Wirkungsbereich;
-    if (areaValue) {
-      result.area = String(areaValue);
-    }
-
-    return result;
   }
 
   /**
