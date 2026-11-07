@@ -1,3 +1,10 @@
+## Unreleased
+
+### Internal
+
+- **Restructure, no behaviour change.** The tool list (50 tools) and the bridge's query names are identical to v0.8.6; a golden snapshot of both is now tested. The server routes tool calls through a `ToolRegistry` instead of a `switch`, and `backend.ts` is split into focused modules under `src/backend/`. In the bridge, the 12,000-line `data-access.ts` becomes services by category, the 2,300-line `queries.ts` becomes query groups published by a `QueryRegistry`, and per-system helpers move under `systems/<id>/`. See `docs/ARCHITECTURE.md` and `docs/adr/`. The one visible difference is the shape of the internal handle `window.foundryMCPBridge.dataAccess`, which now exposes the services as properties.
+- New smoke test `npm run test:backend:smoke` starts the built backend and checks its control channel against the golden tool list.
+
 ## v0.8.6 (2026-11-04)
 
 ### New Features
