@@ -6,11 +6,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
+import { sanitizeData } from './services/support.js';
 
 function sanitize(data: any): any {
-  const access = Object.create(FoundryDataAccess.prototype) as any;
-  return access.sanitizeData(data);
+  const access = createDataAccess();
+  return sanitizeData(data);
 }
 
 describe('sanitizer handling of `key`', () => {

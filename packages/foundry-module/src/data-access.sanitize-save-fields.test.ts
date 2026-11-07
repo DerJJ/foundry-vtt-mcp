@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 const ACTIVITY_ID = 'aaaaaaaaaaaaaaaa';
 
@@ -24,7 +25,7 @@ function createActivitySystem() {
 }
 
 function makeDataAccess(): FoundryDataAccess {
-  return Object.create(FoundryDataAccess.prototype) as FoundryDataAccess;
+  return createDataAccess();
 }
 
 describe('FoundryDataAccess save-field sanitization', () => {
@@ -66,7 +67,7 @@ describe('FoundryDataAccess save-field sanitization', () => {
       actors: { contents: [actor] },
     });
 
-    const result = await makeDataAccess().getCharacterEntity({
+    const result = await makeDataAccess().characters.getCharacterEntity({
       characterIdentifier: actor.id,
       entityIdentifier: item.id,
     });
@@ -110,7 +111,10 @@ describe('FoundryDataAccess save-field sanitization', () => {
       packs: { get: (id: string) => (id === 'test.items' ? pack : undefined) },
     });
 
-    const result = await makeDataAccess().getCompendiumDocumentFull('test.items', document.id);
+    const result = await makeDataAccess().compendium.getCompendiumDocumentFull(
+      'test.items',
+      document.id
+    );
 
     expect((result.system as any).activities[ACTIVITY_ID].save.ability).toEqual(['wis']);
     expect((result.system as any).activities[ACTIVITY_ID].save.dc).toEqual({
@@ -151,7 +155,7 @@ describe('FoundryDataAccess save-field sanitization', () => {
       },
     });
 
-    const result = await makeDataAccess().getCharacterInfo(actor.id);
+    const result = await makeDataAccess().characters.getCharacterInfo(actor.id);
 
     expect((result.system as any).abilities.dex).toEqual({ mod: 3 });
     expect((result.system as any).abilities.dex).not.toHaveProperty('save');

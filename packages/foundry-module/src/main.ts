@@ -136,8 +136,8 @@ class FoundryMCPBridge {
           }
 
           // Trigger index build through data access
-          if (this.queryHandlers?.dataAccess?.rebuildEnhancedCreatureIndex) {
-            await this.queryHandlers.dataAccess.rebuildEnhancedCreatureIndex();
+          if (this.queryHandlers?.dataAccess?.compendium.rebuildEnhancedCreatureIndex) {
+            await this.queryHandlers.dataAccess.compendium.rebuildEnhancedCreatureIndex();
           }
         } else {
           console.log(`[${MODULE_ID}] Enhanced creature index exists, ready for instant searches`);
@@ -532,7 +532,7 @@ Hooks.once('ready', async () => {
               // Get the data access instance to update the message
               const queryHandlers = foundryMCPBridge['queryHandlers'] as any;
               if (queryHandlers && queryHandlers.dataAccess) {
-                await queryHandlers.dataAccess.updateRollButtonMessage(
+                await queryHandlers.dataAccess.rolls.updateRollButtonMessage(
                   data.buttonId,
                   data.userId,
                   data.rollLabel
@@ -560,7 +560,7 @@ Hooks.once('ready', async () => {
               // Get the data access instance to save the roll state
               const queryHandlers = foundryMCPBridge['queryHandlers'] as any;
               if (queryHandlers && queryHandlers.dataAccess) {
-                await queryHandlers.dataAccess.saveRollState(
+                await queryHandlers.dataAccess.rolls.saveRollState(
                   data.buttonId,
                   data.rollState.rolledBy
                 );
@@ -641,7 +641,7 @@ Hooks.on('renderChatMessageHTML', (message: any, html: HTMLElement) => {
         // Just attach any necessary handlers for active buttons
         if ($html.find('.mcp-roll-button').length > 0) {
           // Only attach handlers to active (non-rolled) buttons
-          queryHandlers.dataAccess.attachRollButtonHandlers($html);
+          queryHandlers.dataAccess.rolls.attachRollButtonHandlers($html);
         }
       }
     } else if ($html.find('.mcp-roll-button').length > 0) {
@@ -649,7 +649,7 @@ Hooks.on('renderChatMessageHTML', (message: any, html: HTMLElement) => {
 
       const queryHandlers = foundryMCPBridge['queryHandlers'] as any;
       if (queryHandlers && queryHandlers.dataAccess) {
-        queryHandlers.dataAccess.attachRollButtonHandlers($html);
+        queryHandlers.dataAccess.rolls.attachRollButtonHandlers($html);
 
         // Check for legacy roll states
         setTimeout(() => {

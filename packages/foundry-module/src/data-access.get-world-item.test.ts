@@ -7,7 +7,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 function makeItem(id: string, name: string, system: Record<string, any>, liveSystem?: any) {
   return {
@@ -35,7 +36,7 @@ function stubGame(items: any[]) {
 }
 
 function makeDataAccess(): FoundryDataAccess {
-  return Object.create(FoundryDataAccess.prototype) as FoundryDataAccess;
+  return createDataAccess();
 }
 
 const ringSystem = {
@@ -53,7 +54,9 @@ describe('FoundryDataAccess.getWorldItem', () => {
   it('reads a world item in full by id', async () => {
     stubGame([makeItem('ringId0000000001', 'Unusual Ring', ringSystem)]);
 
-    const result = await makeDataAccess().getWorldItem({ itemIdentifier: 'ringId0000000001' });
+    const result = await makeDataAccess().items.getWorldItem({
+      itemIdentifier: 'ringId0000000001',
+    });
 
     expect(result).toMatchObject({
       id: 'ringId0000000001',
@@ -73,7 +76,7 @@ describe('FoundryDataAccess.getWorldItem', () => {
   it('falls back to an exact, case-insensitive name match', async () => {
     stubGame([makeItem('ringId0000000001', 'Unusual Ring', ringSystem)]);
 
-    const result = await makeDataAccess().getWorldItem({ itemIdentifier: '  unusual ring ' });
+    const result = await makeDataAccess().items.getWorldItem({ itemIdentifier: '  unusual ring ' });
 
     expect(result.id).toBe('ringId0000000001');
   });
@@ -81,7 +84,7 @@ describe('FoundryDataAccess.getWorldItem', () => {
   it('does not partially match a name', async () => {
     stubGame([makeItem('ringId0000000001', 'Unusual Ring', ringSystem)]);
 
-    await expect(makeDataAccess().getWorldItem({ itemIdentifier: 'Ring' })).rejects.toThrow(
+    await expect(makeDataAccess().items.getWorldItem({ itemIdentifier: 'Ring' })).rejects.toThrow(
       /not found/i
     );
   });
@@ -92,9 +95,9 @@ describe('FoundryDataAccess.getWorldItem', () => {
       makeItem('ringId0000000002', 'Unusual Ring', ringSystem),
     ]);
 
-    await expect(makeDataAccess().getWorldItem({ itemIdentifier: 'Unusual Ring' })).rejects.toThrow(
-      /ringId0000000001, ringId0000000002/
-    );
+    await expect(
+      makeDataAccess().items.getWorldItem({ itemIdentifier: 'Unusual Ring' })
+    ).rejects.toThrow(/ringId0000000001, ringId0000000002/);
   });
 
   it('prefers an id match over a same-named item', async () => {
@@ -103,7 +106,9 @@ describe('FoundryDataAccess.getWorldItem', () => {
       makeItem('ringId0000000002', 'Other Ring', { description: { value: 'other' } }),
     ]);
 
-    const result = await makeDataAccess().getWorldItem({ itemIdentifier: 'ringId0000000002' });
+    const result = await makeDataAccess().items.getWorldItem({
+      itemIdentifier: 'ringId0000000002',
+    });
 
     expect(result.name).toBe('Other Ring');
   });
@@ -116,7 +121,7 @@ describe('FoundryDataAccess.getWorldItem', () => {
     const liveSystem = { ...source, activities: new Map([['act1', { type: 'utility' }]]) };
     stubGame([makeItem('wandId0000000001', 'Wand', source, liveSystem)]);
 
-    const result = await makeDataAccess().getWorldItem({ itemIdentifier: 'Wand' });
+    const result = await makeDataAccess().items.getWorldItem({ itemIdentifier: 'Wand' });
 
     expect(result.system.activities.act1).toEqual({ type: 'utility', name: 'Glow' });
   });
@@ -125,7 +130,7 @@ describe('FoundryDataAccess.getWorldItem', () => {
     const source = { description: { value: '' }, advancement: [{ type: 'HitPoints' }] };
     stubGame([makeItem('classId000000001', 'Fighter', source)]);
 
-    const result = await makeDataAccess().getWorldItem({ itemIdentifier: 'Fighter' });
+    const result = await makeDataAccess().items.getWorldItem({ itemIdentifier: 'Fighter' });
 
     expect(result.system.advancement).toEqual([{ type: 'HitPoints' }]);
     expect(result.fullData.system.advancement).toEqual([{ type: 'HitPoints' }]);
@@ -134,7 +139,7 @@ describe('FoundryDataAccess.getWorldItem', () => {
   it('errors on a missing identifier', async () => {
     stubGame([]);
 
-    await expect(makeDataAccess().getWorldItem({ itemIdentifier: '   ' })).rejects.toThrow(
+    await expect(makeDataAccess().items.getWorldItem({ itemIdentifier: '   ' })).rejects.toThrow(
       /itemIdentifier is required/
     );
   });

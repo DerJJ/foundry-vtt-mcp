@@ -2,6 +2,7 @@ import { MODULE_ID } from './constants.js';
 import { FoundryDataAccess } from './data-access.js';
 import { ComfyUIManager } from './comfyui-manager.js';
 import { guardQueryHandler } from './query-guard.js';
+import { validateFoundryState } from './services/support.js';
 
 export class QueryHandlers {
   public dataAccess: FoundryDataAccess;
@@ -226,14 +227,14 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       const identifier = data.characterName || data.characterId;
       if (!identifier) {
         throw new Error('characterName or characterId is required');
       }
 
-      return await this.dataAccess.getCharacterInfo(identifier);
+      return await this.dataAccess.characters.getCharacterInfo(identifier);
     } catch (error) {
       throw new Error(
         `Failed to get character info: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -255,7 +256,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.characterIdentifier) {
         throw new Error('characterIdentifier is required');
@@ -264,7 +265,7 @@ export class QueryHandlers {
         throw new Error('entityIdentifier is required');
       }
 
-      return await this.dataAccess.getCharacterEntity(data);
+      return await this.dataAccess.characters.getCharacterEntity(data);
     } catch (error) {
       throw new Error(
         `Failed to get character entity: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -283,9 +284,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      const actors = await this.dataAccess.listActors();
+      const actors = await this.dataAccess.characters.listActors();
 
       // Filter by type if specified
       if (data.type) {
@@ -322,7 +323,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       // Add better parameter validation
       if (!data || typeof data !== 'object') {
@@ -333,7 +334,11 @@ export class QueryHandlers {
         throw new Error('query parameter is required and must be a string');
       }
 
-      return await this.dataAccess.searchCompendium(data.query, data.packType, data.filters);
+      return await this.dataAccess.compendium.searchCompendium(
+        data.query,
+        data.packType,
+        data.filters
+      );
     } catch (error) {
       throw new Error(
         `Failed to search compendium: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -359,9 +364,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      const result = await this.dataAccess.listCreaturesByCriteria(data);
+      const result = await this.dataAccess.compendium.listCreaturesByCriteria(data);
 
       // Handle the new format with search summary
       return {
@@ -385,8 +390,8 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
-      return await this.dataAccess.getAvailablePacks();
+      validateFoundryState();
+      return await this.dataAccess.compendium.getAvailablePacks();
     } catch (error) {
       throw new Error(
         `Failed to get available packs: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -407,11 +412,11 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
       if (!data?.packId) {
         throw new Error('packId is required');
       }
-      return await this.dataAccess.getPackIndex(data.packId, data.fields);
+      return await this.dataAccess.compendium.getPackIndex(data.packId, data.fields);
     } catch (error) {
       throw new Error(
         `Failed to get pack index: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -430,8 +435,8 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
-      return await this.dataAccess.getActiveScene();
+      validateFoundryState();
+      return await this.dataAccess.world.getActiveScene();
     } catch (error) {
       throw new Error(
         `Failed to get active scene: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -450,8 +455,8 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
-      return await this.dataAccess.getWorldInfo();
+      validateFoundryState();
+      return await this.dataAccess.world.getWorldInfo();
     } catch (error) {
       throw new Error(
         `Failed to get world info: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -516,7 +521,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       // Clean interface - direct pack/item reference only
       const requestData: any = {
@@ -531,7 +536,7 @@ export class QueryHandlers {
         requestData.placement = data.placement;
       }
 
-      return await this.dataAccess.createActorFromCompendiumEntry(requestData);
+      return await this.dataAccess.actors.createActorFromCompendiumEntry(requestData);
     } catch (error) {
       throw new Error(
         `Failed to create actor from compendium: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -553,7 +558,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.packId) {
         throw new Error('packId is required');
@@ -563,7 +568,10 @@ export class QueryHandlers {
         throw new Error('documentId is required');
       }
 
-      return await this.dataAccess.getCompendiumDocumentFull(data.packId, data.documentId);
+      return await this.dataAccess.compendium.getCompendiumDocumentFull(
+        data.packId,
+        data.documentId
+      );
     } catch (error) {
       throw new Error(
         `Failed to get compendium document: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -586,13 +594,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIds || !Array.isArray(data.actorIds) || data.actorIds.length === 0) {
         throw new Error('actorIds array is required and must not be empty');
       }
 
-      return await this.dataAccess.addActorsToScene({
+      return await this.dataAccess.world.addActorsToScene({
         actorIds: data.actorIds,
         placement: data.placement || 'random',
         hidden: data.hidden || false,
@@ -617,13 +625,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.operation) {
         throw new Error('operation is required');
       }
 
-      return await this.dataAccess.validateWritePermissions(data.operation);
+      return await this.dataAccess.world.validateWritePermissions(data.operation);
     } catch (error) {
       throw new Error(
         `Failed to validate write permissions: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -649,7 +657,7 @@ export class QueryHandlers {
         throw new Error('content is required');
       }
 
-      return await this.dataAccess.createJournalEntry({
+      return await this.dataAccess.journals.createJournalEntry({
         name: data.name,
         content: data.content,
         additionalPages: data.additionalPages,
@@ -673,8 +681,8 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
-      return await this.dataAccess.listJournals();
+      validateFoundryState();
+      return await this.dataAccess.journals.listJournals();
     } catch (error) {
       throw new Error(
         `Failed to list journals: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -693,13 +701,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.journalId) {
         throw new Error('journalId is required');
       }
 
-      return await this.dataAccess.getJournalContent(data.journalId);
+      return await this.dataAccess.journals.getJournalContent(data.journalId);
     } catch (error) {
       throw new Error(
         `Failed to get journal content: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -718,7 +726,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.journalId) {
         throw new Error('journalId is required');
@@ -727,7 +735,7 @@ export class QueryHandlers {
         throw new Error('pageId is required');
       }
 
-      return await this.dataAccess.getJournalPageContent(data.journalId, data.pageId);
+      return await this.dataAccess.journals.getJournalPageContent(data.journalId, data.pageId);
     } catch (error) {
       throw new Error(
         `Failed to get journal page content: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -751,7 +759,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.journalId) {
         throw new Error('journalId is required');
@@ -772,7 +780,7 @@ export class QueryHandlers {
       if (data.pageId) updateRequest.pageId = data.pageId;
       if (data.newPageName) updateRequest.newPageName = data.newPageName;
 
-      return await this.dataAccess.updateJournalContent(updateRequest);
+      return await this.dataAccess.journals.updateJournalContent(updateRequest);
     } catch (error) {
       throw new Error(
         `Failed to update journal content: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -798,13 +806,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.rollType || !data.rollTarget || !data.targetPlayer) {
         throw new Error('rollType, rollTarget, and targetPlayer are required');
       }
 
-      return await this.dataAccess.requestPlayerRolls(data);
+      return await this.dataAccess.rolls.requestPlayerRolls(data);
     } catch (error) {
       throw new Error(
         `Failed to request player rolls: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -823,9 +831,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getEnhancedCreatureIndex();
+      return await this.dataAccess.compendium.getEnhancedCreatureIndex();
     } catch (error) {
       throw new Error(
         `Failed to get enhanced creature index: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -848,7 +856,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       // For now, this is a pass-through to the MCP server
       // In the future, campaign data might be stored in Foundry world flags
@@ -879,13 +887,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorId || !data.userId || data.permission === undefined) {
         throw new Error('actorId, userId, and permission are required');
       }
 
-      return await this.dataAccess.setActorOwnership(data);
+      return await this.dataAccess.ownership.setActorOwnership(data);
     } catch (error) {
       throw new Error(
         `Failed to set actor ownership: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -904,13 +912,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actor) {
         throw new Error('actor (name or id) is required');
       }
 
-      return await this.dataAccess.updateWfrp4eActor(data);
+      return await this.dataAccess.wfrp4e.updateWfrp4eActor(data);
     } catch (error) {
       throw new Error(
         `Failed to update WFRP4e actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -930,7 +938,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actor) {
         throw new Error('actor (name or id) is required');
@@ -939,7 +947,7 @@ export class QueryHandlers {
         throw new Error('items array is required and must contain at least one entry');
       }
 
-      return await this.dataAccess.addWfrp4eItems(data);
+      return await this.dataAccess.wfrp4e.addWfrp4eItems(data);
     } catch (error) {
       throw new Error(
         `Failed to add WFRP4e items: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -958,9 +966,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getActorOwnership(data);
+      return await this.dataAccess.ownership.getActorOwnership(data);
     } catch (error) {
       throw new Error(
         `Failed to get actor ownership: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -976,9 +984,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.createChatMessage(data);
+      return await this.dataAccess.chat.createChatMessage(data);
     } catch (error) {
       throw new Error(
         `Failed to create chat message: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -997,9 +1005,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getFriendlyNPCs();
+      return await this.dataAccess.characters.getFriendlyNPCs();
     } catch (error) {
       throw new Error(
         `Failed to get friendly NPCs: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1018,9 +1026,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getPartyCharacters();
+      return await this.dataAccess.characters.getPartyCharacters();
     } catch (error) {
       throw new Error(
         `Failed to get party characters: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1039,9 +1047,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getConnectedPlayers();
+      return await this.dataAccess.ownership.getConnectedPlayers();
     } catch (error) {
       throw new Error(
         `Failed to get connected players: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1060,13 +1068,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.identifier) {
         throw new Error('identifier is required');
       }
 
-      return await this.dataAccess.findPlayers(data);
+      return await this.dataAccess.ownership.findPlayers(data);
     } catch (error) {
       throw new Error(
         `Failed to find players: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1085,13 +1093,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.identifier) {
         throw new Error('identifier is required');
       }
 
-      return await this.dataAccess.findActor(data);
+      return await this.dataAccess.characters.findActor(data);
     } catch (error) {
       throw new Error(
         `Failed to find actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1110,8 +1118,8 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
-      return await this.dataAccess.listScenes(data);
+      validateFoundryState();
+      return await this.dataAccess.world.listScenes(data);
     } catch (error) {
       throw new Error(
         `Failed to list scenes: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1130,13 +1138,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.scene_identifier) {
         throw new Error('scene_identifier is required');
       }
 
-      return await this.dataAccess.switchScene(data);
+      return await this.dataAccess.world.switchScene(data);
     } catch (error) {
       throw new Error(
         `Failed to switch scene: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1162,7 +1170,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data?.actorData || typeof data.actorData !== 'object') {
         throw new Error('actorData object is required');
@@ -1193,7 +1201,7 @@ export class QueryHandlers {
         requestData.placement = data.placement;
       }
 
-      return await this.dataAccess.createActorFromData(requestData);
+      return await this.dataAccess.actors.createActorFromData(requestData);
     } catch (error) {
       throw new Error(
         `Failed to create actor from data: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1210,7 +1218,7 @@ export class QueryHandlers {
       if (!data?.scene_identifier) {
         throw new Error('scene_identifier is required');
       }
-      return await this.dataAccess.updateSceneMusic(data);
+      return await this.dataAccess.audio.updateSceneMusic(data);
     } catch (error) {
       throw new Error(
         `Failed to update scene music: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1227,7 +1235,7 @@ export class QueryHandlers {
       if (!data?.action) {
         throw new Error('action is required (create | update | delete | describe)');
       }
-      return await this.dataAccess.managePlaylists(data);
+      return await this.dataAccess.audio.managePlaylists(data);
     } catch (error) {
       throw new Error(
         `Failed to manage playlists: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1244,7 +1252,7 @@ export class QueryHandlers {
       if (!data?.playlist || !data?.command) {
         throw new Error('playlist and command are required');
       }
-      return await this.dataAccess.controlPlaylist(data);
+      return await this.dataAccess.audio.controlPlaylist(data);
     } catch (error) {
       throw new Error(
         `Failed to control playlist: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1525,7 +1533,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.tokenId) {
         throw new Error('tokenId is required');
@@ -1534,7 +1542,7 @@ export class QueryHandlers {
         throw new Error('x and y coordinates are required and must be numbers');
       }
 
-      return await this.dataAccess.moveToken(data);
+      return await this.dataAccess.tokens.moveToken(data);
     } catch (error) {
       throw new Error(
         `Failed to move token: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1556,7 +1564,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.tokenId) {
         throw new Error('tokenId is required');
@@ -1565,7 +1573,7 @@ export class QueryHandlers {
         throw new Error('updates object is required');
       }
 
-      return await this.dataAccess.updateToken(data);
+      return await this.dataAccess.tokens.updateToken(data);
     } catch (error) {
       throw new Error(
         `Failed to update token: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1584,13 +1592,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.tokenIds || !Array.isArray(data.tokenIds) || data.tokenIds.length === 0) {
         throw new Error('tokenIds array is required and must not be empty');
       }
 
-      return await this.dataAccess.deleteTokens(data);
+      return await this.dataAccess.tokens.deleteTokens(data);
     } catch (error) {
       throw new Error(
         `Failed to delete tokens: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1609,13 +1617,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.tokenId) {
         throw new Error('tokenId is required');
       }
 
-      return await this.dataAccess.getTokenDetails(data);
+      return await this.dataAccess.tokens.getTokenDetails(data);
     } catch (error) {
       throw new Error(
         `Failed to get token details: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1638,7 +1646,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.tokenId) {
         throw new Error('tokenId is required');
@@ -1650,7 +1658,7 @@ export class QueryHandlers {
         throw new Error('active must be a boolean');
       }
 
-      return await this.dataAccess.toggleTokenCondition(data);
+      return await this.dataAccess.tokens.toggleTokenCondition(data);
     } catch (error) {
       throw new Error(
         `Failed to toggle token condition: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1669,9 +1677,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.getAvailableConditions();
+      return await this.dataAccess.tokens.getAvailableConditions();
     } catch (error) {
       throw new Error(
         `Failed to get available conditions: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1700,7 +1708,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -1709,7 +1717,7 @@ export class QueryHandlers {
         throw new Error('itemIdentifier is required');
       }
 
-      return await this.dataAccess.useItem({
+      return await this.dataAccess.items.useItem({
         actorIdentifier: data.actorIdentifier,
         itemIdentifier: data.itemIdentifier,
         targets: data.targets,
@@ -1739,13 +1747,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.characterIdentifier) {
         throw new Error('characterIdentifier is required');
       }
 
-      return await this.dataAccess.searchCharacterItems({
+      return await this.dataAccess.characters.searchCharacterItems({
         characterIdentifier: data.characterIdentifier,
         query: data.query,
         type: data.type,
@@ -1775,7 +1783,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data?.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -1784,7 +1792,7 @@ export class QueryHandlers {
         throw new Error('items array is required and must contain at least one entry');
       }
 
-      return await this.dataAccess.addActorItems({
+      return await this.dataAccess.actors.addActorItems({
         actorIdentifier: data.actorIdentifier,
         items: data.items,
       });
@@ -1808,7 +1816,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data?.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -1819,7 +1827,7 @@ export class QueryHandlers {
         throw new Error('Provide itemIds and/or itemNames identifying the items to remove');
       }
 
-      return await this.dataAccess.removeActorItems({
+      return await this.dataAccess.actors.removeActorItems({
         actorIdentifier: data.actorIdentifier,
         ...(data.itemIds !== undefined ? { itemIds: data.itemIds } : {}),
         ...(data.itemNames !== undefined ? { itemNames: data.itemNames } : {}),
@@ -1847,13 +1855,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!Array.isArray(data?.updates) || data.updates.length === 0) {
         throw new Error('updates array is required and must contain at least one entry');
       }
 
-      return await this.dataAccess.updateWorldItems({ updates: data.updates });
+      return await this.dataAccess.items.updateWorldItems({ updates: data.updates });
     } catch (error) {
       throw new Error(
         `Failed to update world items: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1872,9 +1880,9 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
-      return await this.dataAccess.listWorldItems({
+      return await this.dataAccess.items.listWorldItems({
         ...(data.type !== undefined ? { type: data.type } : {}),
         ...(data.folder !== undefined ? { folder: data.folder } : {}),
         ...(data.nameFilter !== undefined ? { nameFilter: data.nameFilter } : {}),
@@ -1893,13 +1901,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data?.itemIdentifier) {
         throw new Error('itemIdentifier is required');
       }
 
-      return await this.dataAccess.getWorldItem({ itemIdentifier: data.itemIdentifier });
+      return await this.dataAccess.items.getWorldItem({ itemIdentifier: data.itemIdentifier });
     } catch (error) {
       throw new Error(
         `Failed to get world item: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1923,13 +1931,13 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!Array.isArray(data?.items) || data.items.length === 0) {
         throw new Error('items array is required and must contain at least one entry');
       }
 
-      return await this.dataAccess.createWorldItems({
+      return await this.dataAccess.items.createWorldItems({
         items: data.items,
         ...(data.folder !== undefined ? { folder: data.folder } : {}),
       });
@@ -1953,7 +1961,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -1962,7 +1970,7 @@ export class QueryHandlers {
         throw new Error('featureName is required');
       }
 
-      return await this.dataAccess.addSaveFeatureToActor(data);
+      return await this.dataAccess.dnd5e.addSaveFeatureToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add save feature to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1981,7 +1989,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.name) {
         throw new Error('name is required');
@@ -2008,7 +2016,7 @@ export class QueryHandlers {
         throw new Error('acMode is required');
       }
 
-      return await this.dataAccess.createNpcActor(data);
+      return await this.dataAccess.dnd5e.createNpcActor(data);
     } catch (error) {
       throw new Error(
         `Failed to create NPC actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2027,7 +2035,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -2042,7 +2050,7 @@ export class QueryHandlers {
         throw new Error('damageParts is required and must contain at least one element');
       }
 
-      return await this.dataAccess.addAttackToActor(data);
+      return await this.dataAccess.dnd5e.addAttackToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add attack to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2061,7 +2069,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -2079,7 +2087,7 @@ export class QueryHandlers {
         throw new Error('areaSize is required');
       }
 
-      return await this.dataAccess.addAuraToActor(data);
+      return await this.dataAccess.dnd5e.addAuraToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add aura to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2097,7 +2105,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) {
         throw new Error('actorIdentifier is required');
@@ -2106,7 +2114,7 @@ export class QueryHandlers {
         throw new Error('featureName is required');
       }
 
-      return await this.dataAccess.addPassiveFeatureToActor(data);
+      return await this.dataAccess.dnd5e.addPassiveFeatureToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add passive feature to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2124,7 +2132,7 @@ export class QueryHandlers {
         return { error: 'Access denied', success: false };
       }
 
-      this.dataAccess.validateFoundryState();
+      validateFoundryState();
 
       if (!data.actorIdentifier) throw new Error('actorIdentifier is required');
       if (!data.featureName) throw new Error('featureName is required');
@@ -2138,7 +2146,7 @@ export class QueryHandlers {
         throw new Error('saveDamageParts is required and must contain at least one element');
       }
 
-      return await this.dataAccess.addAttackWithSaveToActor(data);
+      return await this.dataAccess.dnd5e.addAttackWithSaveToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add attack+save to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2165,7 +2173,7 @@ export class QueryHandlers {
         throw new Error('effectiveAbility is required');
       }
 
-      return await this.dataAccess.setActorSpellcasting(data);
+      return await this.dataAccess.dnd5e.setActorSpellcasting(data);
     } catch (error) {
       throw new Error(
         `Failed to set actor spellcasting: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2185,7 +2193,7 @@ export class QueryHandlers {
         throw new Error('spellNames cannot contain more than 50 elements');
       }
 
-      return await this.dataAccess.addSpellsToActor(data);
+      return await this.dataAccess.dnd5e.addSpellsToActor(data);
     } catch (error) {
       throw new Error(
         `Failed to add spells to actor: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2205,7 +2213,7 @@ export class QueryHandlers {
         throw new Error('featureNames cannot contain more than 50 elements');
       }
 
-      return await this.dataAccess.addFeaturesFromCompendium(data);
+      return await this.dataAccess.dnd5e.addFeaturesFromCompendium(data);
     } catch (error) {
       throw new Error(
         `Failed to add features from compendium: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2215,7 +2223,7 @@ export class QueryHandlers {
 
   private async handleGetSystemSchema(_data: any): Promise<any> {
     try {
-      return this.dataAccess.getSystemSchema();
+      return this.dataAccess.items.getSystemSchema();
     } catch (error) {
       throw new Error(
         `Failed to get system schema: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -2236,11 +2244,11 @@ export class QueryHandlers {
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
+    validateFoundryState();
     if (!Array.isArray(data?.actors) || data.actors.length === 0) {
       throw new Error('actors array is required and must contain at least one entry');
     }
-    return this.dataAccess.createActors(data);
+    return this.dataAccess.actors.createActors(data);
   }
 
   private async handleUpdateActors(data: {
@@ -2253,21 +2261,21 @@ export class QueryHandlers {
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
+    validateFoundryState();
     if (!Array.isArray(data?.updates) || data.updates.length === 0) {
       throw new Error('updates array is required');
     }
-    return this.dataAccess.updateActors(data.updates);
+    return this.dataAccess.actors.updateActors(data.updates);
   }
 
   private async handleDeleteActors(data: { ids: string[] }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
+    validateFoundryState();
     if (!Array.isArray(data?.ids) || data.ids.length === 0) {
       throw new Error('ids array is required');
     }
-    return this.dataAccess.deleteActors(data.ids);
+    return this.dataAccess.actors.deleteActors(data.ids);
   }
 
   private async handleUpdateActorItems(data: {
@@ -2276,8 +2284,8 @@ export class QueryHandlers {
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    return this.dataAccess.updateActorItems(data.actorIdentifier, data.itemUpdates);
+    validateFoundryState();
+    return this.dataAccess.actors.updateActorItems(data.actorIdentifier, data.itemUpdates);
   }
 
   private async handleDeleteActorItems(data: {
@@ -2286,8 +2294,8 @@ export class QueryHandlers {
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    return this.dataAccess.deleteActorItems(data.actorIdentifier, data.itemIds);
+    validateFoundryState();
+    return this.dataAccess.actors.deleteActorItems(data.actorIdentifier, data.itemIds);
   }
 
   private async handleManageEffects(data: {
@@ -2300,7 +2308,7 @@ export class QueryHandlers {
   }): Promise<any> {
     const gmCheck = this.validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    this.dataAccess.validateFoundryState();
-    return this.dataAccess.manageEffects(data);
+    validateFoundryState();
+    return this.dataAccess.effects.manageEffects(data);
   }
 }

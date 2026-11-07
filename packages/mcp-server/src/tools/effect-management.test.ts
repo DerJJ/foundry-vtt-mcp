@@ -104,7 +104,7 @@ describe('FoundryDataAccess.manageEffects', () => {
       changes: [{ key: 'system.attributes.ac.bonus', value: '1' }],
     };
 
-    const result = await makeDataAccess().manageEffects({
+    const result = await makeDataAccess().effects.manageEffects({
       action: 'create',
       actorIdentifier: 'mcp test actor',
       parentType: 'actor',
@@ -125,7 +125,7 @@ describe('FoundryDataAccess.manageEffects', () => {
     const { actor, item } = makeFixture();
     const effectData = { name: 'Item Aura', transfer: true };
 
-    const result = await makeDataAccess().manageEffects({
+    const result = await makeDataAccess().effects.manageEffects({
       action: 'create',
       actorIdentifier: actor.id,
       parentType: 'item',
@@ -148,7 +148,7 @@ describe('FoundryDataAccess.manageEffects', () => {
   it('updates only supplied fields on an Item-owned effect', async () => {
     const { actor, item, itemEffect } = makeFixture();
 
-    const result = await makeDataAccess().manageEffects({
+    const result = await makeDataAccess().effects.manageEffects({
       action: 'update',
       actorIdentifier: actor.id,
       parentType: 'item',
@@ -171,7 +171,7 @@ describe('FoundryDataAccess.manageEffects', () => {
   it('deletes an Item-owned effect and returns its captured metadata', async () => {
     const { actor, item, itemEffect } = makeFixture();
 
-    const result = await makeDataAccess().manageEffects({
+    const result = await makeDataAccess().effects.manageEffects({
       action: 'delete',
       actorIdentifier: actor.id,
       parentType: 'item',
@@ -196,14 +196,14 @@ describe('FoundryDataAccess.manageEffects', () => {
     const { actor, actorEffect } = makeFixture();
     const dataAccess = makeDataAccess();
 
-    const updated = await dataAccess.manageEffects({
+    const updated = await dataAccess.effects.manageEffects({
       action: 'update',
       actorIdentifier: actor.id,
       parentType: 'actor',
       effectId: actorEffect.id,
       effectData: { disabled: true },
     });
-    const deleted = await dataAccess.manageEffects({
+    const deleted = await dataAccess.effects.manageEffects({
       action: 'delete',
       actorIdentifier: actor.id,
       parentType: 'actor',
@@ -222,7 +222,7 @@ describe('FoundryDataAccess.manageEffects', () => {
     const { actor, item, itemEffect } = makeFixture();
 
     await expect(
-      makeDataAccess().manageEffects({
+      makeDataAccess().effects.manageEffects({
         action: 'update',
         actorIdentifier: actor.id,
         parentType: 'actor',
@@ -241,7 +241,7 @@ describe('FoundryDataAccess.manageEffects', () => {
     const { actor } = makeFixture();
 
     await expect(
-      makeDataAccess().manageEffects({
+      makeDataAccess().effects.manageEffects({
         action: 'create',
         actorIdentifier: actor.id,
         parentType: 'item',

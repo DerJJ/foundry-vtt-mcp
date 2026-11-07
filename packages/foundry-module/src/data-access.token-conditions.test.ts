@@ -12,7 +12,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 function makeActor() {
   return {
@@ -37,7 +38,7 @@ function stubWorld(systemId: string, statusEffects: unknown, actor: any) {
   vi.stubGlobal('CONFIG', { statusEffects });
 }
 
-const access = () => Object.create(FoundryDataAccess.prototype) as FoundryDataAccess;
+const access = () => createDataAccess();
 
 // PF2e's shape: a plain object keyed by slug.
 const pf2eStatuses = {
@@ -66,7 +67,7 @@ describe('condition tools', () => {
     it('lists conditions from its object-shaped CONFIG.statusEffects', async () => {
       stubWorld('pf2e', pf2eStatuses, makeActor());
 
-      const result = await access().getAvailableConditions();
+      const result = await access().tokens.getAvailableConditions();
 
       expect(result.conditions.map((c: any) => c.id)).toEqual([
         'frightened',
@@ -79,7 +80,7 @@ describe('condition tools', () => {
       const actor = makeActor();
       stubWorld('pf2e', pf2eStatuses, actor);
 
-      await access().toggleTokenCondition({
+      await access().tokens.toggleTokenCondition({
         tokenId: 'tok1',
         conditionId: 'frightened',
         active: true,
@@ -93,7 +94,11 @@ describe('condition tools', () => {
       const actor = makeActor();
       stubWorld('pf2e', pf2eStatuses, actor);
 
-      await access().toggleTokenCondition({ tokenId: 'tok1', conditionId: 'prone', active: false });
+      await access().tokens.toggleTokenCondition({
+        tokenId: 'tok1',
+        conditionId: 'prone',
+        active: false,
+      });
 
       expect(actor.toggleStatusEffect).toHaveBeenCalledWith('prone', { active: false });
       expect(actor.deleteEmbeddedDocuments).not.toHaveBeenCalled();
@@ -103,7 +108,7 @@ describe('condition tools', () => {
       const actor = makeActor();
       stubWorld('pf2e', pf2eStatuses, actor);
 
-      await access().toggleTokenCondition({
+      await access().tokens.toggleTokenCondition({
         tokenId: 'tok1',
         conditionId: 'Frightened',
         active: true,
@@ -117,7 +122,7 @@ describe('condition tools', () => {
       stubWorld('pf2e', pf2eStatuses, actor);
 
       await expect(
-        access().toggleTokenCondition({
+        access().tokens.toggleTokenCondition({
           tokenId: 'tok1',
           conditionId: 'persistent-damage',
           active: true,
@@ -136,7 +141,7 @@ describe('condition tools', () => {
       ];
       stubWorld('dnd5e', coreStatuses, actor);
 
-      await access().toggleTokenCondition({
+      await access().tokens.toggleTokenCondition({
         tokenId: 'tok1',
         conditionId: 'incapacitated',
         active: false,
@@ -150,7 +155,7 @@ describe('condition tools', () => {
       const actor = makeActor();
       stubWorld('dnd5e', coreStatuses, actor);
 
-      await access().toggleTokenCondition({
+      await access().tokens.toggleTokenCondition({
         tokenId: 'tok1',
         conditionId: 'paralyzed',
         active: true,
@@ -176,7 +181,11 @@ describe('condition tools', () => {
       const actor = makeActor();
       stubWorld('dsa5', dsaStatuses, actor);
 
-      await access().toggleTokenCondition({ tokenId: 'tok1', conditionId: 'prone', active: true });
+      await access().tokens.toggleTokenCondition({
+        tokenId: 'tok1',
+        conditionId: 'prone',
+        active: true,
+      });
 
       expect(actor.toggleStatusEffect).not.toHaveBeenCalled();
       const created = actor.createEmbeddedDocuments.mock.calls[0];
@@ -194,7 +203,11 @@ describe('condition tools', () => {
       actor.effects.contents = [{ id: 'e1', name: 'Liegend', statuses: new Set(['prone']) }];
       stubWorld('dsa5', dsaStatuses, actor);
 
-      await access().toggleTokenCondition({ tokenId: 'tok1', conditionId: 'prone', active: false });
+      await access().tokens.toggleTokenCondition({
+        tokenId: 'tok1',
+        conditionId: 'prone',
+        active: false,
+      });
 
       expect(actor.toggleStatusEffect).not.toHaveBeenCalled();
       expect(actor.deleteEmbeddedDocuments).toHaveBeenCalledWith('ActiveEffect', ['e1']);
@@ -205,7 +218,11 @@ describe('condition tools', () => {
     stubWorld('dnd5e', coreStatuses, makeActor());
 
     await expect(
-      access().toggleTokenCondition({ tokenId: 'tok1', conditionId: 'nonsense', active: true })
+      access().tokens.toggleTokenCondition({
+        tokenId: 'tok1',
+        conditionId: 'nonsense',
+        active: true,
+      })
     ).rejects.toThrow(/Condition not found: nonsense/);
   });
 });

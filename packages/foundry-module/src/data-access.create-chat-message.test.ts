@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 function setupFoundry(options: { polyglot?: boolean; allowWriteOperations?: boolean } = {}) {
   const scene: any = { id: 'scene-1', tokens: new Map() };
@@ -63,7 +64,7 @@ function setupFoundry(options: { polyglot?: boolean; allowWriteOperations?: bool
   vi.stubGlobal('CONST', { CHAT_MESSAGE_STYLES: { IC: 2 } });
 
   return {
-    dataAccess: new FoundryDataAccess(),
+    dataAccess: createDataAccess(),
     create,
     getSpeaker,
     broadcast,
@@ -86,7 +87,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('gives a chat-log line a speaker on the current scene, so its bubble can render', async () => {
     const { dataAccess, create, getSpeaker, tokenDoc } = setupFoundry();
 
-    await dataAccess.createChatMessage({
+    await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Sit down.',
       chatLog: true,
@@ -100,7 +101,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('broadcasts a bubble over the placeable token by default, posting no message', async () => {
     const { dataAccess, create, broadcast, placeable } = setupFoundry();
 
-    const result = await dataAccess.createChatMessage({
+    const result = await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Sit down.',
     });
@@ -114,7 +115,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('addresses one specific token by id', async () => {
     const { dataAccess, broadcast, placeable } = setupFoundry();
 
-    await dataAccess.createChatMessage({ tokenId: 'tok-1', content: 'Mind the step.' });
+    await dataAccess.chat.createChatMessage({ tokenId: 'tok-1', content: 'Mind the step.' });
 
     expect(broadcast.mock.calls[0][0]).toBe(placeable);
   });
@@ -126,7 +127,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('creates a chat-log line in character, so Foundry draws its bubble as for a typed line', async () => {
     const { dataAccess, create, broadcast } = setupFoundry();
 
-    await dataAccess.createChatMessage({
+    await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Short line.',
       chatLog: true,
@@ -139,7 +140,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('creates a whisper outside the in-character mode, so no bubble shows it to the table', async () => {
     const { dataAccess, create } = setupFoundry();
 
-    await dataAccess.createChatMessage({
+    await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Come alone.',
       whisperTo: ['Catterick'],
@@ -152,7 +153,10 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('broadcasts a bubble exactly as written, with no padding, so Foundry times it', async () => {
     const { dataAccess, broadcast } = setupFoundry();
 
-    await dataAccess.createChatMessage({ actorIdentifier: 'Wenet', content: 'Mind the step.' });
+    await dataAccess.chat.createChatMessage({
+      actorIdentifier: 'Wenet',
+      content: 'Mind the step.',
+    });
 
     expect(broadcast.mock.calls[0][1]).toBe('Mind the step.');
   });
@@ -160,7 +164,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('whispers without a bubble, addressed to the resolved user', async () => {
     const { dataAccess, create, broadcast } = setupFoundry();
 
-    const result = await dataAccess.createChatMessage({
+    const result = await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Come alone.',
       whisperTo: ['Catterick'],
@@ -175,7 +179,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
     const { dataAccess, create, broadcast } = setupFoundry();
 
     await expect(
-      dataAccess.createChatMessage({
+      dataAccess.chat.createChatMessage({
         actorIdentifier: 'Wenet',
         content: 'Come alone.',
         whisperTo: ['NoSuchPlayer'],
@@ -188,7 +192,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it("hands the language to Polyglot's bubble class when Polyglot is active", async () => {
     const { dataAccess, broadcast } = setupFoundry({ polyglot: true });
 
-    const result = await dataAccess.createChatMessage({
+    const result = await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Not by me.',
       language: 'necril',
@@ -204,7 +208,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('plays the line unmarked when Polyglot is absent, as Foundry itself would', async () => {
     const { dataAccess, broadcast } = setupFoundry();
 
-    const result = await dataAccess.createChatMessage({
+    const result = await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Not by me.',
       language: 'necril',
@@ -219,7 +223,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   it('leaves a chat-log line unmarked when Polyglot is absent', async () => {
     const { dataAccess, create, broadcast } = setupFoundry();
 
-    await dataAccess.createChatMessage({
+    await dataAccess.chat.createChatMessage({
       actorIdentifier: 'Wenet',
       content: 'Not by me.',
       language: 'necril',
@@ -239,7 +243,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
     it('escapes HTML in a bubble', async () => {
       const { dataAccess, broadcast } = setupFoundry();
 
-      await dataAccess.createChatMessage({ actorIdentifier: 'Wenet', content: raw });
+      await dataAccess.chat.createChatMessage({ actorIdentifier: 'Wenet', content: raw });
 
       expect(broadcast.mock.calls[0][1]).toBe(escaped);
     });
@@ -247,7 +251,11 @@ describe('FoundryDataAccess.createChatMessage', () => {
     it('escapes HTML in a chat-log message', async () => {
       const { dataAccess, create } = setupFoundry();
 
-      await dataAccess.createChatMessage({ actorIdentifier: 'Wenet', content: raw, chatLog: true });
+      await dataAccess.chat.createChatMessage({
+        actorIdentifier: 'Wenet',
+        content: raw,
+        chatLog: true,
+      });
 
       expect(create.mock.calls[0][0].content).toBe(escaped);
     });
@@ -255,7 +263,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
     it('escapes HTML in a whisper', async () => {
       const { dataAccess, create } = setupFoundry();
 
-      await dataAccess.createChatMessage({
+      await dataAccess.chat.createChatMessage({
         actorIdentifier: 'Wenet',
         content: raw,
         whisperTo: ['Catterick'],
@@ -267,7 +275,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
     it('escapes HTML in a line Polyglot will scramble', async () => {
       const { dataAccess, broadcast } = setupFoundry({ polyglot: true });
 
-      await dataAccess.createChatMessage({
+      await dataAccess.chat.createChatMessage({
         actorIdentifier: 'Wenet',
         content: raw,
         language: 'necril',
@@ -283,7 +291,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
   describe('whisper targets', () => {
     function whisperTo(targets: string[]) {
       const setup = setupFoundry();
-      const result = setup.dataAccess.createChatMessage({
+      const result = setup.dataAccess.chat.createChatMessage({
         actorIdentifier: 'Wenet',
         content: 'Come alone.',
         whisperTo: targets,
@@ -356,7 +364,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
       const { dataAccess, create, broadcast } = setupFoundry({ allowWriteOperations: false });
 
       await expect(
-        dataAccess.createChatMessage({
+        dataAccess.chat.createChatMessage({
           actorIdentifier: 'Wenet',
           content: 'Sit down.',
           ...delivery,
@@ -369,7 +377,7 @@ describe('FoundryDataAccess.createChatMessage', () => {
     it('speaks when write operations are enabled', async () => {
       const { dataAccess, broadcast } = setupFoundry({ allowWriteOperations: true });
 
-      await dataAccess.createChatMessage({ actorIdentifier: 'Wenet', content: 'Sit down.' });
+      await dataAccess.chat.createChatMessage({ actorIdentifier: 'Wenet', content: 'Sit down.' });
 
       expect(broadcast).toHaveBeenCalledOnce();
     });

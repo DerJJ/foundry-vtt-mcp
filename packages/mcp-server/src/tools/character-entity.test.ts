@@ -76,7 +76,7 @@ beforeEach(() => {
 
 describe('FoundryDataAccess.getCharacterEntity', () => {
   it('resolves an actor-owned effect by exact case-insensitive name', async () => {
-    const result = await makeDataAccess().getCharacterEntity({
+    const result = await makeDataAccess().characters.getCharacterEntity({
       characterIdentifier: 'mcp test actor',
       entityIdentifier: 'actor effect',
     });
@@ -91,7 +91,7 @@ describe('FoundryDataAccess.getCharacterEntity', () => {
   });
 
   it('resolves an Item-owned effect by ID with parent metadata', async () => {
-    const result = await makeDataAccess().getCharacterEntity({
+    const result = await makeDataAccess().characters.getCharacterEntity({
       characterIdentifier: 'YZk06eI9NHTN9PuN',
       entityIdentifier: 'x9OMIlFjG5VoBsis',
     });
@@ -108,7 +108,7 @@ describe('FoundryDataAccess.getCharacterEntity', () => {
   });
 
   it('still resolves a normal Item and serializes its system and effects', async () => {
-    const result = await makeDataAccess().getCharacterEntity({
+    const result = await makeDataAccess().characters.getCharacterEntity({
       characterIdentifier: 'MCP Test Actor',
       entityIdentifier: 'mcp test feature',
     });

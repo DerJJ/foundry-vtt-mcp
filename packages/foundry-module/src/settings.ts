@@ -44,9 +44,9 @@ export class ModuleSettings {
           super.activateListeners(html);
           html.find('.rebuild-index-btn').click(() => {
             const bridge = (globalThis as any).foundryMCPBridge;
-            if (bridge?.dataAccess?.rebuildEnhancedCreatureIndex) {
+            if (bridge?.dataAccess?.compendium.rebuildEnhancedCreatureIndex) {
               ui.notifications?.info('Rebuilding enhanced creature index...');
-              bridge.dataAccess.rebuildEnhancedCreatureIndex();
+              bridge.dataAccess.compendium.rebuildEnhancedCreatureIndex();
             }
           });
         }

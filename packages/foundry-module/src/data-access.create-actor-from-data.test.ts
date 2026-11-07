@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -61,7 +62,7 @@ function setupFoundry() {
     scenes: Object.assign([], { active: undefined }),
   });
 
-  return { actors, create, dataAccess: new FoundryDataAccess() };
+  return { actors, create, dataAccess: createDataAccess() };
 }
 
 afterEach(() => {
@@ -83,13 +84,13 @@ describe('FoundryDataAccess.createActorFromData updateExisting', () => {
       ],
     };
 
-    const firstResult = await dataAccess.createActorFromData({
+    const firstResult = await dataAccess.actors.createActorFromData({
       actorData: firstImport,
       updateExisting: true,
       existingActorIdentifier: 'Nayeli',
       preserveItemTypes: ['species', 'culture', 'career'],
     });
-    const secondResult = await dataAccess.createActorFromData({
+    const secondResult = await dataAccess.actors.createActorFromData({
       actorData: {
         ...firstImport,
         system: { value: 2 },
@@ -125,8 +126,11 @@ describe('FoundryDataAccess.createActorFromData updateExisting', () => {
       system: {},
     };
 
-    await dataAccess.createActorFromData({ actorData, updateExisting: false });
-    const secondResult = await dataAccess.createActorFromData({ actorData, updateExisting: false });
+    await dataAccess.actors.createActorFromData({ actorData, updateExisting: false });
+    const secondResult = await dataAccess.actors.createActorFromData({
+      actorData,
+      updateExisting: false,
+    });
 
     expect(secondResult.updatedExisting).toBe(false);
     expect(actors).toHaveLength(2);
@@ -140,15 +144,17 @@ describe('FoundryDataAccess.createActorFromData updateExisting', () => {
       effects: [{ name: 'Blessed', type: 'bonus', changes: [{ key: 'system.value', value: '1' }] }],
     };
 
-    await dataAccess.createActorFromData({
+    await dataAccess.actors.createActorFromData({
       actorData: firstImport,
       updateExisting: true,
       existingActorIdentifier: 'Nayeli',
     });
-    const secondResult = await dataAccess.createActorFromData({
+    const secondResult = await dataAccess.actors.createActorFromData({
       actorData: {
         ...firstImport,
-        effects: [{ name: 'Blessed', type: 'bonus', changes: [{ key: 'system.value', value: '2' }] }],
+        effects: [
+          { name: 'Blessed', type: 'bonus', changes: [{ key: 'system.value', value: '2' }] },
+        ],
       },
       updateExisting: true,
       existingActorIdentifier: 'Nayeli',

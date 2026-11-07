@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 interface MockToken {
   id: string;
@@ -70,7 +71,7 @@ function setupFoundry(
     actor,
     itemUse,
     updateTokenTargets,
-    dataAccess: new FoundryDataAccess(),
+    dataAccess: createDataAccess(),
   };
 }
 
@@ -88,7 +89,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     const target = createToken('target-1', 'Goblin', 'actor-2');
     const { dataAccess, itemUse, updateTokenTargets } = setupFoundry({ tokens: [target] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
     });
@@ -114,7 +115,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
       controlled: [laterControlledToken, controlledToken],
     });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['self'],
@@ -134,7 +135,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     const target = createToken('target-1', 'Goblin', 'actor-2');
     const { dataAccess, updateTokenTargets } = setupFoundry({ tokens: [target] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['target-1'],
@@ -151,7 +152,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     const orc = createToken('target-2', 'Orc', 'actor-3');
     const { dataAccess } = setupFoundry({ tokens: [goblin, orc] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['Orc', 'Goblin'],
@@ -168,7 +169,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
   it('reports an unresolved target and still initiates item use', async () => {
     const { dataAccess, itemUse } = setupFoundry();
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['Missing Target'],
@@ -188,7 +189,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     const goblin = createToken('target-1', 'Goblin', 'actor-2');
     const { dataAccess, itemUse } = setupFoundry({ tokens: [goblin] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['Goblin', 'Missing Target'],
@@ -205,7 +206,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     target.setTarget.mockRejectedValue(new Error('Target API unavailable'));
     const { dataAccess, itemUse } = setupFoundry({ tokens: [target] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['Goblin'],
@@ -233,7 +234,7 @@ describe('FoundryDataAccess.useItem targeting', () => {
     goblin.setTarget.mockRejectedValue(new Error('Target API unavailable'));
     const { dataAccess, itemUse } = setupFoundry({ tokens: [goblin, orc] });
 
-    const result = await dataAccess.useItem({
+    const result = await dataAccess.items.useItem({
       actorIdentifier: 'Kai Veyl',
       itemIdentifier: 'Shadow Dive',
       targets: ['Goblin', 'Orc'],

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 function createAdvancementSource() {
   return {
@@ -81,7 +82,7 @@ function createItemDocument() {
 }
 
 function makeDataAccess(): FoundryDataAccess {
-  return Object.create(FoundryDataAccess.prototype) as FoundryDataAccess;
+  return createDataAccess();
 }
 
 describe('FoundryDataAccess Advancement sanitization', () => {
@@ -107,7 +108,7 @@ describe('FoundryDataAccess Advancement sanitization', () => {
       actors: { contents: [actor] },
     });
 
-    const result = await makeDataAccess().getCharacterEntity({
+    const result = await makeDataAccess().characters.getCharacterEntity({
       characterIdentifier: actor.id,
       entityIdentifier: item.id,
     });
@@ -145,7 +146,10 @@ describe('FoundryDataAccess Advancement sanitization', () => {
       packs: { get: (id: string) => (id === 'dnd5e.classes' ? pack : undefined) },
     });
 
-    const result = await makeDataAccess().getCompendiumDocumentFull('dnd5e.classes', document.id);
+    const result = await makeDataAccess().compendium.getCompendiumDocumentFull(
+      'dnd5e.classes',
+      document.id
+    );
     const systemAdvancement = (result.system as any).advancement;
     const fullDataAdvancement = (result.fullData as any).system.advancement;
 

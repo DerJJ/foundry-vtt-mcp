@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FoundryDataAccess } from './data-access.js';
+import type { FoundryDataAccess } from './data-access.js';
+import { createDataAccess } from './test-support/create-data-access.js';
 
 const ACTOR_ID = 'actor00000000001';
 const TOKEN_ID = 'token00000000001';
@@ -94,7 +95,7 @@ function setup(baseActor: ActorMock, scenes: ReturnType<typeof createScene>[] = 
     scenes,
   });
 
-  return Object.create(FoundryDataAccess.prototype) as FoundryDataAccess;
+  return createDataAccess();
 }
 
 describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
@@ -110,7 +111,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     expect(actor.toObject().system.abilities.dex.value).toBe(14);
     actor.toObject.mockClear();
 
-    const result = await dataAccess.getCharacterInfo(ACTOR_ID);
+    const result = await dataAccess.characters.getCharacterInfo(ACTOR_ID);
 
     expect((result.system as any).abilities.dex.value).toBe(16);
     expect((result.system as any).abilities.dex.mod).toBe(3);
@@ -127,7 +128,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
   it('preserves exact case-insensitive world Actor name lookup', async () => {
     const actor = createActor({ dexterity: 15, name: 'Test Actor' });
 
-    const result = await setup(actor).getCharacterInfo('tEsT aCtOr');
+    const result = await setup(actor).characters.getCharacterInfo('tEsT aCtOr');
 
     expect(result.name).toBe('Test Actor');
     expect((result.system as any).abilities.dex.value).toBe(15);
@@ -140,7 +141,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     const syntheticActor = createActor({ dexterity: 16, effects: [syntheticEffect] });
     const scene = createScene(SCENE_ID, [createToken(TOKEN_ID, syntheticActor)]);
 
-    const result = await setup(baseActor, [scene]).getCharacterInfo(ACTOR_ID);
+    const result = await setup(baseActor, [scene]).characters.getCharacterInfo(ACTOR_ID);
 
     expect(syntheticActor.id).toBe(baseActor.id);
     expect((result.system as any).abilities.dex.value).toBe(14);
@@ -154,7 +155,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     const syntheticActor = createActor({ dexterity: 16, effects: [syntheticEffect] });
     const scene = createScene(SCENE_ID, [createToken(TOKEN_ID, syntheticActor)]);
 
-    const result = await setup(baseActor, [scene]).getCharacterInfo(TOKEN_ID);
+    const result = await setup(baseActor, [scene]).characters.getCharacterInfo(TOKEN_ID);
 
     expect(result).toMatchObject({
       id: ACTOR_ID,
@@ -179,7 +180,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     ]);
 
     await expect(
-      setup(baseActor, [firstScene, secondScene]).getCharacterInfo(TOKEN_ID)
+      setup(baseActor, [firstScene, secondScene]).characters.getCharacterInfo(TOKEN_ID)
     ).rejects.toThrow(
       `Token ID "${TOKEN_ID}" is ambiguous across Scenes (${SCENE_ID}, scene00000000002); use a full Token UUID`
     );
@@ -196,7 +197,9 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     const fromUuid = vi.fn(async (uuid: string) => (uuid === tokenUuid ? secondToken : undefined));
     vi.stubGlobal('fromUuid', fromUuid);
 
-    const result = await setup(baseActor, [firstScene, secondScene]).getCharacterInfo(tokenUuid);
+    const result = await setup(baseActor, [firstScene, secondScene]).characters.getCharacterInfo(
+      tokenUuid
+    );
 
     expect(fromUuid).toHaveBeenCalledWith(tokenUuid);
     expect((result.system as any).abilities.dex.value).toBe(18);
@@ -218,7 +221,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
     const tokenUuid = `Scene.${SCENE_ID}.Token.${TOKEN_ID}`;
     vi.stubGlobal('fromUuid', undefined);
 
-    const result = await setup(baseActor, [scene]).getCharacterInfo(tokenUuid);
+    const result = await setup(baseActor, [scene]).characters.getCharacterInfo(tokenUuid);
 
     expect(tokenLookup).toHaveBeenCalledWith(TOKEN_ID);
     expect((result.system as any).abilities.dex.value).toBe(16);
@@ -239,7 +242,7 @@ describe('FoundryDataAccess.getCharacterInfo effective Actor state', () => {
       vi.fn(async () => ({ documentName: 'Actor' }))
     );
 
-    await expect(setup(baseActor).getCharacterInfo(tokenUuid)).rejects.toThrow(
+    await expect(setup(baseActor).characters.getCharacterInfo(tokenUuid)).rejects.toThrow(
       `UUID does not resolve to a TokenDocument: ${tokenUuid}`
     );
   });
