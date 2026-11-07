@@ -75,13 +75,22 @@ systems/<id>/              system-specific code: dnd5e and wfrp4e actor services
 
 ## Checks
 
-| Command                      | What it checks                                                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `npm run typecheck`          | all packages                                                                                                 |
-| `npm test`                   | unit tests of module and server, including the golden snapshots                                              |
-| `npm run test:mcp:schema`    | tool schemas load and are objects (needs a build)                                                            |
-| `npm run test:backend:smoke` | starts the built backend and checks its control channel against the snapshot (needs `npm run build:release`) |
-| `npm run version:check`      | the five manifests agree on the version                                                                      |
+| Command                      | What it checks                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`          | all packages                                                                                                  |
+| `npm test`                   | unit tests of module and server, including the golden snapshots                                               |
+| `npm run test:coverage`      | the unit tests again, failing if a folder drops below its coverage floor (`vitest.config.ts` of each package) |
+| `npm run test:mcp:schema`    | tool schemas load and are objects (needs a build)                                                             |
+| `npm run test:backend:smoke` | starts the built backend and checks its control channel against the snapshot (needs `npm run build:release`)  |
+| `npm run version:check`      | the five manifests agree on the version                                                                       |
+
+## Tests
+
+- **Core** (registries, the GM guard, sanitising, permissions, transactions, per-system helpers, error handling): held to 90% line coverage.
+- **Everything else**: a floor at today's level per folder. Raise a floor in the commit that adds the tests; never lower one.
+- **Contract tests** (`registry/tool-contract.test.ts`, `queries/query-contract.test.ts`) state what every tool and every query must satisfy without naming any of them.
+- **Fixtures** from live worlds: capture them with `scripts/export-fixtures.macro.js` and see `packages/foundry-module/src/__fixtures__/README.md`. Tests using them are skipped when no capture exists.
+- Installers, the ComfyUI client and the transport are covered by the smoke tests, not by unit tests.
 
 ## Conventions
 

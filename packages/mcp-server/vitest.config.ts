@@ -18,6 +18,7 @@ export default defineConfig({
         '**/*.test.*',
         '**/*.spec.*',
         'src/__golden__/**',
+        'src/test-support/**',
         'src/**/*.d.ts',
         'src/**/types.ts',
       ],
