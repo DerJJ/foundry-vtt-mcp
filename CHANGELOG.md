@@ -1,4 +1,6 @@
-## v0.8.6 (2026-11-04)
+## Unreleased
+
+Changes in this fork (DerJJ/foundry-vtt-mcp) on top of upstream v0.8.6. Upstream v0.8.6 was merged on 2026-11-07.
 
 ### Community fork integration
 
@@ -14,6 +16,12 @@ See [docs/COMMUNITY-FORKS.md](docs/COMMUNITY-FORKS.md) for sources, credits and 
 - **`request-player-rolls` works on PF2e** — modifiers come from the actor's skills, perception and saves instead of dnd5e roll data (which gave flat d20 rolls), the player rolls through PF2e's own roll so the chat card carries the outcome, an optional `dc` gives the degree of success, and an unknown skill or save is reported instead of rolled.
 - **PF2e spell save DC and spell attack** now come from the spellcasting entry's computed statistic, so `get-character` reports what the sheet shows.
 - **PF2e fix** from ErikGenibo's fork: strikes and item use run on the token's actor, avoiding "This actor no longer exists!".
+
+### Fixes (fork)
+
+- **`execute-script`, `manage-macros execute` and `use-item` reported a timeout after 10 s while the work kept running and finished correctly.** The server gave up on every query after a hard-coded 10 s, regardless of `timeoutMs` or `waitMs`. The query timeout is now set per call: the script timeout plus 5 s (default 35 s), and for `use-item` the `waitMs` plus 10 s. Other tools keep 10 s.
+
+## v0.8.6 (2026-11-04)
 
 ### New Features
 
