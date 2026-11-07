@@ -15,39 +15,7 @@ import { config } from './config.js';
 import { Logger } from './logger.js';
 
 import { FoundryClient } from './foundry-client.js';
-
-import { CharacterTools } from './tools/character.js';
-
-import { CompendiumTools } from './tools/compendium.js';
-
-import { SceneTools } from './tools/scene.js';
-import { PlaylistTools } from './tools/playlist.js';
-
-import { ActorCreationTools } from './tools/actor-creation.js';
-import { ActorManagementTools } from './tools/actor-management.js';
-import { EffectManagementTools } from './tools/effect-management.js';
-
-import { QuestCreationTools } from './tools/quest-creation.js';
-
-import { DiceRollTools } from './tools/dice-roll.js';
-
-import { CampaignManagementTools } from './tools/campaign-management.js';
-
-import { OwnershipTools } from './tools/ownership.js';
-import { WFRP4eUpdateActorTools } from './tools/wfrp4e/update-actor.js';
-import { WFRP4eAddItemsTools } from './tools/wfrp4e/add-items.js';
-
-import { MapGenerationTools } from './tools/map-generation.js';
-
-import { TokenManipulationTools } from './tools/token-manipulation.js';
-
-import { DSA5CharacterCreator } from './systems/dsa5/character-creator.js';
-import { DSA5JsonActorImporter } from './systems/dsa5/json-actor-importer.js';
-
-import { DnD5eAddFeatureTool } from './tools/dnd5e/add-feature.js';
-import { DnD5eNpcTools } from './tools/dnd5e/npc.js';
-import { DnD5eFeaturesFromCompendiumTools } from './tools/dnd5e/features.js';
-import { ChatTools } from './tools/chat.js';
+import { createToolRegistry } from './registry/create-tool-registry.js';
 
 const CONTROL_HOST = '127.0.0.1';
 
@@ -1190,42 +1158,6 @@ async function startBackend(): Promise<void> {
     supportedSystems: systemRegistry.getSupportedSystems(),
   });
 
-  const characterTools = new CharacterTools({ foundryClient, logger, systemRegistry });
-
-  const compendiumTools = new CompendiumTools({ foundryClient, logger, systemRegistry });
-
-  const sceneTools = new SceneTools({ foundryClient, logger });
-  const playlistTools = new PlaylistTools({ foundryClient, logger });
-
-  const actorCreationTools = new ActorCreationTools({ foundryClient, logger });
-  const actorManagementTools = new ActorManagementTools({ foundryClient, logger, systemRegistry });
-  const effectManagementTools = new EffectManagementTools({ foundryClient, logger });
-
-  const dsa5CharacterCreator = new DSA5CharacterCreator({ foundryClient, logger });
-  const dsa5JsonActorImporter = new DSA5JsonActorImporter({ foundryClient, logger });
-
-  const dnd5eAddFeatureTool = new DnD5eAddFeatureTool({ foundryClient, logger });
-  const dnd5eNpcTools = new DnD5eNpcTools({ foundryClient, logger });
-  const dnd5eFeaturesFromCompendiumTools = new DnD5eFeaturesFromCompendiumTools({
-    foundryClient,
-    logger,
-  });
-
-  const questCreationTools = new QuestCreationTools({ foundryClient, logger });
-
-  const chatTools = new ChatTools({ foundryClient, logger });
-
-  const diceRollTools = new DiceRollTools({ foundryClient, logger });
-
-  const campaignManagementTools = new CampaignManagementTools(foundryClient, logger);
-
-  const ownershipTools = new OwnershipTools({ foundryClient, logger });
-
-  const tokenManipulationTools = new TokenManipulationTools({ foundryClient, logger });
-
-  const wfrp4eUpdateActorTools = new WFRP4eUpdateActorTools({ foundryClient, logger });
-  const wfrp4eAddItemsTools = new WFRP4eAddItemsTools({ foundryClient, logger });
-
   // Initialize mapgen-style backend components for map generation
   let mapGenerationJobQueue: any = null;
   let mapGenerationComfyUIClient: any = null;
@@ -1414,52 +1346,13 @@ async function startBackend(): Promise<void> {
     },
   };
 
-  // Now create MapGenerationTools with the handlers available
-
-  const mapGenerationTools = new MapGenerationTools({
+  // Create and register every tool, now that the ComfyUI handlers exist
+  const toolRegistry = createToolRegistry({
     foundryClient,
     logger,
+    systemRegistry,
     backendComfyUIHandlers: (globalThis as any).backendComfyUIHandlers,
   });
-
-  const allTools = [
-    ...characterTools.getToolDefinitions(),
-
-    ...compendiumTools.getToolDefinitions(),
-
-    ...sceneTools.getToolDefinitions(),
-
-    ...actorCreationTools.getToolDefinitions(),
-    ...actorManagementTools.getToolDefinitions(),
-    ...effectManagementTools.getToolDefinitions(),
-
-    ...dsa5CharacterCreator.getToolDefinitions(),
-    ...dsa5JsonActorImporter.getToolDefinitions(),
-
-    ...dnd5eAddFeatureTool.getToolDefinitions(),
-    ...dnd5eNpcTools.getToolDefinitions(),
-    ...dnd5eFeaturesFromCompendiumTools.getToolDefinitions(),
-
-    ...questCreationTools.getToolDefinitions(),
-
-    ...chatTools.getToolDefinitions(),
-
-    ...diceRollTools.getToolDefinitions(),
-
-    ...campaignManagementTools.getToolDefinitions(),
-
-    ...ownershipTools.getToolDefinitions(),
-
-    ...wfrp4eUpdateActorTools.getToolDefinitions(),
-
-    ...wfrp4eAddItemsTools.getToolDefinitions(),
-
-    ...tokenManipulationTools.getToolDefinitions(),
-
-    ...mapGenerationTools.getToolDefinitions(),
-
-    ...playlistTools.getToolDefinitions(),
-  ];
 
   // Start Foundry connector (owns app port 31415)
 
@@ -1512,7 +1405,9 @@ async function startBackend(): Promise<void> {
           }
 
           if (msg.method === 'list_tools') {
-            socket.write(JSON.stringify({ id: msg.id, result: { tools: allTools } }) + '\n');
+            socket.write(
+              JSON.stringify({ id: msg.id, result: { tools: toolRegistry.list() } }) + '\n'
+            );
 
             continue;
           }
@@ -1521,293 +1416,7 @@ async function startBackend(): Promise<void> {
             const { name, args } = (msg.params || {}) as { name: string; args?: any };
 
             try {
-              let result: any;
-
-              switch (name) {
-                // Character tools
-
-                case 'get-character':
-                  result = await characterTools.handleGetCharacter(args);
-
-                  break;
-
-                case 'list-characters':
-                  result = await characterTools.handleListCharacters(args);
-
-                  break;
-
-                case 'get-character-entity':
-                  result = await characterTools.handleGetCharacterEntity(args);
-
-                  break;
-
-                case 'use-item':
-                  result = await characterTools.handleUseItem(args);
-
-                  break;
-
-                case 'search-character-items':
-                  result = await characterTools.handleSearchCharacterItems(args);
-
-                  break;
-
-                case 'manage-world-items':
-                  result = await characterTools.handleManageWorldItems(args);
-
-                  break;
-
-                // Compendium tools
-
-                case 'search-compendium':
-                  result = await compendiumTools.handleSearchCompendium(args);
-
-                  break;
-
-                case 'get-compendium-item':
-                  result = await compendiumTools.handleGetCompendiumItem(args);
-
-                  break;
-
-                case 'list-creatures-by-criteria':
-                  result = await compendiumTools.handleListCreaturesByCriteria(args);
-
-                  break;
-
-                case 'list-compendium-packs':
-                  result = await compendiumTools.handleListCompendiumPacks(args);
-
-                  break;
-
-                // Scene tools
-
-                case 'get-current-scene':
-                  result = await sceneTools.handleGetCurrentScene(args);
-
-                  break;
-
-                case 'get-world-info':
-                  result = await sceneTools.handleGetWorldInfo(args);
-
-                  break;
-
-                // Actor creation tools
-
-                case 'create-actor-from-compendium':
-                  result = await actorCreationTools.handleCreateActorFromCompendium(args);
-
-                  break;
-
-                case 'get-compendium-entry-full':
-                  result = await actorCreationTools.handleGetCompendiumEntryFull(args);
-
-                  break;
-
-                case 'wfrp4e-update-actor':
-                  result = await wfrp4eUpdateActorTools.handleUpdateActor(args);
-
-                  break;
-
-                case 'wfrp4e-add-items':
-                  result = await wfrp4eAddItemsTools.handleAddItems(args);
-
-                  break;
-
-                // Generic actor management (create / update / delete)
-
-                case 'manage-actors':
-                  result = await actorManagementTools.handleManageActors(args);
-
-                  break;
-
-                case 'manage-effects':
-                  result = await effectManagementTools.handleManageEffects(args);
-
-                  break;
-
-                // DSA5 character creation tools
-
-                case 'create-dsa5-character-from-archetype':
-                  result = await dsa5CharacterCreator.handleCreateCharacterFromArchetype(args);
-
-                  break;
-
-                case 'list-dsa5-archetypes':
-                  result = await dsa5CharacterCreator.handleListArchetypes(args);
-
-                  break;
-
-                case 'import-dsa5-actor-from-json':
-                  result = await dsa5JsonActorImporter.handleImportActorFromJson(args);
-
-                  break;
-
-                // D&D 5e tools
-
-                case 'dnd5e-add-feature':
-                  result = await dnd5eAddFeatureTool.handleAddFeature(args);
-
-                  break;
-
-                case 'dnd5e-create-npc':
-                  result = await dnd5eNpcTools.handleCreateNpc(args);
-
-                  break;
-
-                case 'dnd5e-add-features-from-compendium':
-                  result =
-                    await dnd5eFeaturesFromCompendiumTools.handleAddFeaturesFromCompendium(args);
-
-                  break;
-
-                // Chat tools
-
-                case 'create-chat-message':
-                  result = await chatTools.handleCreateChatMessage(args);
-
-                  break;
-
-                // Quest creation tools
-
-                case 'create-quest-journal':
-                  result = await questCreationTools.handleCreateQuestJournal(args);
-
-                  break;
-
-                case 'link-quest-to-npc':
-                  result = await questCreationTools.handleLinkQuestToNPC(args);
-
-                  break;
-
-                case 'update-quest-journal':
-                  result = await questCreationTools.handleUpdateQuestJournal(args);
-
-                  break;
-
-                case 'replace-journal-page':
-                  result = await questCreationTools.handleReplaceJournalPage(args);
-
-                  break;
-
-                case 'list-journals':
-                  result = await questCreationTools.handleListJournals(args);
-
-                  break;
-
-                case 'search-journals':
-                  result = await questCreationTools.handleSearchJournals(args);
-
-                  break;
-
-                // Dice roll tools
-
-                case 'request-player-rolls':
-                  result = await diceRollTools.handleRequestPlayerRolls(args);
-
-                  break;
-
-                // Campaign management tools
-
-                case 'create-campaign-dashboard':
-                  result = await campaignManagementTools.handleCreateCampaignDashboard(args);
-
-                  break;
-
-                // Ownership tools
-
-                case 'assign-actor-ownership':
-                  result = await ownershipTools.handleToolCall('assign-actor-ownership', args);
-
-                  break;
-
-                case 'remove-actor-ownership':
-                  result = await ownershipTools.handleToolCall('remove-actor-ownership', args);
-
-                  break;
-
-                case 'list-actor-ownership':
-                  result = await ownershipTools.handleToolCall('list-actor-ownership', args);
-
-                  break;
-
-                // Token manipulation tools
-
-                case 'move-token':
-                  result = await tokenManipulationTools.handleMoveToken(args);
-
-                  break;
-
-                case 'update-token':
-                  result = await tokenManipulationTools.handleUpdateToken(args);
-
-                  break;
-
-                case 'delete-tokens':
-                  result = await tokenManipulationTools.handleDeleteTokens(args);
-
-                  break;
-
-                case 'get-token-details':
-                  result = await tokenManipulationTools.handleGetTokenDetails(args);
-
-                  break;
-
-                case 'toggle-token-condition':
-                  result = await tokenManipulationTools.handleToggleTokenCondition(args);
-
-                  break;
-
-                case 'get-available-conditions':
-                  result = await tokenManipulationTools.handleGetAvailableConditions(args);
-
-                  break;
-
-                // Map generation tools
-
-                case 'generate-map':
-                  result = await mapGenerationTools.generateMap(args);
-
-                  break;
-
-                case 'check-map-status':
-                  result = await mapGenerationTools.checkMapStatus(args);
-
-                  break;
-
-                case 'cancel-map-job':
-                  result = await mapGenerationTools.cancelMapJob(args);
-
-                  break;
-
-                case 'list-scenes':
-                  result = await mapGenerationTools.listScenes(args);
-
-                  break;
-
-                case 'switch-scene':
-                  result = await mapGenerationTools.switchScene(args);
-
-                  break;
-
-                // Playlist management tools
-
-                case 'manage-playlists':
-                  result = await playlistTools.handleManagePlaylists(args);
-
-                  break;
-
-                case 'control-playlist':
-                  result = await playlistTools.handleControlPlaylist(args);
-
-                  break;
-
-                case 'update-scene-music':
-                  result = await sceneTools.handleUpdateSceneMusic(args);
-
-                  break;
-
-                default:
-                  throw new Error(`Unknown tool: ${name}`);
-              }
+              const result = await toolRegistry.call(name, args);
 
               const payload = {
                 content: [

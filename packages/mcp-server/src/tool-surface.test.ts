@@ -20,27 +20,7 @@ import { DSA5Adapter } from './systems/dsa5/adapter.js';
 import { CosmereRpgAdapter } from './systems/cosmere-rpg/adapter.js';
 import { WFRP4eAdapter } from './systems/wfrp4e/adapter.js';
 import { MGT2eAdapter } from './systems/mgt2e/adapter.js';
-import { CharacterTools } from './tools/character.js';
-import { CompendiumTools } from './tools/compendium.js';
-import { SceneTools } from './tools/scene.js';
-import { PlaylistTools } from './tools/playlist.js';
-import { ActorCreationTools } from './tools/actor-creation.js';
-import { ActorManagementTools } from './tools/actor-management.js';
-import { EffectManagementTools } from './tools/effect-management.js';
-import { QuestCreationTools } from './tools/quest-creation.js';
-import { DiceRollTools } from './tools/dice-roll.js';
-import { CampaignManagementTools } from './tools/campaign-management.js';
-import { OwnershipTools } from './tools/ownership.js';
-import { TokenManipulationTools } from './tools/token-manipulation.js';
-import { MapGenerationTools } from './tools/map-generation.js';
-import { WFRP4eUpdateActorTools } from './tools/wfrp4e/update-actor.js';
-import { WFRP4eAddItemsTools } from './tools/wfrp4e/add-items.js';
-import { DSA5CharacterCreator } from './systems/dsa5/character-creator.js';
-import { DSA5JsonActorImporter } from './systems/dsa5/json-actor-importer.js';
-import { DnD5eAddFeatureTool } from './tools/dnd5e/add-feature.js';
-import { DnD5eNpcTools } from './tools/dnd5e/npc.js';
-import { DnD5eFeaturesFromCompendiumTools } from './tools/dnd5e/features.js';
-import { ChatTools } from './tools/chat.js';
+import { createToolRegistry } from './registry/create-tool-registry.js';
 
 const GOLDEN_FILE = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -60,30 +40,12 @@ function buildToolDefinitions(): unknown[] {
   systemRegistry.register(new WFRP4eAdapter());
   systemRegistry.register(new MGT2eAdapter());
 
-  const deps = { foundryClient, logger };
-  return [
-    ...new CharacterTools({ ...deps, systemRegistry }).getToolDefinitions(),
-    ...new CompendiumTools({ ...deps, systemRegistry }).getToolDefinitions(),
-    ...new SceneTools(deps).getToolDefinitions(),
-    ...new ActorCreationTools(deps).getToolDefinitions(),
-    ...new ActorManagementTools({ ...deps, systemRegistry }).getToolDefinitions(),
-    ...new EffectManagementTools(deps).getToolDefinitions(),
-    ...new DSA5CharacterCreator(deps).getToolDefinitions(),
-    ...new DSA5JsonActorImporter(deps).getToolDefinitions(),
-    ...new DnD5eAddFeatureTool(deps).getToolDefinitions(),
-    ...new DnD5eNpcTools(deps).getToolDefinitions(),
-    ...new DnD5eFeaturesFromCompendiumTools(deps).getToolDefinitions(),
-    ...new QuestCreationTools(deps).getToolDefinitions(),
-    ...new ChatTools(deps).getToolDefinitions(),
-    ...new DiceRollTools(deps).getToolDefinitions(),
-    ...new CampaignManagementTools(foundryClient, logger).getToolDefinitions(),
-    ...new OwnershipTools(deps).getToolDefinitions(),
-    ...new WFRP4eUpdateActorTools(deps).getToolDefinitions(),
-    ...new WFRP4eAddItemsTools(deps).getToolDefinitions(),
-    ...new TokenManipulationTools(deps).getToolDefinitions(),
-    ...new MapGenerationTools({ ...deps, backendComfyUIHandlers: {} }).getToolDefinitions(),
-    ...new PlaylistTools(deps).getToolDefinitions(),
-  ];
+  return createToolRegistry({
+    foundryClient,
+    logger,
+    systemRegistry,
+    backendComfyUIHandlers: {},
+  }).list();
 }
 
 describe('MCP tool surface', () => {
