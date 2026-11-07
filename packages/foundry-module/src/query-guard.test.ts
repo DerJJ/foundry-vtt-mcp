@@ -7,6 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { guardQueryHandler } from './query-guard.js';
 import { QueryHandlers } from './queries.js';
+import { UtilityQueries } from './queries/utility.js';
 
 describe('guardQueryHandler', () => {
   beforeEach(() => {
@@ -69,6 +70,7 @@ describe('QueryHandlers.registerHandlers', () => {
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.stubGlobal('CONFIG', { queries: { 'other-module.keep': () => 'untouched' } });
+    vi.stubGlobal('Hooks', { on: vi.fn(() => 1), once: vi.fn(() => 1), off: vi.fn() });
   });
 
   afterEach(() => {
@@ -77,7 +79,7 @@ describe('QueryHandlers.registerHandlers', () => {
   });
 
   function register(): Record<string, (...args: any[]) => any> {
-    const handlers = Object.create(QueryHandlers.prototype) as QueryHandlers;
+    const handlers = new QueryHandlers();
     handlers.registerHandlers();
     return (globalThis as any).CONFIG.queries;
   }
@@ -98,7 +100,7 @@ describe('QueryHandlers.registerHandlers', () => {
 
   it('still lets the bridge call a handler directly', async () => {
     const ping = vi
-      .spyOn(QueryHandlers.prototype as any, 'handlePing')
+      .spyOn(UtilityQueries.prototype as any, 'handlePing')
       .mockResolvedValue({ pong: true });
     const queries = register();
 

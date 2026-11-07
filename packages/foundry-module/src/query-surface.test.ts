@@ -20,6 +20,7 @@ const GOLDEN_FILE = path.join(
 describe('bridge query surface', () => {
   beforeEach(() => {
     vi.stubGlobal('CONFIG', { queries: {} });
+    vi.stubGlobal('Hooks', { on: vi.fn(() => 1), once: vi.fn(() => 1), off: vi.fn() });
   });
 
   afterEach(() => {
@@ -27,7 +28,7 @@ describe('bridge query surface', () => {
   });
 
   it('registers exactly the golden set of query names', () => {
-    const handlers = Object.create(QueryHandlers.prototype) as QueryHandlers;
+    const handlers = new QueryHandlers();
     handlers.registerHandlers();
     const current = Object.keys((globalThis as any).CONFIG.queries).sort();
 
