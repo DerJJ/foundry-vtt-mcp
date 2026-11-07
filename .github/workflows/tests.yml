@@ -1,0 +1,36 @@
+name: Tests
+
+# Unit tests and the coverage floors set in each package's vitest.config.ts. A change fails here
+# if it makes a tested folder worse than it is today; raise the floor when you add tests.
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.12.2'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build:shared
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests with coverage floors
+        run: npm run test:coverage
