@@ -20,7 +20,7 @@ For whoever picks this up next, human or agent. State as of 2026-11-07.
   git push -u origin integrate/community-forks
   ```
 
-- **Redesign:** planned, not started. The decisions in PLAN.md section 7 are all open. Phase 1 must not start until they are recorded there.
+- **Redesign:** see PLAN.md sections 6 and 7 (revised 2026-11-07): restructure on upstream v0.8.6 first, in the worktree `../foundry-vtt-mcp-restructure` (branch `refactor/architecture`, ADRs there).
 - **Checks:** typecheck, the schema smoke test and the version check pass, and the 121 module tests and 290 server tests pass. Lint does not pass: it reports 251 errors and 14,266 warnings, mostly inherited `any` warnings. Phase 0 sets the lint baseline.
 - **Live testing:** none of the fork's own work has run against a real Foundry. COMMUNITY-FORKS.md lists what to verify first.
 
@@ -92,7 +92,7 @@ This is the PF2e and D&D 5e knowledge to move into the system adapters. Most of 
 
 ## Rescanning forks
 
-`gh` is not installed on the owner's machine. Use GitHub's REST API instead:
+`gh` 2.103 is installed and logged in as DerJJ (checked 2026-11-07). Without it, use GitHub's REST API:
 
 - `GET /repos/adambdooley/foundry-vtt-mcp/forks?per_page=100&sort=newest` lists the forks.
 - `GET /repos/adambdooley/foundry-vtt-mcp/compare/master...<owner>:master` gives `ahead_by` and the commit list for one fork.

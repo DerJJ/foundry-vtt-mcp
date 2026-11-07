@@ -2,6 +2,8 @@
 
 Status: draft for review. Nothing in here is built yet.
 
+> **Revised 2026-11-07.** The redesign now runs as three stacked branches (see section 6 and ADR-0002), starting from upstream v0.8.6 and not from this branch (ADR-0001). Where sections 2 to 5 describe a base, a tool count or a phase order, section 6 and section 7 win. Sections 3 to 5 remain the design target for the second iteration (tool unification). The ADRs live on the restructure branch `refactor/architecture`, in the worktree `../foundry-vtt-mcp-restructure`.
+
 ## 1. Goal
 
 Turn the combined fork into a maintained product of our own, with:
@@ -180,31 +182,43 @@ The default listed here is the category on/off default. Write and destructive ac
 - **Decisions** are recorded as short ADRs in `docs/adr/`.
 - **Releases.** Semantic versioning starting at 1.0.0, the changelog kept per release, and conventional commits.
 
-## 6. Phases
+## 6. Iterations
 
-Each phase ends with green CI and a working build that can be installed. Work happens on branch `v1` (cut from `integrate/community-forks`), and the current branch keeps receiving fixes until phase 4.
+Three stacked branches. Each one is cut from the one before and ends with green CI and an installable build. Our fork's feature code reaches the final structure exactly once (ADR-0002).
 
-| Phase          | Scope                                                                                                                                                                     | Done when                                                                 |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 0. Groundwork  | Approve this plan and its decisions. Push the current branch. Turn on stricter lint. Write the fixture export script and capture PF2e and D&D 5e fixtures.                | Plan approved, fixtures committed                                         |
-| 1. Skeleton    | `tool-contract`, tool registry, generic dispatch, guard module and settings, capabilities handshake, result envelope. Port **`chat` and `roll`** end to end as the proof. | Both tools work live on PF2e and D&D 5e, and the old versions are removed |
-| 2. Read side   | `bridge`, `world`, `actor` (read), `compendium` (read), `scene` (read), `journal` (read). Split the matching code out of `data-access.ts`.                                | The read catalogue is complete and filtered by system                     |
-| 3. Write side  | Write and destructive actions of every category, `combat`, `effect`, `token`, `audio`, `time`, `folder`, `media`, `script`, `dnd5e`.                                      | `data-access.ts` and the old tools are gone                               |
-| 4. Safety      | Audit log in settings, dry-run, undo, batch (concepts from webmaster94).                                                                                                  | Undo works for actor, item, token and scene writes                        |
-| 5. Release 1.0 | Generate the README tool list from the registry. Installers. The live check list done on both systems.                                                                    | Tagged v1.0.0 on DerJJ/foundry-vtt-mcp                                    |
-| After 1.0      | From the fork review: `combat.wait-for-turn` (RasmusBMN), `scene.screenshot` (iCaptainNemo), HTTP transport (edoren/tonancheta), multi-server profiles (webmaster94).     | —                                                                         |
+| Iteration        | Branch                  | Base                       | Scope                                                                                                                                                                                                                                                                              | Done when                                                                                                                                  |
+| ---------------- | ----------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1. Restructure   | `refactor/architecture` | `upstream/master` (v0.8.6) | Same 49 tools and module queries in a proper architecture: server tool registry, bridge query registry, `data-access.ts` split by category, system code under `systems/`, `docs/ARCHITECTURE.md`, ADRs. No tool added, dropped, renamed or reshaped. Not tracked as GitHub issues. | The golden snapshot (ADR-0003) is reproduced byte-identically, tests and typecheck pass, and a PF2e live check on v14 matches the baseline |
+| 2. Unification   | to be named             | iteration 1                | Section 3 to 5 of this plan, applied to upstream's tools only: action per resource, result envelope, guard levels, capability handshake. No code from our fork.                                                                                                                    | Registry-driven tools, snapshot regenerated on purpose                                                                                     |
+| 3. Fork re-ports | to be named             | iteration 2                | PF2e and D&D 5e work, chat log, roll requests, script runner and the other community-fork features, ported into the final structure, original authors kept.                                                                                                                        | Everything on `integrate/community-forks` is ported or consciously dropped                                                                 |
 
-## 7. Decisions needed before phase 1
+Work order inside iteration 1 (not issue-tracked): worktree and green baseline, golden snapshot and its test, live baseline on the PF2e server, fixtures, lint baseline for new code, `ARCHITECTURE.md`, then the slices: server registry, bridge query registry, one `data-access.ts` category at a time, `systems/`.
 
-All open. Record the answers here, with the date, before starting phase 1.
+After 1.0: `combat.wait-for-turn` (RasmusBMN), `scene.screenshot` (iCaptainNemo), HTTP transport (edoren/tonancheta), multi-server profiles (webmaster94), unless pulled forward by decision 7.
 
-1. **Tool style.** One tool per resource with an `action` enum (recommended, about 18 tools), or one tool per operation such as `actor-get` and `actor-update` (about 70 tools, flatter schemas).
-2. **Dropping the other systems** in 1.0 (recommended), or keeping them behind the adapter interface untouched.
-3. **Map generation (ComfyUI)**: keep it as the optional `media` category, or drop it.
-4. **Repository.** Keep `DerJJ/foundry-vtt-mcp` as a GitHub fork, or ask GitHub to detach it from the fork network.
-5. **Module id.** Keep `foundry-mcp-bridge`, so existing worlds keep their settings, or rename it, which needs a fresh install and a new manifest URL.
-6. **Foundry versions.** v14 only (what the live world runs; fewer code paths), or v13 and v14 (what upstream users have).
-7. **HTTP transport timing.** Keep it after 1.0, or pull it into phase 5 because the agent and the browser run on different machines.
+## 7. Decisions
+
+Answers recorded 2026-11-07. ADR numbers refer to `docs/adr/` on `refactor/architecture`.
+
+| #                           | Decision                                                 | Answer                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base                        | Which code the redesign starts from (replaces section 2) | **Upstream v0.8.6, fresh.** No production-code change from this branch is carried over; only tests, tooling, fixtures and a new architecture description are. ADR-0001                                                                                                                                                                       |
+| Order                       | How the work is staged                                   | **Restructure, then unification, then fork re-ports**, three stacked branches. ADR-0002                                                                                                                                                                                                                                                      |
+| Safety                      | How "no behaviour change" is checked                     | **Golden snapshot** of `tools/list` and module query names. ADR-0003                                                                                                                                                                                                                                                                         |
+| 4. Repository               | Fork or detach                                           | **Keep the fork** (an upstream PR needs it). ADR-0004                                                                                                                                                                                                                                                                                        |
+| 5. Module id                | Keep or rename                                           | **Keep `foundry-mcp-bridge`.** ADR-0004                                                                                                                                                                                                                                                                                                      |
+| Architecture of iteration 1 | Shape of the restructure                                 | **Delegated to the agent.** Draft in `docs/ARCHITECTURE.md` on the restructure branch, reviewed there. Starting point: server tool registry instead of the `switch` in `backend.ts`, bridge query registry instead of hand-registered `CONFIG.queries`, `data-access.ts` split into `services/` by category, hand-written schemas unchanged. |
+| Live baseline               | Where v0.8.6 is checked on v14                           | **On the PF2e dev server directly.** It is the test and development server; the integrated branch stays in git for switching back.                                                                                                                                                                                                           |
+| Issue tracking              | Whether iteration 1 is tracked                           | **No.** Iteration 1 is not tracked as GitHub issues.                                                                                                                                                                                                                                                                                         |
+
+Still open, to be decided at the start of iteration 2:
+
+1. **Tool style** (old decision 1): action per resource, recounted against upstream's real 49 tools.
+2. **Dropping other systems** (old decision 2): dsa5, wfrp4e, cosmere, mgt2e, iron-gods.
+3. **Map generation** (old decision 3): ComfyUI as optional `media` category, or drop.
+4. **Foundry versions** (old decision 6): v14 only, or v13 and v14, after the live baseline.
+5. **HTTP transport timing** (old decision 7).
+6. **`tools/list_changed`** support in Claude Desktop and Claude Code (section 3.5, section 8).
 
 ## 8. Risks
 
