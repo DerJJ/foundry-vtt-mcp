@@ -39,6 +39,7 @@ import { DnD5eAddFeatureTool } from './tools/dnd5e/add-feature.js';
 import { DnD5eNpcTools } from './tools/dnd5e/npc.js';
 import { DnD5eFeaturesFromCompendiumTools } from './tools/dnd5e/features.js';
 import { resolveControlPort, resolveLockFile } from './instance.js';
+import { ChatTools } from './tools/chat.js';
 
 const CONTROL_HOST = '127.0.0.1';
 
@@ -1215,6 +1216,8 @@ async function startBackend(): Promise<void> {
 
   const questCreationTools = new QuestCreationTools({ foundryClient, logger });
 
+  const chatTools = new ChatTools({ foundryClient, logger });
+
   const diceRollTools = new DiceRollTools({ foundryClient, logger });
 
   const campaignManagementTools = new CampaignManagementTools(foundryClient, logger);
@@ -1451,6 +1454,8 @@ async function startBackend(): Promise<void> {
     ...dnd5eFeaturesFromCompendiumTools.getToolDefinitions(),
 
     ...questCreationTools.getToolDefinitions(),
+
+    ...chatTools.getToolDefinitions(),
 
     ...diceRollTools.getToolDefinitions(),
 
@@ -1722,6 +1727,13 @@ async function startBackend(): Promise<void> {
                 case 'dnd5e-add-features-from-compendium':
                   result =
                     await dnd5eFeaturesFromCompendiumTools.handleAddFeaturesFromCompendium(args);
+
+                  break;
+
+                // Chat tools
+
+                case 'create-chat-message':
+                  result = await chatTools.handleCreateChatMessage(args);
 
                   break;
 
