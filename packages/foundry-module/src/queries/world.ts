@@ -12,6 +12,7 @@ export class WorldQueries implements QueryGroup {
       'list-scenes': this.handleListScenes.bind(this),
       'switch-scene': this.handleSwitchScene.bind(this),
       getWorldInfo: this.handleGetWorldInfo.bind(this),
+      getCapabilities: this.handleGetCapabilities.bind(this),
       addActorsToScene: this.handleAddActorsToScene.bind(this),
       validateWritePermissions: this.handleValidateWritePermissions.bind(this),
     };
@@ -35,6 +36,16 @@ export class WorldQueries implements QueryGroup {
         `Failed to get active scene: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  /** Handle get capabilities request */
+  private async handleGetCapabilities(): Promise<any> {
+    const gmCheck = validateGMAccess();
+    if (!gmCheck.allowed) {
+      return { error: 'Access denied', success: false };
+    }
+    validateFoundryState();
+    return this.dataAccess.world.getCapabilities();
   }
 
   /**

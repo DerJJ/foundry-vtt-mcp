@@ -1,9 +1,26 @@
+import {
+  ACCESS_LEVELS,
+  isExecuteAllowed,
+  isFeatureOn,
+  readAccessLevel,
+  type Risk,
+  type AccessLevel,
+} from '../access-level.js';
 import { MODULE_ID, ERROR_MESSAGES, TOKEN_DISPOSITIONS } from '../constants.js';
 import { permissionManager } from '../permissions.js';
 import { transactionManager } from '../transaction-manager.js';
 import type { SceneInfo, WorldInfo, SceneTokenPlacement, TokenPlacementResult } from './types.js';
 import { validateFoundryState, auditLog } from './support.js';
 import type { FoundryDataAccess } from '../data-access.js';
+
+export interface Capabilities {
+  system: { id: string; version: string };
+  foundryVersion: string;
+  moduleVersion: string | null;
+  accessLevel: { id: AccessLevel; label: string; allows: Risk[] };
+  executeAllowed: boolean;
+  imageGenerationEnabled: boolean;
+}
 
 export class WorldService {
   constructor(private readonly access: FoundryDataAccess) {}
@@ -77,6 +94,27 @@ export class WorldService {
         active: user.active,
         isGM: user.isGM,
       })),
+    };
+  }
+
+  /**
+   * What this world offers: its game system, how much the MCP may do, and which gated
+   * features are switched on. The server relays this to the model.
+   */
+  getCapabilities(): Capabilities {
+    const level = readAccessLevel();
+    return {
+      system: { id: game.system.id, version: game.system.version },
+      foundryVersion: game.version,
+      moduleVersion:
+        (game.modules?.get(MODULE_ID) as { version?: string } | undefined)?.version ?? null,
+      accessLevel: {
+        id: level,
+        label: ACCESS_LEVELS[level].label,
+        allows: [...ACCESS_LEVELS[level].allows],
+      },
+      executeAllowed: isExecuteAllowed(),
+      imageGenerationEnabled: isFeatureOn('imageGenerationEnabled'),
     };
   }
 

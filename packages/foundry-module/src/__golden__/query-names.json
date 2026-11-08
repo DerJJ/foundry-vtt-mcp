@@ -32,6 +32,7 @@
   "foundry-mcp-bridge.getActorOwnership",
   "foundry-mcp-bridge.getAvailableConditions",
   "foundry-mcp-bridge.getAvailablePacks",
+  "foundry-mcp-bridge.getCapabilities",
   "foundry-mcp-bridge.getCharacterEntity",
   "foundry-mcp-bridge.getCharacterInfo",
   "foundry-mcp-bridge.getCompendiumDocumentFull",

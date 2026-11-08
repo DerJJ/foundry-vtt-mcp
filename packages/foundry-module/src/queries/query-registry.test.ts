@@ -20,13 +20,13 @@ describe('QueryRegistry', () => {
   });
 
   it('installs every query under the module prefix, guarded', async () => {
-    new QueryRegistry([group({ a: async () => 'result' })], 'mod').install();
+    new QueryRegistry([group({ ping: async () => 'result' })], 'mod').install();
     const queries = (globalThis as any).CONFIG.queries;
 
-    await expect(queries['mod.a']({})).resolves.toBe('result');
-    await expect(queries['mod.a']({}, { user: { isGM: false, name: 'Player' } })).rejects.toThrow(
-      'Access denied'
-    );
+    await expect(queries['mod.ping']({})).resolves.toBe('result');
+    await expect(
+      queries['mod.ping']({}, { user: { isGM: false, name: 'Player' } })
+    ).rejects.toThrow('Access denied');
   });
 
   it('refuses two groups that answer the same query name', () => {

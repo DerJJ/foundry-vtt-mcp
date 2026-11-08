@@ -1,4 +1,5 @@
 import { MODULE_ID } from './constants.js';
+import { checkRisk, isExecuteAllowed, readAccessLevel } from './access-level.js';
 
 export const PERMISSION_LEVELS = {
   LOW_RISK: 'low', // Auto-allowed
@@ -12,7 +13,6 @@ export interface WriteOperation {
   name: string;
   level: PermissionLevel;
   description: string;
-  settingKey: string;
   requiresGM?: boolean;
 }
 
@@ -32,42 +32,36 @@ export class PermissionManager {
       name: 'Create Actor',
       level: PERMISSION_LEVELS.LOW_RISK,
       description: 'Create new actors from compendium entries',
-      settingKey: 'allowWriteOperations',
       requiresGM: false,
     },
     modifyScene: {
       name: 'Modify Scene',
       level: PERMISSION_LEVELS.MEDIUM_RISK,
       description: 'Add tokens to scenes or modify scene elements',
-      settingKey: 'allowWriteOperations',
       requiresGM: false,
     },
     createChatMessage: {
       name: 'Create Chat Message',
       level: PERMISSION_LEVELS.LOW_RISK,
       description: 'Speak lines as actors in bubbles, the chat log, or whispers',
-      settingKey: 'allowWriteOperations',
       requiresGM: false,
     },
     bulkOperations: {
       name: 'Bulk Operations',
       level: PERMISSION_LEVELS.MEDIUM_RISK,
       description: 'Perform operations on multiple entities at once',
-      settingKey: 'allowWriteOperations',
       requiresGM: false,
     },
     deleteData: {
       name: 'Delete Data',
       level: PERMISSION_LEVELS.HIGH_RISK,
       description: 'Delete actors, scenes, or other world data',
-      settingKey: 'allowWriteOperations',
       requiresGM: true,
     },
     modifyWorld: {
       name: 'Modify World',
       level: PERMISSION_LEVELS.HIGH_RISK,
       description: 'Modify world settings or structure',
-      settingKey: 'allowWriteOperations',
       requiresGM: true,
     },
   };
@@ -87,13 +81,11 @@ export class PermissionManager {
       };
     }
 
-    // Check setting-based permissions (GM safety toggles)
-    const settingAllowed = game.settings.get(this.moduleId, operation.settingKey) as boolean;
-    if (!settingAllowed) {
-      return {
-        allowed: false,
-        reason: `${operation.name} is disabled in module settings`,
-      };
+    // The world's access level decides: deleting needs full access, everything else write access.
+    const risk = operationName === 'deleteData' ? 'delete' : 'write';
+    const riskCheck = checkRisk(risk, operation.name);
+    if (!riskCheck.allowed) {
+      return { allowed: false, reason: riskCheck.reason };
     }
 
     return this.checkOperationSpecifics(operation, context);
@@ -227,15 +219,10 @@ export class PermissionManager {
    */
   getPermissionSummary(): {
     user: { name: string; isGM: boolean };
-    settings: Record<string, boolean>;
+    settings: { accessLevel: string; allowExecute: boolean };
     operations: Record<string, boolean>;
   } {
-    const settingKeys = Object.values(this.writeOperations).map(op => op.settingKey);
-    const settings: Record<string, boolean> = {};
-
-    for (const key of settingKeys) {
-      settings[key] = game.settings.get(this.moduleId, key) as boolean;
-    }
+    const settings = { accessLevel: readAccessLevel(), allowExecute: isExecuteAllowed() };
 
     const operations: Record<string, boolean> = {};
     for (const [key] of Object.entries(this.writeOperations)) {

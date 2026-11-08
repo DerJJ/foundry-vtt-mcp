@@ -240,13 +240,36 @@ export class ModuleSettings {
     // SECTION 2: WRITE PERMISSIONS
     // ============================================================================
 
-    game.settings.register(this.moduleId, 'allowWriteOperations', {
-      name: 'Allow Write Operations',
-      hint: 'Let AI model create actors, NPCs, and modify world content. Reading is always allowed.',
+    game.settings.register(this.moduleId, 'accessLevel', {
+      name: 'Access level',
+      hint: 'What the AI model may do in this world. Read only: look but never change. Read & write: create and change content. Full access: also delete.',
+      scope: 'world',
+      config: true,
+      type: String,
+      choices: {
+        readonly: 'Read only',
+        readwrite: 'Read & write',
+        full: 'Full access (also delete)',
+      },
+      default: 'readwrite',
+    });
+
+    game.settings.register(this.moduleId, 'allowExecute', {
+      name: 'Allow script and macro execution',
+      hint: 'Let the AI model run scripts and macros. They run as code in the GM browser. Off unless you need it; Full access does not turn it on.',
       scope: 'world',
       config: true,
       type: Boolean,
-      default: true,
+      default: false,
+    });
+
+    game.settings.register(this.moduleId, 'imageGenerationEnabled', {
+      name: 'Enable image generation (ComfyUI)',
+      hint: 'Let the AI model generate images, such as maps, through a ComfyUI service. Needs ComfyUI installed and configured below.',
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: false,
     });
 
     // ============================================================================

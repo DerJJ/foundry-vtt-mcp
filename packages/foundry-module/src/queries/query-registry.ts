@@ -1,7 +1,33 @@
 import { MODULE_ID } from '../constants.js';
 import { guardQueryHandler } from '../query-guard.js';
+import { checkRisk, isFeatureOn } from '../access-level.js';
+import { QUERY_FEATURE, riskOfQuery } from './query-risk.js';
 
 export type QueryHandler = (data?: any, context?: any) => Promise<any>;
+
+/**
+ * Refuses a query the world's access level does not allow, or whose optional feature is off.
+ * A query without a risk entry is refused, so a new query cannot go live untagged.
+ */
+export function guardRisk(name: string, handler: QueryHandler): QueryHandler {
+  return async function riskGuardedHandler(this: unknown, data, context) {
+    const risk = riskOfQuery(name, data);
+    if (!risk) {
+      throw new Error(`Query "${name}" has no risk defined and is refused.`);
+    }
+    const feature = QUERY_FEATURE[name];
+    if (feature && !isFeatureOn(feature.setting)) {
+      throw new Error(
+        `${feature.label} is off. A GM can switch it on under Module Settings, Foundry MCP Bridge.`
+      );
+    }
+    const check = checkRisk(risk, `"${name}"`);
+    if (!check.allowed) {
+      throw new Error(check.reason);
+    }
+    return handler.call(this, data, context);
+  };
+}
 
 /** A set of related queries: the names it answers and the handler of each. */
 export interface QueryGroup {
@@ -34,7 +60,7 @@ export class QueryRegistry {
   install(): void {
     for (const [name, handler] of this.collect()) {
       const key = `${this.prefix}.${name}`;
-      CONFIG.queries[key] = guardQueryHandler(key, handler);
+      CONFIG.queries[key] = guardQueryHandler(key, guardRisk(name, handler));
       this.installed.add(key);
     }
   }

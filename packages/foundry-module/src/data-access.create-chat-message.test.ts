@@ -53,7 +53,11 @@ function setupFoundry(options: { polyglot?: boolean; allowWriteOperations?: bool
     ],
     settings: {
       get: (_module: string, key: string) =>
-        key === 'allowWriteOperations' ? (options.allowWriteOperations ?? true) : undefined,
+        key === 'accessLevel'
+          ? options.allowWriteOperations === false
+            ? 'readonly'
+            : 'readwrite'
+          : undefined,
     },
     modules: {
       get: (id: string) => (id === 'polyglot' && options.polyglot ? { active: true } : undefined),

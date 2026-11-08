@@ -24,27 +24,28 @@ describe('PermissionManager', () => {
 
   describe('checkWritePermission', () => {
     it('refuses an unknown operation', () => {
-      stubGame({ allowWriteOperations: true });
+      stubGame({ accessLevel: 'full' });
       expect(manager.checkWritePermission('formatDisk')).toEqual({
         allowed: false,
         reason: 'Unknown operation: formatDisk',
       });
     });
 
-    it('refuses everything while write operations are switched off', () => {
-      stubGame({ allowWriteOperations: false });
+    it('refuses everything while the access level is read only', () => {
+      stubGame({ accessLevel: 'readonly' });
       const result = manager.checkWritePermission('createActor');
       expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('Create Actor is disabled in module settings');
+      expect(result.reason).toContain('Create Actor needs write access');
+      expect(result.reason).toContain('Read only');
     });
 
     it('allows a low risk operation without confirmation', () => {
-      stubGame({ allowWriteOperations: true, maxActorsPerRequest: 10 });
+      stubGame({ accessLevel: 'full', maxActorsPerRequest: 10 });
       expect(manager.checkWritePermission('createActor')).toEqual({ allowed: true });
     });
 
     it('asks for confirmation for medium risk operations', () => {
-      stubGame({ allowWriteOperations: true });
+      stubGame({ accessLevel: 'full' });
       const result = manager.checkWritePermission('modifyScene');
       expect(result.allowed).toBe(true);
       expect(result.requiresConfirmation).toBe(true);
@@ -52,7 +53,7 @@ describe('PermissionManager', () => {
     });
 
     it('asks for confirmation and warns for high risk operations', () => {
-      stubGame({ allowWriteOperations: true });
+      stubGame({ accessLevel: 'full' });
       const result = manager.checkWritePermission('deleteData');
       expect(result.allowed).toBe(true);
       expect(result.requiresConfirmation).toBe(true);
@@ -60,21 +61,21 @@ describe('PermissionManager', () => {
     });
 
     it('refuses a quantity above the configured maximum', () => {
-      stubGame({ allowWriteOperations: true, maxActorsPerRequest: 5 });
+      stubGame({ accessLevel: 'full', maxActorsPerRequest: 5 });
       const result = manager.checkWritePermission('createActor', { quantity: 6 });
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('Quantity 6 exceeds maximum allowed 5');
     });
 
     it('allows up to the maximum without confirmation for up to three actors', () => {
-      stubGame({ allowWriteOperations: true, maxActorsPerRequest: 5 });
+      stubGame({ accessLevel: 'full', maxActorsPerRequest: 5 });
       expect(manager.checkWritePermission('createActor', { quantity: 3 })).toEqual({
         allowed: true,
       });
     });
 
     it('asks for confirmation when creating more than three actors', () => {
-      stubGame({ allowWriteOperations: true, maxActorsPerRequest: 10 });
+      stubGame({ accessLevel: 'full', maxActorsPerRequest: 10 });
       const result = manager.checkWritePermission('createActor', { quantity: 4 });
       expect(result.allowed).toBe(true);
       expect(result.requiresConfirmation).toBe(true);
@@ -144,7 +145,7 @@ describe('PermissionManager', () => {
 
   describe('status reports', () => {
     it('lists every operation with its permission status', () => {
-      stubGame({ allowWriteOperations: false });
+      stubGame({ accessLevel: 'readonly' });
       const status = manager.getOperationStatus();
       expect(Object.keys(status).sort()).toEqual([
         'bulkOperations',
@@ -155,24 +156,49 @@ describe('PermissionManager', () => {
         'modifyWorld',
       ]);
       expect(status.createActor?.allowed).toBe(false);
-      expect(status.createActor?.reason).toContain('disabled');
+      expect(status.createActor?.reason).toContain('needs write access');
     });
 
     it('summarises the user, settings and operations', () => {
-      stubGame({ allowWriteOperations: true, maxActorsPerRequest: 10 });
+      stubGame({ accessLevel: 'full', maxActorsPerRequest: 10 });
       const summary = manager.getPermissionSummary();
       expect(summary.user).toEqual({ name: 'Gamemaster', isGM: true });
-      expect(summary.settings).toEqual({ allowWriteOperations: true });
+      expect(summary.settings).toEqual({ accessLevel: 'full', allowExecute: false });
       expect(summary.operations.deleteData).toBe(true);
     });
 
     it('falls back to an unknown user', () => {
-      stubGame({ allowWriteOperations: true }, null);
+      stubGame({ accessLevel: 'full' }, null);
       expect(manager.getPermissionSummary().user).toEqual({ name: 'Unknown', isGM: false });
     });
 
     it('accepts audit calls without side effects', () => {
       expect(() => manager.auditPermissionCheck('createActor', { allowed: true })).not.toThrow();
     });
+  });
+});
+
+describe('access levels', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const manager = new PermissionManager();
+
+  it('lets read & write create but not delete', () => {
+    stubGame({ accessLevel: 'readwrite' });
+    expect(manager.checkWritePermission('createActor').allowed).toBe(true);
+    const refused = manager.checkWritePermission('deleteData');
+    expect(refused.allowed).toBe(false);
+    expect(refused.reason).toContain('Full access');
+  });
+
+  it('lets full access delete', () => {
+    stubGame({ accessLevel: 'full' });
+    expect(manager.checkWritePermission('deleteData').allowed).toBe(true);
+  });
+
+  it('treats a missing or unknown setting as read & write', () => {
+    stubGame({});
+    expect(manager.checkWritePermission('createActor').allowed).toBe(true);
+    stubGame({ accessLevel: 'banana' });
+    expect(manager.checkWritePermission('deleteData').allowed).toBe(false);
   });
 });
