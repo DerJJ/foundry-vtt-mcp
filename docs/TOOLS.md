@@ -13,6 +13,7 @@ Information about the connected Foundry world and what the MCP may do in it.
 | Action | Risk | Game system | Parameters | Does |
 | --- | --- | --- | --- | --- |
 | `info` | read | all | (none) | Get basic information about the Foundry world and system |
+| `permissions` | read | all | identifier, documentType | Show Foundry world permissions by user role. |
 | `capabilities` | read | all | (none) | The game system, the access level, and which gated features are on. Call it first. |
 
 ## `scenes`

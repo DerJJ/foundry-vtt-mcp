@@ -188,4 +188,109 @@ export class OwnershipService {
       return [];
     }
   }
+
+  /**
+   * Get Foundry's world-level role permissions, with optional ownership details
+   * for one world document.
+   */
+  async getPermissions(
+    params: { identifier?: string; documentType?: 'Actor' | 'Scene' | 'JournalEntry' } = {}
+  ): Promise<any> {
+    validateFoundryState();
+
+    const { identifier, documentType } = params;
+    if ((identifier && !documentType) || (!identifier && documentType)) {
+      throw new Error('identifier and documentType must be provided together');
+    }
+
+    // Foundry v13/v14 exposes game.permissions as Record<permissionName, roleId[]>.
+    // Cast at this v9 type-package boundary; the runtime API is the supported source.
+    const gameAny = game as any;
+    const rawPermissions = Object.fromEntries(
+      Object.entries(gameAny.permissions || {}).map(([permission, roles]) => [
+        permission,
+        Array.isArray(roles) ? [...roles] : roles,
+      ])
+    );
+    const userRoles = (CONST as any).USER_ROLES || {};
+    const permissionsByRole: Record<string, string[]> = Object.fromEntries(
+      Object.entries(userRoles)
+        .filter(([, roleId]) => typeof roleId === 'number')
+        .map(([roleName]) => [roleName, []])
+    );
+
+    for (const [permission, roleIds] of Object.entries(rawPermissions)) {
+      if (!Array.isArray(roleIds)) continue;
+      for (const [roleName, roleId] of Object.entries(userRoles)) {
+        if (typeof roleId === 'number' && roleIds.includes(roleId)) {
+          permissionsByRole[roleName].push(permission);
+        }
+      }
+    }
+
+    const result: any = {
+      worldPermissions: {
+        raw: rawPermissions,
+        byRole: permissionsByRole,
+      },
+    };
+
+    if (!identifier || !documentType) return result;
+
+    const document = this.findDocumentByIdentifier(identifier, documentType);
+    if (!document) {
+      throw new Error(`${documentType} not found: ${identifier}`);
+    }
+
+    const ownershipLevels = (CONST as any).DOCUMENT_OWNERSHIP_LEVELS || {};
+    const ownershipNames = Object.fromEntries(
+      Object.entries(ownershipLevels).map(([name, level]) => [level as number, name])
+    ) as Record<number, string>;
+    const ownership = Object.entries((document as any).ownership || {}).map(([userId, level]) => {
+      const user = userId === 'default' ? undefined : game.users?.get(userId);
+      const numericPermission = Number(level);
+      return {
+        userId,
+        userName: user?.name || (userId === 'default' ? 'All Users (default)' : 'Unknown user'),
+        permission: ownershipNames[numericPermission] || String(level),
+        numericPermission,
+      };
+    });
+
+    result.document = {
+      id: document.id,
+      name: document.name,
+      type: documentType,
+      ownership,
+    };
+    return result;
+  }
+
+  /** Resolve only the document types supported by getPermissions. */
+  private findDocumentByIdentifier(
+    identifier: string,
+    documentType: 'Actor' | 'Scene' | 'JournalEntry'
+  ): any {
+    switch (documentType) {
+      case 'Actor':
+        return this.access.characters.findActorByIdentifier(identifier);
+      case 'Scene':
+        return this.access.world.findSceneByIdentifier(identifier);
+      case 'JournalEntry':
+        return this.findJournalEntryByIdentifier(identifier);
+    }
+  }
+
+  /** Find a journal entry by Foundry ID or exact name. */
+  private findJournalEntryByIdentifier(identifier: string): any {
+    const journals = game.journal as any;
+    if (identifier.length === 16) {
+      const journal = journals?.get(identifier);
+      if (journal) return journal;
+    }
+
+    return Array.from(journals || []).find(
+      (journal: any) => journal.name?.toLowerCase() === identifier.toLowerCase()
+    );
+  }
 }

@@ -1,7 +1,7 @@
 [
   {
     "name": "world",
-    "description": "Information about the connected Foundry world and what the MCP may do in it.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- info(): Get basic information about the Foundry world and system\n- capabilities(): The game system, the access level, and which gated features are on. Call it first.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "description": "Information about the connected Foundry world and what the MCP may do in it.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- info(): Get basic information about the Foundry world and system\n- permissions(identifier?, documentType?): Show Foundry world permissions by user role.\n- capabilities(): The game system, the access level, and which gated features are on. Call it first.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {

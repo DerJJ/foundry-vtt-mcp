@@ -12,6 +12,7 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
     purpose: 'Information about the connected Foundry world and what the MCP may do in it.',
     actions: {
       info: { operation: 'get-world-info', risk: 'read' },
+      permissions: { operation: 'get-permissions', risk: 'read' },
       capabilities: {
         risk: 'read',
         summary:

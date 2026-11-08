@@ -12,7 +12,26 @@ export class OwnershipQueries implements QueryGroup {
       getActorOwnership: this.handleGetActorOwnership.bind(this),
       getConnectedPlayers: this.handleGetConnectedPlayers.bind(this),
       findPlayers: this.handleFindPlayers.bind(this),
+      getPermissions: this.handleGetPermissions.bind(this),
     };
+  }
+
+  /** Handle get permissions request: world role permissions and one document's ownership. */
+  async handleGetPermissions(data: any): Promise<any> {
+    try {
+      // SECURITY: Silent GM validation
+      const gmCheck = validateGMAccess();
+      if (!gmCheck.allowed) {
+        return { error: 'Access denied', success: false };
+      }
+
+      validateFoundryState();
+      return await this.dataAccess.ownership.getPermissions(data || {});
+    } catch (error) {
+      throw new Error(
+        `Failed to get permissions: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 
   /**

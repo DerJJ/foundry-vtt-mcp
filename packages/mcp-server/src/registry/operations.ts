@@ -22,6 +22,7 @@ import { DnD5eFeaturesFromCompendiumTools } from '../tools/dnd5e/features.js';
 import { ChatTools } from '../tools/chat.js';
 import { ScriptExecutionTools } from '../tools/script-execution.js';
 import { TableTools } from '../tools/table-tools.js';
+import { PermissionsTools } from '../tools/permissions.js';
 import { SceneBuilderTools } from '../tools/scene-builder.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
 import { DSA5CharacterCreator } from '../systems/dsa5/character-creator.js';
@@ -259,6 +260,12 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: calendarClockTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(calendarClockTools, { 'calendar-clock': 'handleCalendarClock' }),
+  });
+
+  const permissionsTools = new PermissionsTools(base);
+  registry.registerModule({
+    definitions: permissionsTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(permissionsTools, { 'get-permissions': 'handleGetPermissions' }),
   });
 
   return registry;

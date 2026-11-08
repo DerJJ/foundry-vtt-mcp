@@ -49,6 +49,7 @@
   "foundry-mcp-bridge.getJournalPageContent",
   "foundry-mcp-bridge.getPackIndex",
   "foundry-mcp-bridge.getPartyCharacters",
+  "foundry-mcp-bridge.getPermissions",
   "foundry-mcp-bridge.getSystemSchema",
   "foundry-mcp-bridge.getTokenDetails",
   "foundry-mcp-bridge.getWorldInfo",
