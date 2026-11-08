@@ -93,6 +93,8 @@ export class WorldService {
         name: user.name || '',
         active: user.active,
         isGM: user.isGM,
+        viewedScene: (user as any).viewedScene || null,
+        character: (user as any).character?.name || null,
       })),
     };
   }

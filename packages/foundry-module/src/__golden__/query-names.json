@@ -39,6 +39,7 @@
   "foundry-mcp-bridge.getCapabilities",
   "foundry-mcp-bridge.getCharacterEntity",
   "foundry-mcp-bridge.getCharacterInfo",
+  "foundry-mcp-bridge.getChatMessages",
   "foundry-mcp-bridge.getCompendiumDocumentFull",
   "foundry-mcp-bridge.getConnectedPlayers",
   "foundry-mcp-bridge.getEnhancedCreatureIndex",

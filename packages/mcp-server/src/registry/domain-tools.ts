@@ -381,6 +381,7 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
     actions: {
       post: { operation: 'create-chat-message', risk: 'write' },
       'request-rolls': { operation: 'request-player-rolls', risk: 'write' },
+      'get-messages': { operation: 'get-chat-messages', risk: 'read' },
       'post-rich': { operation: 'post-chat', risk: 'write' },
       'gm-roll': { operation: 'gm-roll', risk: 'write' },
       'list-tables': {

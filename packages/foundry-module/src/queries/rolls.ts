@@ -22,6 +22,8 @@ export class RollQueries implements QueryGroup {
     isPublic: boolean;
     rollModifier: string;
     flavor: string;
+    advantageMode?: 'normal' | 'advantage' | 'disadvantage';
+    dc?: number;
   }): Promise<any> {
     try {
       // SECURITY: Silent GM validation

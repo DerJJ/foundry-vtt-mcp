@@ -79,7 +79,7 @@ Items: world items, items on actors, and using an item.
 | `add-to-actor` | write | all | **actorIdentifier**, **items** | Create items directly on an actor. |
 | `remove-from-actor` | delete | all | **actorIdentifier**, itemIds, itemNames, type | Delete items from an actor. |
 | `system-notes` | read | all | (none) | Item types and field values of the active game system. |
-| `use` | write | all | **actorIdentifier**, **itemIdentifier**, targets, consume, spellLevel | Use an item on a character (cast spell, use ability, activate feature, consume item). |
+| `use` | write | all | **actorIdentifier**, **itemIdentifier**, targets, consume, spellLevel, waitMs | Use an item on a character (cast spell, use ability, activate feature, consume item). |
 | `add-wfrp4e` | write | wfrp4e | **actor**, **items** | [WFRP4e only] Add skills, talents, traits, trappings, careers, weapons, spells and other items to an existing actor. |
 
 ## `actors`
@@ -146,7 +146,8 @@ Speak as an actor and ask players to roll.
 | Action | Risk | Game system | Parameters | Does |
 | --- | --- | --- | --- | --- |
 | `post` | write | all | actorIdentifier, tokenId, **content**, language, chatLog, whisperTo | Speak an in-character line as an actor or a specific token: a floating speech bubble over the token (the default), a real chat-log message, or a whisper to named players. |
-| `request-rolls` | write | all | **rollType**, **rollTarget**, **targetPlayer**, **isPublic**, **userConfirmedVisibility**, rollModifier, flavor | Request dice rolls from players with interactive buttons. |
+| `request-rolls` | write | all | **rollType**, **rollTarget**, **targetPlayer**, **isPublic**, **userConfirmedVisibility**, dc, rollModifier, flavor, advantageMode | Request dice rolls from players with interactive buttons. |
+| `get-messages` | read | all | limit, since, beforeId, actor, kinds, rollsOnly, includeText, textLength | Read the Foundry chat log as structured events (GM view, includes whispers), oldest first, so you can tell what happened and who did it. |
 | `post-rich` | write | all | **content**, speaker, whisperTo, style | Post a chat message as the GM. |
 | `gm-roll` | write | all | formula, sceneIdentifier, targets, rollType, key, advantageMode, visibility, flavor | Roll hidden from the players. |
 | `list-tables` | read | all | search | List the roll tables of the world and of compendiums. |

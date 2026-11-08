@@ -29,6 +29,7 @@ export class ItemQueries implements QueryGroup {
       configureDialog?: boolean;
       spellLevel?: number;
       versatile?: boolean;
+      waitMs?: number;
     };
   }): Promise<any> {
     try {

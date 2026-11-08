@@ -2,6 +2,24 @@ import { z } from 'zod';
 import { FoundryClient } from '../foundry-client.js';
 import { Logger } from '../logger.js';
 
+const CHAT_KINDS = [
+  'spell-cast',
+  'item-use',
+  'attack',
+  'damage',
+  'damage-applied',
+  'saving-throw',
+  'skill-check',
+  'perception-check',
+  'ability-check',
+  'initiative',
+  'flat-check',
+  'death-save',
+  'roll',
+  'chat',
+  'other',
+] as const;
+
 interface DiceRollToolsOptions {
   foundryClient: FoundryClient;
   logger: Logger;
@@ -34,7 +52,7 @@ export class DiceRollTools {
             rollTarget: {
               type: 'string',
               description:
-                'Target for the roll - can be ability name (str, dex, con, int, wis, cha), skill name (perception, insight, stealth, etc.), or custom roll formula',
+                'Target for the roll. dnd5e: ability (str, dex, con, int, wis, cha) or skill (perception, insight, stealth, ...). pf2e: skill (acrobatics, stealth, ... or perception), save (fortitude, reflex, will) or initiative; pf2e has no ability checks. custom: a roll formula.',
             },
             targetPlayer: {
               type: 'string',
@@ -51,6 +69,11 @@ export class DiceRollTools {
               description:
                 'REQUIRED: Must be set to true to confirm the roll visibility has been determined. This can happen in two ways: 1) User explicitly specified "public" or "private" in their original request (e.g., "public stealth check"), or 2) You asked the clarifying question and received their answer. Only set this to true when you are confident about the visibility preference, either from their original request or from a direct answer to your question.',
             },
+            dc: {
+              type: 'number',
+              description:
+                'Optional DC for the check. Used on pf2e, where the roll then reports its degree of success in the chat; ignored on dnd5e.',
+            },
             rollModifier: {
               type: 'string',
               description: 'Optional modifier to add to the roll (e.g., "+2", "-1", "+1d4")',
@@ -61,6 +84,14 @@ export class DiceRollTools {
               description: 'Optional flavor text to describe the roll context',
               default: '',
             },
+            // Local patch: preselect advantage/disadvantage in the player's dnd5e roll dialog
+            advantageMode: {
+              type: 'string',
+              enum: ['normal', 'advantage', 'disadvantage'],
+              description:
+                'Advantage mode for skill, save and ability rolls: preselected in the dnd5e roll dialog the player gets (the player can still change it). Default normal.',
+              default: 'normal',
+            },
           },
           required: [
             'rollType',
@@ -69,6 +100,47 @@ export class DiceRollTools {
             'isPublic',
             'userConfirmedVisibility',
           ],
+        },
+      },
+      {
+        name: 'get-chat-messages',
+        description:
+          'Read the Foundry chat log as structured events (GM view, includes whispers), oldest first, so you can tell what happened and who did it. ' +
+          'Every event has a kind (spell-cast, item-use, attack, damage, damage-applied, saving-throw, skill-check, perception-check, ability-check, initiative, flat-check, death-save, roll, chat, other), ' +
+          'a one-line summary, who (user, actor), the item or spell involved (name, type, level), targets, DC, outcome (success/failure/critical) and the dice. ' +
+          'Works for dnd5e and pf2e. Filter by actor, kinds or since; page backwards with beforeId (use oldestId from the previous result). ' +
+          'Text is included for plain chat and applied damage; set includeText=all to add the description of item and spell cards.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Number of most recent matching events (1-100, default 20)',
+              minimum: 1,
+              maximum: 100,
+            },
+            since: { type: 'string', description: 'Only events after this ISO timestamp' },
+            beforeId: {
+              type: 'string',
+              description: 'Only events older than this message id (paging)',
+            },
+            actor: { type: 'string', description: 'Actor name (substring) or id of the speaker' },
+            kinds: {
+              type: 'array',
+              items: { type: 'string', enum: CHAT_KINDS },
+              description: 'Only these kinds of event',
+            },
+            rollsOnly: { type: 'boolean', description: 'Only messages that contain dice rolls' },
+            includeText: {
+              type: 'string',
+              enum: ['auto', 'all', 'none'],
+              description: 'auto (default), all, none',
+            },
+            textLength: {
+              type: 'number',
+              description: 'Max characters of text per event (default 300)',
+            },
+          },
         },
       },
     ];
@@ -83,6 +155,8 @@ export class DiceRollTools {
       userConfirmedVisibility: z.literal(true),
       rollModifier: z.string().default(''),
       flavor: z.string().default(''),
+      advantageMode: z.enum(['normal', 'advantage', 'disadvantage']).default('normal'),
+      dc: z.number().optional(),
     });
 
     try {
@@ -120,5 +194,24 @@ export class DiceRollTools {
       }
       throw error;
     }
+  }
+
+  async handleGetChatMessages(args: any) {
+    const schema = z.object({
+      limit: z.number().min(1).max(100).optional(),
+      since: z.string().optional(),
+      beforeId: z.string().optional(),
+      actor: z.string().optional(),
+      kinds: z.array(z.enum(CHAT_KINDS)).optional(),
+      rollsOnly: z.boolean().optional(),
+      includeText: z.enum(['auto', 'all', 'none']).optional(),
+      textLength: z.number().min(0).max(5000).optional(),
+    });
+    const params = schema.parse(args ?? {});
+    const response = await this.foundryClient.query('foundry-mcp-bridge.getChatMessages', params);
+    if (response?.success === false) {
+      throw new Error(response.error || 'Failed to get chat messages');
+    }
+    return response;
   }
 }

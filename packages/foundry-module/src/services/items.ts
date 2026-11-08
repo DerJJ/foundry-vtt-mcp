@@ -1,6 +1,11 @@
 import type { ItemTargetingResult } from './types.js';
 import { sanitizeData, validateFoundryState, auditLog } from './support.js';
 import type { FoundryDataAccess } from '../data-access.js';
+import {
+  describeMessage as describeChatMessage,
+  liveChatEnv,
+  startCollectingMessages,
+} from './chat-log.js';
 
 export class ItemService {
   constructor(private readonly access: FoundryDataAccess) {}
@@ -634,11 +639,13 @@ export class ItemService {
           skipDialog?: boolean | undefined; // Skip confirmation dialogs (default: true for MCP)
           spellLevel?: number | undefined; // For spells: cast at higher level
           versatile?: boolean | undefined; // For versatile weapons: use versatile damage
+          waitMs?: number | undefined; // How long to wait for the chat messages the action creates
         }
       | undefined;
   }): Promise<{
     success: boolean;
     status?: string;
+    chatMessages?: any[];
     message: string;
     itemName?: string;
     actorName?: string;
@@ -650,11 +657,41 @@ export class ItemService {
     validateFoundryState();
 
     const { actorIdentifier, itemIdentifier, targets, options = {} } = params;
+    const systemId = (game.system as any).id;
 
     // Find the actor
-    const actor = this.access.characters.findActorByIdentifier(actorIdentifier);
+    let actor = this.access.characters.findActorByIdentifier(actorIdentifier);
     if (!actor) {
       throw new Error(`Actor not found: ${actorIdentifier}`);
+    }
+
+    // For PF2e, we need to use a token's actor for strikes to work properly
+    // The world actor doesn't have the right context for rolling
+    if (systemId === 'pf2e') {
+      const scene = (game.scenes as any)?.active;
+      if (scene) {
+        // Find a live (non-defeated) token for this actor on the scene
+        const token = scene.tokens.find((t: any) => {
+          if (t.actorId !== actor.id && t.actor?.id !== actor.id) return false;
+          // Skip defeated/dead tokens
+          const tokenActor = t.actor;
+          if (!tokenActor) return false;
+          const isDead =
+            tokenActor.hasCondition?.('dead') || tokenActor.system?.attributes?.hp?.value <= 0;
+          return !isDead;
+        });
+
+        if (token?.actor) {
+          console.log(
+            `[foundry-mcp-bridge] PF2e: Using token actor for "${actor.name}" (token: ${token.name})`
+          );
+          actor = token.actor;
+        } else {
+          console.warn(
+            `[foundry-mcp-bridge] PF2e: No live token found for "${actor.name}", using world actor`
+          );
+        }
+      }
     }
 
     // Find the item on the actor
@@ -667,18 +704,43 @@ export class ItemService {
     }
 
     const itemAny = item;
-    const systemId = (game.system as any).id;
 
     const { targeting, warnings } = await this.applyItemTargets(actor, targets);
     const resolvedTargetNames = targeting.applied.map(target => target.tokenName);
+
+    // Listen for the chat messages this action creates, so the result can say what happened.
+    const waitMs = Math.min(Math.max(Number(options.waitMs ?? 3000), 0), 20000);
+    const collector = startCollectingMessages(m => m.speaker?.actor === actor.id);
+    let useError: string | undefined;
 
     try {
       // For items that may show dialogs (spells with choices, etc.),
       // we fire-and-forget to avoid timeout issues. The GM will interact
       // with the dialog in Foundry, and the result appears in chat.
 
-      // Check if item has a use() method (common in D&D 5e, PF2e)
-      if (typeof itemAny.use === 'function') {
+      const pf2eEntry = systemId === 'pf2e' && item.type === 'spell' ? itemAny.spellcasting : null;
+      if (pf2eEntry && typeof pf2eEntry.cast === 'function') {
+        // PF2e: cast through the spellcasting entry so the slot, focus point or charge is spent.
+        // A prepared spell needs the index of the slot it was prepared in.
+        const rank = options.spellLevel ?? itemAny.rank ?? itemAny.system?.level?.value ?? 1;
+        const castOptions: Record<string, any> = {
+          rank,
+          consume: options.consume ?? true,
+          message: true,
+        };
+        if (pf2eEntry.system?.prepared?.value === 'prepared') {
+          const prepared = pf2eEntry.system?.slots?.['slot' + rank]?.prepared ?? {};
+          const slotId = Object.entries<any>(prepared).find(
+            ([, p]) => p?.id === item.id && !p.expended
+          )?.[0];
+          if (slotId !== undefined) castOptions.slotId = Number(slotId);
+        }
+        pf2eEntry.cast(itemAny, castOptions).catch((err: Error) => {
+          useError = err.message;
+          console.error(`[foundry-mcp-bridge] Error casting ${item.name}:`, err);
+        });
+      } else if (typeof itemAny.use === 'function') {
+        // Check if item has a use() method (common in D&D 5e, PF2e)
         // D&D 5e and similar systems
         // Only pass options that D&D 5e's item.use() expects
         const useOptions: Record<string, any> = {
@@ -775,6 +837,11 @@ export class ItemService {
         'success'
       );
 
+      const created = await collector.finish(waitMs);
+      const chatMessages = created.map(m =>
+        describeChatMessage(m, liveChatEnv(), { includeText: 'all', textLength: 500 })
+      );
+
       const targetInfo =
         resolvedTargetNames.length > 0 ? ` targeting ${resolvedTargetNames.join(', ')}` : '';
       const targetingWarningInfo =
@@ -787,13 +854,17 @@ export class ItemService {
         itemName?: string;
         actorName?: string;
         targets?: string[];
+        chatMessages?: any[];
         targeting: ItemTargetingResult;
         warnings?: string[];
         requiresGMInteraction?: boolean;
       } = {
         success: true,
         status: 'initiated',
-        message: `Item use initiated for ${actor.name} using ${item.name}${targetInfo}.${targetingWarningInfo} If a dialog appeared in Foundry VTT, the GM should select options and confirm. The result will appear in chat.`,
+        message:
+          chatMessages.length > 0
+            ? `${actor.name} used ${item.name}${targetInfo}.${targetingWarningInfo} ${chatMessages.length} chat message(s) were created, see chatMessages.`
+            : `Item use initiated for ${actor.name} using ${item.name}${targetInfo}.${targetingWarningInfo} No chat message appeared within ${waitMs} ms, so a dialog is probably open in Foundry VTT: the GM should select options and confirm. Read the result afterwards with get-chat-messages.`,
         itemName: item.name,
         actorName: actor.name,
         targeting,
@@ -803,12 +874,17 @@ export class ItemService {
       if (resolvedTargetNames.length > 0) {
         result.targets = resolvedTargetNames;
       }
-      if (warnings.length > 0) {
-        result.warnings = warnings;
+      if (chatMessages.length > 0) {
+        result.chatMessages = chatMessages;
+      }
+      const allWarnings = useError ? [...warnings, `Casting failed: ${useError}`] : warnings;
+      if (allWarnings.length > 0) {
+        result.warnings = allWarnings;
       }
 
       return result;
     } catch (error) {
+      collector.stop();
       auditLog(
         'useItem',
         {

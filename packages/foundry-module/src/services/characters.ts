@@ -101,6 +101,28 @@ export class CharacterService {
       name: actor.name || '',
       type: actor.type,
       ...(actor.img ? { img: actor.img } : {}),
+      ...(() => {
+        const pt: any =
+          (actor as any).prototypeToken?.toObject?.() ?? (actor as any).prototypeToken;
+        if (!pt) return {};
+        return {
+          prototypeToken: {
+            name: pt.name,
+            width: pt.width,
+            height: pt.height,
+            alpha: pt.alpha,
+            texture: pt.texture
+              ? {
+                  src: pt.texture.src,
+                  tint: pt.texture.tint,
+                  scaleX: pt.texture.scaleX,
+                  scaleY: pt.texture.scaleY,
+                }
+              : undefined,
+            ring: pt.ring,
+          },
+        };
+      })(),
       system: sanitizeData((actor as any).system),
       items: actor.items.map(item => {
         const itemData = item.toObject() as Record<string, any>;
@@ -618,8 +640,20 @@ export class CharacterService {
           tradition: entryData?.tradition?.value || entryData?.tradition || undefined,
           type: entryData?.prepared?.value || entryData?.prepared || 'prepared',
           ability: entryData?.ability?.value || entryData?.ability || undefined,
-          dc: entryData?.spelldc?.dc || entryData?.dc?.value || undefined,
-          attack: entryData?.spelldc?.value || entryData?.attack?.value || undefined,
+          // Current PF2e computes these on the entry's Statistic (statistic.dc.value is the
+          // spell save DC, statistic.check.mod the spell attack modifier). Older versions
+          // stored them in system.spelldc, so keep that as a fallback.
+          dc:
+            entry.statistic?.dc?.value ??
+            entryData?.spelldc?.dc ??
+            entryData?.dc?.value ??
+            undefined,
+          attack:
+            entry.statistic?.check?.mod ??
+            entry.attack?.mod ??
+            entryData?.spelldc?.value ??
+            entryData?.attack?.value ??
+            undefined,
           slots: extractPF2eSpellSlots(entryData),
           spells: entrySpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });
@@ -707,6 +741,9 @@ export class CharacterService {
             name: `${className} Spellcasting`,
             type: classSystem?.spellcasting?.type || 'prepared',
             ability: classSystem?.spellcasting?.ability || undefined,
+            // dnd5e keeps one spell save DC / spell attack per actor, not per class
+            dc: actorAny.system?.attributes?.spell?.dc ?? undefined,
+            attack: actorAny.system?.attributes?.spell?.attack ?? undefined,
             slots: extractDnD5eSpellSlots(spellSlots),
             spells: classSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
           });
@@ -735,6 +772,8 @@ export class CharacterService {
           id: 'spellcasting',
           name: 'Spellcasting',
           type: 'prepared',
+          dc: actorAny.system?.attributes?.spell?.dc ?? undefined,
+          attack: actorAny.system?.attributes?.spell?.attack ?? undefined,
           slots: extractDnD5eSpellSlots(spellSlots),
           spells: allSpells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
         });
@@ -1050,6 +1089,9 @@ export class CharacterService {
             description: itemSystem.description?.value || itemSystem.description || '',
             system: itemSystem,
             effects: itemData.effects ?? [],
+            ...(itemData.flags?.autoanimations
+              ? { flags: { autoanimations: itemData.flags.autoanimations } }
+              : {}),
           },
         };
       }

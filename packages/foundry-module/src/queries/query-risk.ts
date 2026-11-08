@@ -12,6 +12,7 @@ type RiskOf = Risk | ((data: any) => Risk);
 const read: string[] = [
   'ping',
   'getCapabilities',
+  'getChatMessages',
   'findActor',
   'findPlayers',
   'get-available-conditions',

@@ -1,5 +1,6 @@
 import { validateFoundryState } from '../services/support.js';
 import type { FoundryDataAccess } from '../data-access.js';
+import { getChatLog } from '../services/chat-log.js';
 import { validateGMAccess } from './gm-access.js';
 import type { QueryGroup, QueryHandler } from './query-registry.js';
 
@@ -9,6 +10,7 @@ export class ChatQueries implements QueryGroup {
   routes(): Record<string, QueryHandler> {
     return {
       createChatMessage: this.handleCreateChatMessage.bind(this),
+      getChatMessages: getChatLog,
     };
   }
 

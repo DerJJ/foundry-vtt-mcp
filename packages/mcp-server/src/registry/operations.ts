@@ -158,7 +158,10 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   const diceRollTools = new DiceRollTools(base);
   registry.registerModule({
     definitions: diceRollTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(diceRollTools, { 'request-player-rolls': 'handleRequestPlayerRolls' }),
+    handlers: bindMethods(diceRollTools, {
+      'request-player-rolls': 'handleRequestPlayerRolls',
+      'get-chat-messages': 'handleGetChatMessages',
+    }),
   });
 
   const campaignManagementTools = new CampaignManagementTools(foundryClient, logger);
