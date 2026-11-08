@@ -1,3 +1,4 @@
+import { withLegacyMethods } from './legacy-data-access.js';
 import { MODULE_ID } from './constants.js';
 import { SocketBridge } from './socket-bridge.js';
 import { QueryHandlers } from './queries.js';
@@ -51,7 +52,9 @@ class FoundryMCPBridge {
       this.campaignHooks.register();
 
       // Expose data access globally for settings UI
-      (window as any).foundryMCPBridge.dataAccess = this.queryHandlers.dataAccess;
+      (window as any).foundryMCPBridge.dataAccess = withLegacyMethods(
+        this.queryHandlers.dataAccess
+      );
 
       this.isInitialized = true;
       console.log(`[${MODULE_ID}] Module initialized successfully`);

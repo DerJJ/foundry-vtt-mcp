@@ -95,4 +95,4 @@ systems/<id>/              system-specific code: dnd5e and wfrp4e actor services
 ## Conventions
 
 - Tests stub Foundry globals with `vi.stubGlobal`. Code that builds the data access needs a `Hooks` stand-in first; `test-support/create-data-access.ts` does that.
-- Service and query-group files were extracted from two very large classes without changing their bodies. Style findings in them predate the restructure; new code follows the lint rules.
+- Service and query-group files were extracted from two very large classes without changing their bodies. Style findings in them predate the restructure; new code follows the lint rules: the pre-commit hook fails on lint errors in files that are being added (`scripts/lint-new-files.mjs`), and leaves existing files alone.
