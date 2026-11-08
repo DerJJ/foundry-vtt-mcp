@@ -1,3 +1,4 @@
+import { clearSystemCacheOnReconnect } from './utils/system-detection.js';
 import * as os from 'os';
 import * as path from 'path';
 import { config } from './config.js';
@@ -39,6 +40,8 @@ async function startBackend(): Promise<void> {
   // Initialize Foundry client and tools
 
   const foundryClient = new FoundryClient(config.foundry, logger);
+  // A world has one game system; a new connection may be a different world.
+  clearSystemCacheOnReconnect(foundryClient);
 
   // Initialize system registry and register adapters
   const { getSystemRegistry } = await import('./systems/index.js');

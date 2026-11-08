@@ -18,6 +18,7 @@ const ConfigSchema = z.object({
     connectionTimeout: z.number().min(1000).max(60000).default(10000),
     connectionType: z.enum(['websocket', 'webrtc', 'auto']).default('auto'),
     protocol: z.enum(['ws', 'wss']).default('ws'), // Legacy, used only for WebSocket mode
+    webrtcSignalingPort: z.number().min(1024).max(65535).default(31416),
     remoteMode: z.boolean().default(false),
     dataPath: z.string().optional(), // Custom path for generated maps (remote mode)
     rejectUnauthorized: z.boolean().default(true), // TLS certificate validation
@@ -71,6 +72,7 @@ const rawConfig = {
       | 'webrtc'
       | 'auto',
     protocol: (process.env.FOUNDRY_PROTOCOL || 'ws') as 'ws' | 'wss',
+    webrtcSignalingPort: parseInt(process.env.FOUNDRY_WEBRTC_SIGNALING_PORT || '31416', 10),
     remoteMode: process.env.FOUNDRY_REMOTE_MODE === 'true',
     dataPath: process.env.FOUNDRY_DATA_PATH,
     rejectUnauthorized: process.env.FOUNDRY_REJECT_UNAUTHORIZED !== 'false',

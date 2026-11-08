@@ -103,6 +103,11 @@ export class FoundryClient {
     this.connector.broadcastMessage(message);
   }
 
+  /** Calls the listener whenever the bridge connects or disconnects. Returns an unsubscribe. */
+  onConnectionChange(listener: () => void): () => void {
+    return this.connector.onConnectionChange(listener);
+  }
+
   isConnected(): boolean {
     return this.connector.isConnected();
   }

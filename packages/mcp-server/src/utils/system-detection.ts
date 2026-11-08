@@ -88,6 +88,17 @@ export function clearSystemCache(): void {
 }
 
 /**
+ * Forgets the detected system whenever the bridge connects or disconnects. A world has one
+ * game system for as long as it is loaded, and switching worlds reloads the page, so the
+ * bridge reconnects. Returns an unsubscribe.
+ */
+export function clearSystemCacheOnReconnect(client: {
+  onConnectionChange(listener: () => void): () => void;
+}): () => void {
+  return client.onConnectionChange(clearSystemCache);
+}
+
+/**
  * System-specific data paths for creature/actor stats
  */
 export const SystemPaths = {

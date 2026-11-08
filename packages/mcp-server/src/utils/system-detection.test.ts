@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearSystemCache,
+  clearSystemCacheOnReconnect,
   detectGameSystem,
   extractSystemValue,
   formatSystemError,
@@ -159,5 +160,30 @@ describe('formatSystemError', () => {
 
   it('has a generic message for supported systems', () => {
     expect(formatSystemError('dnd5e', 'dnd5e')).toBe('Unknown system error');
+  });
+});
+
+describe('system cache across world switches', () => {
+  it('is cleared when the bridge connects or disconnects', async () => {
+    let notify: () => void = () => undefined;
+    const unsubscribe = vi.fn();
+    const events = {
+      onConnectionChange: (listener: () => void) => {
+        notify = listener;
+        return unsubscribe;
+      },
+    };
+    const world = { current: 'pf2e' };
+    const client: any = { query: vi.fn(async () => ({ system: { id: world.current } })) };
+
+    clearSystemCacheOnReconnect(events);
+    expect(await detectGameSystem(client)).toBe('pf2e');
+
+    world.current = 'dnd5e';
+    expect(await detectGameSystem(client)).toBe('pf2e'); // same connection, still cached
+
+    notify(); // the bridge reconnected, as it does after a world switch
+    expect(await detectGameSystem(client)).toBe('dnd5e');
+    expect(getCachedSystemId()).toBe('dnd5e');
   });
 });

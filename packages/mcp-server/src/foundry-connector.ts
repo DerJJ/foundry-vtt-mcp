@@ -22,6 +22,7 @@ export class FoundryConnector {
   private logger: Logger;
   private config: Config['foundry'];
   private isStarted = false;
+  private readonly connectionListeners = new Set<() => void>();
   private foundrySocket: WebSocket | null = null;
   private webrtcPeer: WebRTCPeer | null = null;
   private activeConnectionType: 'websocket' | 'webrtc' | null = null;
@@ -51,8 +52,8 @@ export class FoundryConnector {
       res.end();
     });
 
-    // Create SEPARATE HTTP server for WebRTC signaling (port 31416)
-    const WEBRTC_PORT = 31416;
+    // Create SEPARATE HTTP server for WebRTC signaling (default port 31416)
+    const WEBRTC_PORT = this.config.webrtcSignalingPort;
     this.webrtcSignalingServer = createServer(async (req, res) => {
       // Set CORS headers for all requests
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -123,6 +124,7 @@ export class FoundryConnector {
         this.foundrySocket = ws;
         this.activeConnectionType = 'websocket';
         this.logger.info('Foundry module registered via WebSocket');
+        this.notifyConnectionChange();
       }
 
       ws.on('close', () => {
@@ -130,6 +132,7 @@ export class FoundryConnector {
         if (this.activeConnectionType === 'websocket' && this.foundrySocket === ws) {
           this.foundrySocket = null;
           this.activeConnectionType = null;
+          this.notifyConnectionChange();
           // Reject all pending queries
           this.pendingQueries.forEach(({ reject, timeout }) => {
             clearTimeout(timeout);
@@ -206,6 +209,13 @@ export class FoundryConnector {
         });
       });
       this.httpServer = null;
+    }
+
+    if (this.webrtcSignalingServer) {
+      await new Promise<void>(resolve => {
+        this.webrtcSignalingServer.close(() => resolve());
+      });
+      this.webrtcSignalingServer = null;
     }
 
     this.isStarted = false;
@@ -285,6 +295,7 @@ export class FoundryConnector {
 
       this.activeConnectionType = 'webrtc';
       this.logger.info('WebRTC connection established');
+      this.notifyConnectionChange();
 
       // Close signaling WebSocket after handshake
       setTimeout(() => {
@@ -341,6 +352,7 @@ export class FoundryConnector {
 
       this.activeConnectionType = 'webrtc';
       this.logger.info('WebRTC connection established via HTTP signaling');
+      this.notifyConnectionChange();
 
       // Send answer back via HTTP response
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -405,6 +417,25 @@ export class FoundryConnector {
       this.foundrySocket.send(JSON.stringify(message));
     } else {
       throw new Error('Not connected to Foundry VTT module');
+    }
+  }
+
+  /**
+   * Calls the listener whenever the bridge connects or disconnects. A world switch reloads
+   * the page, so the bridge reconnects, which makes this the signal that the world may differ.
+   */
+  onConnectionChange(listener: () => void): () => void {
+    this.connectionListeners.add(listener);
+    return () => this.connectionListeners.delete(listener);
+  }
+
+  private notifyConnectionChange(): void {
+    for (const listener of this.connectionListeners) {
+      try {
+        listener();
+      } catch (error) {
+        this.logger.error('Connection listener failed', error);
+      }
     }
   }
 
