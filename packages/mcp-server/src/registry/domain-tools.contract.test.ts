@@ -16,7 +16,7 @@ const actions = DOMAIN_TOOLS.flatMap(tool =>
 );
 
 /** What clients pay for in every session: all descriptions and schemas. A ceiling, not a goal. */
-const SURFACE_BUDGET_CHARS = 16_000;
+const SURFACE_BUDGET_CHARS = 24_000;
 
 describe('domain tool specs', () => {
   it('give every tool and every action in it a different name', () => {
@@ -66,7 +66,7 @@ describe('domain tool specs', () => {
 
   it('marks every action that deletes, and only those, with the delete risk', () => {
     for (const { tool, name, spec } of actions) {
-      const deletes = /^delete|^remove-from|-delete$/.test(name);
+      const deletes = /^delete|^remove-from|-delete$|^end$|^reset-fog$/.test(name);
       expect(spec.risk === 'delete', `${tool}.${name}`).toBe(deletes);
     }
   });

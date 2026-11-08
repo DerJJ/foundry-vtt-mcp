@@ -100,6 +100,16 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   ...Object.fromEntries(write.map(name => [name, 'write' as Risk])),
   ...Object.fromEntries(destructive.map(name => [name, 'delete' as Risk])),
   manageEffects: (data: any): Risk => (data?.action === 'delete' ? 'delete' : 'write'),
+  combatControl: (data: any): Risk =>
+    data?.action === 'status' ? 'read' : data?.action === 'end' ? 'delete' : 'write',
+  applyDamage: 'write' as Risk,
+  partyStatus: 'read' as Risk,
+  gmRoll: 'write' as Risk,
+  rollTable: (data: any): Risk => (data?.action === 'list' ? 'read' : 'write'),
+  postChat: 'write' as Risk,
+  sceneView: (data: any): Risk =>
+    data?.action === 'list-weather' ? 'read' : data?.action === 'reset-fog' ? 'delete' : 'write',
+  creatureCard: 'read' as Risk,
   executeScript: 'execute' as Risk,
   manageMacros: (data: any): Risk =>
     data?.action === 'execute'

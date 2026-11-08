@@ -25,6 +25,11 @@ Scenes: look at the current one, list them, switch, and set scene music.
 | `list` | read | all | filter, include_active_only | List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSound) for each scene |
 | `activate` | write | all | **scene_identifier**, optimize_view | Switch to a different Foundry VTT scene by name or ID |
 | `set-music` | write | all | **scene_identifier**, playlist, playlist_sound | Set or clear the music binding of a scene. |
+| `ping` | write | all | sceneIdentifier, target, x, y | Ping a token or a point on the scene the GM browser is showing. |
+| `pull-players` | write | all | sceneIdentifier, target, x, y | Ping and pull every player view to a token or point. |
+| `reset-fog` | delete | all | sceneIdentifier | Reset the fog of war of a scene. |
+| `set-weather` | write | all | sceneIdentifier, **weather** | Set the weather effect of a scene (an empty string clears it). |
+| `list-weather` | read | all | (none) | List the available weather effects. |
 
 ## `playlists`
 
@@ -98,6 +103,8 @@ Actors (characters, NPCs, monsters): read, search, create, change, delete, place
 | `set-ownership` | write | all | **actorIdentifier**, **playerIdentifier**, **permissionLevel**, confirmBulkOperation | Assign ownership permissions for actors to players. |
 | `remove-ownership` | write | all | **actorIdentifier**, **playerIdentifier**, confirmRemoval | Remove ownership permissions (set to NONE) for specific actors and players. |
 | `list-ownership` | read | all | actorIdentifier, playerIdentifier | List current ownership permissions for actors, showing which players have what access levels. |
+| `party-status` | read | all | includeFeatures | Compact live status of all player characters in one call (dnd5e or pf2e). |
+| `creature-card` | read | all | target, actor, sceneIdentifier | Compact stat block with derived values for a token on the scene (target) or a world actor (actor: name, id or uuid): CR, HP, AC, initiative, speed, abilities, proficient saves and skills, senses, resistances/immunities, legendary actions, and actions with activation, to-hit, save DC, damage, uses or recharge. |
 | `create-npc` | write | dnd5e | **name**, **creatureType**, creatureSubtype, **size**, alignment, **cr**, **hpAverage**, **hpFormula**, **acMode**, acValue, **abilities**, savingThrows, walkSpeed, flySpeed, swimSpeed, climbSpeed, burrowSpeed, hover, darkvision, blindsight, tremorsense, truesight, specialSenses, skills, damageImmunities, damageResistances, damageVulnerabilities, conditionImmunities, languages, languagesCustom, biography, sourceBook, sourcePage, sourceRules | [D&D 5e only] Create a new NPC actor from scratch with a full Level-2 stat block: identity (name, type, size, alignment, CR), ability scores, saving throw proficiencies, HP (average + formula), AC (default or flat), movement speeds, senses, skill proficiencies, damage immunities/resistances/vulnerabilities, condition immunities, languages, and biography. |
 | `add-feature` | write | dnd5e | **featureType**, **actorIdentifier**, featureName, description, activationType, uses, damageParts, saveAbility, saveDC, halfOnSave, saveDamageParts, saveOnSave, areaType, areaSize, areaUnits, affectsType, attackType, weaponClass, abilityModifier, attackBonus, proficient, equipped, reachFt, rangeFt, longRangeFt, properties, spellcastingClass, spellcastingLevel, spellcastingAbility, spellNames, compendiumPacks, sourceRules, sourceBook, sourcePage | [D&D 5e only] Add a feature, attack, spellcasting setup, or spells to an existing actor. |
 | `add-features-from-compendium` | write | dnd5e | **actorIdentifier**, **featureNames**, compendiumPacks | [D&D 5e only] Import class features and monster features from an official compendium pack onto an actor (NPC or PC). |
@@ -140,6 +147,30 @@ Speak as an actor and ask players to roll.
 | --- | --- | --- | --- | --- |
 | `post` | write | all | actorIdentifier, tokenId, **content**, language, chatLog, whisperTo | Speak an in-character line as an actor or a specific token: a floating speech bubble over the token (the default), a real chat-log message, or a whisper to named players. |
 | `request-rolls` | write | all | **rollType**, **rollTarget**, **targetPlayer**, **isPublic**, **userConfirmedVisibility**, rollModifier, flavor | Request dice rolls from players with interactive buttons. |
+| `post-rich` | write | all | **content**, speaker, whisperTo, style | Post a chat message as the GM. |
+| `gm-roll` | write | all | formula, sceneIdentifier, targets, rollType, key, advantageMode, visibility, flavor | Roll hidden from the players. |
+| `list-tables` | read | all | search | List the roll tables of the world and of compendiums. |
+| `roll-table` | write | all | **table**, visibility | Draw from a roll table. |
+
+## `combat`
+
+The combat tracker of a scene: read it, run it, and apply damage or healing.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `status` | read | all | sceneIdentifier | Round, turn and combatants with initiative, HP, AC and state. |
+| `add` | write | all | targets, include, sceneIdentifier | Put tokens into the combat; creates the combat if there is none. |
+| `remove` | write | all | **targets**, sceneIdentifier | Take tokens out of the combat. |
+| `roll-initiative` | write | all | who, targets, sceneIdentifier | Roll initiative as a GM roll. |
+| `set-initiative` | write | all | **targets**, **initiative**, sceneIdentifier | Set the initiative of tokens. |
+| `begin` | write | all | sceneIdentifier | Start round 1. |
+| `next-turn` | write | all | sceneIdentifier | Advance to the next turn. |
+| `previous-turn` | write | all | sceneIdentifier | Go back one turn. |
+| `next-round` | write | all | sceneIdentifier | Advance to the next round. |
+| `previous-round` | write | all | sceneIdentifier | Go back one round. |
+| `defeated` | write | all | **targets**, defeated, sceneIdentifier | Mark tokens defeated (defeated=false undoes it). |
+| `end` | delete | all | sceneIdentifier | End the combat by deleting it. |
+| `apply-damage` | write | all | sceneIdentifier, **targets**, **amount**, type, multiplier, allMatches | Apply damage or healing to tokens (dnd5e or pf2e). |
 
 ## `macros`
 

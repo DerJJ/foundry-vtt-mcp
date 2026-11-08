@@ -21,6 +21,7 @@ import { DnD5eNpcTools } from '../tools/dnd5e/npc.js';
 import { DnD5eFeaturesFromCompendiumTools } from '../tools/dnd5e/features.js';
 import { ChatTools } from '../tools/chat.js';
 import { ScriptExecutionTools } from '../tools/script-execution.js';
+import { TableTools } from '../tools/table-tools.js';
 import { DSA5CharacterCreator } from '../systems/dsa5/character-creator.js';
 import { DSA5JsonActorImporter } from '../systems/dsa5/json-actor-importer.js';
 import { bindMethods, ToolRegistry, type ToolDefinition } from './tool-registry.js';
@@ -233,6 +234,14 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
       'execute-script': 'handleExecuteScript',
       'manage-macros': 'handleManageMacros',
     }),
+  });
+
+  const tableTools = new TableTools(base);
+  registry.registerModule({
+    definitions: tableTools.getToolDefinitions() as ToolDefinition[],
+    handlers: Object.fromEntries(
+      TableTools.toolNames.map(name => [name, (args: unknown) => tableTools.handle(name, args)])
+    ),
   });
 
   return registry;
