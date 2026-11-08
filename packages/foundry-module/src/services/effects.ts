@@ -74,7 +74,14 @@ export class EffectService {
       const created = await parent.createEmbeddedDocuments('ActiveEffect', [data.effectData]);
       const effect = created?.[0];
       if (!effect) {
-        throw new Error('Foundry failed to create the ActiveEffect');
+        const systemId = String(game.system?.id ?? 'unknown');
+        throw new Error(
+          systemId === 'pf2e'
+            ? 'Foundry created no ActiveEffect: pf2e models effects as effect items, not ActiveEffects. ' +
+              'Add an item of type "effect" to the actor instead (items, action add-to-actor).'
+            : `Foundry created no ActiveEffect on this ${data.parentType} (game system: ${systemId}). ` +
+              'The system may not use ActiveEffects here.'
+        );
       }
 
       return {
