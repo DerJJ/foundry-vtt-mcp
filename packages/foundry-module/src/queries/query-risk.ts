@@ -100,6 +100,15 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   ...Object.fromEntries(write.map(name => [name, 'write' as Risk])),
   ...Object.fromEntries(destructive.map(name => [name, 'delete' as Risk])),
   manageEffects: (data: any): Risk => (data?.action === 'delete' ? 'delete' : 'write'),
+  executeScript: 'execute' as Risk,
+  manageMacros: (data: any): Risk =>
+    data?.action === 'execute'
+      ? 'execute'
+      : data?.action === 'delete'
+        ? 'delete'
+        : data?.action === 'list' || data?.action === 'get'
+          ? 'read'
+          : 'write',
   'manage-playlists': (data: any): Risk =>
     data?.action === 'delete' ? 'delete' : data?.action === 'describe' ? 'read' : 'write',
 };

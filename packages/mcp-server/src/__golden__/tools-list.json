@@ -190,6 +190,25 @@
     }
   },
   {
+    "name": "macros",
+    "description": "Foundry macros and scripts. Running code is off unless a GM switches on \"Allow script and macro execution\" in the module settings; every run is whispered to the GM as a chat card.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- list(search?): List macros, optionally filtered by name.\n- get(macro*): Read one macro with its source.\n- create(name*, command?, type?, img?, folder?): Create a macro.\n- update(macro*, name?, command?, img?, folder?): Change a macro.\n- delete(macro*) (delete): Delete a macro.\n- execute(macro*, args?, timeoutMs?) (execute): Run a macro in the GM browser; returns its result, logs and errors.\n- run-script(code*, args?, timeoutMs?) (execute): Execute JavaScript (an async function body) in the GM browser with the Foundry API (game, canvas, CONFIG, fou…\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
     "name": "image-generation",
     "description": "Generate images such as maps with ComfyUI. Off unless a GM switches it on in the module settings.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- generate(prompt*, scene_name*, size?, grid_size?): Start AI map generation using D&D Battlemaps SDXL (async)\n- status(job_id*): Check status of map generation job.\n- cancel(job_id*): Cancel a running map generation job\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {

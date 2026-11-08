@@ -141,6 +141,20 @@ Speak as an actor and ask players to roll.
 | `post` | write | all | actorIdentifier, tokenId, **content**, language, chatLog, whisperTo | Speak an in-character line as an actor or a specific token: a floating speech bubble over the token (the default), a real chat-log message, or a whisper to named players. |
 | `request-rolls` | write | all | **rollType**, **rollTarget**, **targetPlayer**, **isPublic**, **userConfirmedVisibility**, rollModifier, flavor | Request dice rolls from players with interactive buttons. |
 
+## `macros`
+
+Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `list` | read | all | search | List macros, optionally filtered by name. |
+| `get` | read | all | **macro** | Read one macro with its source. |
+| `create` | write | all | **name**, command, type, img, folder | Create a macro. |
+| `update` | write | all | **macro**, name, command, img, folder | Change a macro. |
+| `delete` | delete | all | **macro** | Delete a macro. |
+| `execute` | execute | all | **macro**, args, timeoutMs | Run a macro in the GM browser; returns its result, logs and errors. |
+| `run-script` | execute | all | **code**, args, timeoutMs | Execute JavaScript (an async function body) in the GM browser with the Foundry API (game, canvas, CONFIG, foundry, ui) and an `args` object in scope. |
+
 ## `image-generation`
 
 Generate images such as maps with ComfyUI. Off unless a GM switches it on in the module settings.

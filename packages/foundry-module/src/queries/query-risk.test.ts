@@ -45,6 +45,14 @@ describe('query risk table', () => {
     expect(riskOfQuery('manage-playlists', { action: 'delete' })).toBe('delete');
     expect(riskOfQuery('manage-playlists', {})).toBe('write');
   });
+
+  it('treats running a script or a macro as execute, whatever the level', () => {
+    expect(riskOfQuery('executeScript', { code: 'return 1' })).toBe('execute');
+    expect(riskOfQuery('manageMacros', { action: 'execute' })).toBe('execute');
+    expect(riskOfQuery('manageMacros', { action: 'list' })).toBe('read');
+    expect(riskOfQuery('manageMacros', { action: 'create' })).toBe('write');
+    expect(riskOfQuery('manageMacros', { action: 'delete' })).toBe('delete');
+  });
 });
 
 describe('risk guard', () => {
@@ -89,6 +97,13 @@ describe('risk guard', () => {
     await expect(call('generate-map')).rejects.toThrow('Image generation is off');
     stubSettings({ accessLevel: 'full', imageGenerationEnabled: true });
     await expect(call('generate-map')).resolves.toBe('done');
+  });
+
+  it('refuses execute while its checkbox is off, even at full access', async () => {
+    stubSettings({ accessLevel: 'full', allowExecute: false });
+    await expect(call('executeScript')).rejects.toThrow('Allow script and macro execution');
+    stubSettings({ accessLevel: 'readonly', allowExecute: true });
+    await expect(call('executeScript')).resolves.toBe('done');
   });
 
   it('defaults to read & write when the setting is missing', async () => {

@@ -348,6 +348,57 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
+    name: 'macros',
+    purpose:
+      'Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card.',
+    actions: {
+      list: {
+        operation: 'manage-macros',
+        risk: 'read',
+        fixed: { action: 'list' },
+        params: { search: false },
+        summary: 'List macros, optionally filtered by name.',
+      },
+      get: {
+        operation: 'manage-macros',
+        risk: 'read',
+        fixed: { action: 'get' },
+        params: { macro: true },
+        summary: 'Read one macro with its source.',
+      },
+      create: {
+        operation: 'manage-macros',
+        risk: 'write',
+        fixed: { action: 'create' },
+        params: { name: true, command: false, type: false, img: false, folder: false },
+        summary: 'Create a macro.',
+      },
+      update: {
+        operation: 'manage-macros',
+        risk: 'write',
+        fixed: { action: 'update' },
+        params: { macro: true, name: false, command: false, img: false, folder: false },
+        summary: 'Change a macro.',
+      },
+      delete: {
+        operation: 'manage-macros',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        params: { macro: true },
+        summary: 'Delete a macro.',
+      },
+      execute: {
+        operation: 'manage-macros',
+        risk: 'execute',
+        fixed: { action: 'execute' },
+        params: { macro: true, args: false, timeoutMs: false },
+        summary: 'Run a macro in the GM browser; returns its result, logs and errors.',
+      },
+      'run-script': { operation: 'execute-script', risk: 'execute' },
+    },
+  },
+
+  {
     name: 'image-generation',
     purpose:
       'Generate images such as maps with ComfyUI. Off unless a GM switches it on in the module settings.',
