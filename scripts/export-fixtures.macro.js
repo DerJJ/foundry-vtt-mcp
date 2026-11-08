@@ -64,6 +64,18 @@
     return picked;
   }
 
+  // CONFIG.statusEffects is an array in some systems and a map or plain object in others (PF2e).
+  function statusEffectIds() {
+    const raw = CONFIG.statusEffects;
+    if (!raw) return [];
+    const list = Array.isArray(raw)
+      ? raw
+      : typeof raw.values === 'function'
+        ? Array.from(raw.values())
+        : Object.values(raw);
+    return [...new Set(list.map(entry => entry?.id).filter(Boolean))];
+  }
+
   const actors = sampleByType(game.actors);
   const items = sampleByType(game.items);
   const scene = game.scenes.active ?? game.scenes.contents[0] ?? null;
@@ -85,9 +97,7 @@
     foundry: { version: game.version, release: game.release?.generation },
     system: { id: game.system.id, version: game.system.version },
     world: { id: game.world.id, title: game.world.title },
-    conditions: Object.keys(
-      CONFIG.statusEffects ? Object.fromEntries(CONFIG.statusEffects.map(e => [e.id, 1])) : {}
-    ),
+    conditions: statusEffectIds(),
     actors: actors.map(plain),
     items: items.map(plain),
     effects: actors.flatMap(actor => actor.effects.contents.slice(0, PER_TYPE).map(plain)),
