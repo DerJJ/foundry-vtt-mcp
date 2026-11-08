@@ -13,3 +13,7 @@ Input for the tool-style decision in iteration 2. Measured from the golden snaps
   `getTokenDetails`, `moveToken`, `toggleTokenCondition`, `updateToken` (camelCase twins of the kebab-case token
   queries it does use), `updateCampaignProgress`, `validateWritePermissions`.
 - Live findings to fix on the way: #2 playlist create, #3 PF2e effect create, #4 stale system cache.
+
+## After iteration 3 (2026-11-09)
+
+16 domain tools, 22,308 characters of descriptions and schemas, including every fork feature. The ceiling in the contract test is 24,000 characters and 16 tools. Raising it is a deliberate act.
