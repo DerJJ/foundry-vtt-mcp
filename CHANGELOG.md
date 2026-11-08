@@ -7,6 +7,16 @@
 - **Image generation (ComfyUI) is off by default.** Switch it on under Module Settings. The tool is always listed and refuses while the setting is off.
 - `list` actions take `limit` (default 50) and `offset` and return `total` and `hasMore`.
 
+### Added (ported from community forks, authors kept in the git history)
+
+- **Running the table** (flownzu): `combat` (status, add, remove, roll and set initiative, begin, turns and rounds, defeated, end) and `apply-damage` for dnd5e and pf2e, `actors.party-status`, `actors.creature-card`, `chat.gm-roll`, `chat.list-tables`, `chat.roll-table`, `chat.post-rich`, `scenes.ping`, `pull-players`, `reset-fog`, `set-weather`, `list-weather`.
+- **Scene building and time** (flownzu): `scenes.create`, `update`, `create-documents`, `update-documents`, `delete-documents`, `list-documents`; `time` for the Simple Calendar Reborn clock.
+- **Chat, rolls and spells** (DerJJ, with flownzu): `chat.get-messages` reads the chat log with structured roll results; `items.use` and `chat.request-rolls` wait for the chat messages they create; PF2e modifiers and spells cast through their spellcasting entry; spell DC and attack on PF2e and dnd5e characters.
+- **Folders, compendium management and uploads** (KillgoreAlpha): `folders.*` addressed by "Parent/Child" paths, `compendium.packs`, `create-pack`, `delete-pack`, `list-entries`, `create-entries`, `update-entries`, `delete-entries`, `copy-entry`, `media.upload-image`, `tokenImg` and folder paths in `actors.update`, and the optional `features` array of `actors.create-npc`.
+- **Scripts and macros** (ErikGenibo for `execute-script`, DerJJ for the macro actions): `macros.*`. Every run is whispered to the GM as a chat card. They have the `execute` risk and need the "Allow script and macro execution" checkbox, which replaces the fork's `allowScriptExecution` setting (a world that had it on must switch it on again).
+- **World permissions** (khelbenlaforge): `world.permissions`.
+- **Several backends at once** (KillgoreAlpha): `FOUNDRY_MCP_CONTROL_PORT` gives a second backend its own control port and lock file. Queries take a per-call timeout, the server survives an abruptly closed control socket, and the bridge accepts server ports below 1024 (443 behind a TLS reverse proxy).
+
 ### Fixes
 
 - **Playlists can be created** (`playlists` `create`). It failed on every system with `game.playlists.createDocuments is not a function` (#2).

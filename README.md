@@ -146,7 +146,12 @@ Eleven tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool t
 | `actors`           | characters, NPCs and monsters: read, search, create, change, delete, place, ownership |
 | `compendium`       | search packs, read entries, find creatures by criteria                                |
 | `journals`         | journals and quests, campaign dashboards                                              |
-| `chat`             | speak as an actor, ask players to roll                                                |
+| `chat`             | speak as an actor, read the chat log, GM rolls, roll tables, ask players to roll      |
+| `combat`           | the combat tracker and applying damage                                                |
+| `time`             | the Simple Calendar Reborn clock                                                      |
+| `folders`          | folders in the sidebar and inside compendium packs                                    |
+| `media`            | upload local image files into the world                                               |
+| `macros`           | macros and scripts (off unless "Allow script and macro execution" is on)              |
 | `image-generation` | maps and images through ComfyUI (off unless switched on)                              |
 
 ## Settings

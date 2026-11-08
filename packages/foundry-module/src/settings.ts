@@ -520,8 +520,9 @@ export class ModuleSettings {
     }
 
     const port = this.getSetting('serverPort');
-    if (!port || typeof port !== 'number' || port < 1024 || port > 65535) {
-      errors.push('Server port must be between 1024 and 65535');
+    // Port 443 is allowed so the bridge can reach a server behind a TLS reverse proxy (wss).
+    if (!port || typeof port !== 'number' || port < 1 || port > 65535) {
+      errors.push('Server port must be between 1 and 65535');
     }
 
     const maxActors = this.getSetting('maxActorsPerRequest');

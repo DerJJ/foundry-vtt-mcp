@@ -60,7 +60,10 @@ queries/
 data-access.ts             composition root: one service per category
 services/
   <category>.ts            the operations themselves (characters, compendium, world, audio, journals,
-                           actors, effects, items, rolls, ownership, chat, tokens)
+                           actors, effects, items, rolls, ownership, chat, tokens, library)
+  chat-log.ts, script-runner.ts, table-actions.ts
+                           standalone: the chat log reader, scripts and macros, combat, damage,
+                           hidden rolls, tables, scene view and creature cards
   creature-index.ts        persistent creature index
   support.ts               sanitising, audit log and Foundry state checks
   types.ts, helpers.ts     shared types and helpers
