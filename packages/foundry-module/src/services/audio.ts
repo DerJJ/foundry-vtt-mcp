@@ -213,7 +213,8 @@ export class AudioService {
         if (options.sorting !== undefined) data.sorting = options.sorting;
         if (options.folder !== undefined) data.folder = options.folder;
         if (options.color !== undefined) data.color = options.color;
-        const pl = await ((game as any).playlists as any).createDocuments([data]);
+        // The collection (game.playlists) cannot create documents; the document class can.
+        const pl = await ((globalThis as any).Playlist as any).createDocuments([data]);
         const doc = Array.isArray(pl) ? pl[0] : pl;
 
         let soundsCreated = 0;
