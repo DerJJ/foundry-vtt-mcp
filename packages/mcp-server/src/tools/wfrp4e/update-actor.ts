@@ -71,8 +71,8 @@ export class WFRP4eUpdateActorTools {
           'you provide change; the characteristic Total/Bonus and skill totals recompute ' +
           'automatically. USE THIS to tweak a creature/NPC/PC you already have — e.g. after ' +
           'cloning a creature to make a tougher variant, or to advance a skill. To ADD a new ' +
-          'skill, talent, trait, trapping or career use wfrp4e-add-items; to create an actor ' +
-          'use create-actor-from-compendium.',
+          'skill, talent, trait, trapping or career use items.add-wfrp4e; to create an actor ' +
+          'use actors.create-from-compendium.',
         inputSchema: {
           type: 'object',
           properties: {

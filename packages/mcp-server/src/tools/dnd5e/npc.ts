@@ -102,7 +102,7 @@ export class DnD5eNpcTools {
           'identity (name, type, size, alignment, CR), ability scores, saving throw proficiencies, ' +
           'HP (average + formula), AC (default or flat), movement speeds, senses, skill proficiencies, ' +
           'damage immunities/resistances/vulnerabilities, condition immunities, languages, and biography. ' +
-          'Items, actions, features, and spells are NOT added by this tool — use dnd5e-add-feature ' +
+          'Items, actions, features, and spells are NOT added by this tool — use actors.add-feature ' +
           '(featureType: "passive", "save", "attack", "attack-with-save", "aura", "spellcasting", or "spells") ' +
           'to add them after creation. The actor is placed in the "Foundry MCP Creatures" folder.',
         inputSchema: {

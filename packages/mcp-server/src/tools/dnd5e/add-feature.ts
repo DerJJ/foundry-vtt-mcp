@@ -195,7 +195,7 @@ export class DnD5eAddFeatureTool {
           '• spells — import named spells from compendium. Names must be in English.\n' +
           '  Required: actorIdentifier, spellNames (max 50)\n' +
           '  Optional: compendiumPacks (default ["dnd5e.spells"])\n\n' +
-          'Use list-characters or get-character first to find the actorIdentifier.',
+          'Use actors.list or actors.get first to find the actorIdentifier.',
 
         inputSchema: {
           type: 'object',

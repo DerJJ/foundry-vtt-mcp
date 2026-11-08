@@ -56,7 +56,7 @@ export class CompendiumTools {
       {
         name: 'search-compendium',
         description:
-          'Search through compendium packs by name. IMPORTANT LIMITATIONS: (1) Text search only matches entity NAMES - descriptions and traits are NOT searchable. (2) Filters use name heuristics only (not actual system data) and only work on Actor packs - challengeRating and creatureType filters search for keywords like "ancient", "legendary", "humanoid", etc. in entity names. For accurate filtering by level/CR, traits, or rarity, use list-creatures-by-criteria instead. For best results, use broad name-based searches (e.g., "dragon", "knight") and inspect individual items with get-compendium-item.',
+          'Search through compendium packs by name. IMPORTANT LIMITATIONS: (1) Text search only matches entity NAMES - descriptions and traits are NOT searchable. (2) Filters use name heuristics only (not actual system data) and only work on Actor packs - challengeRating and creatureType filters search for keywords like "ancient", "legendary", "humanoid", etc. in entity names. For accurate filtering by level/CR, traits, or rarity, use compendium.find-creatures instead. For best results, use broad name-based searches (e.g., "dragon", "knight") and inspect individual items with compendium.get-item.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -72,7 +72,7 @@ export class CompendiumTools {
             filters: {
               type: 'object',
               description:
-                'LIMITED FUNCTIONALITY: Only works on Actor packs using name-based heuristics. challengeRating searches for keywords like "ancient" (CR 15+), "adult" (CR 10+), "captain" (CR 5+). creatureType searches for type keywords in names. Does NOT check actual system data. For accurate filtering, use list-creatures-by-criteria instead.',
+                'LIMITED FUNCTIONALITY: Only works on Actor packs using name-based heuristics. challengeRating searches for keywords like "ancient" (CR 15+), "adult" (CR 10+), "captain" (CR 5+). creatureType searches for type keywords in names. Does NOT check actual system data. For accurate filtering, use compendium.find-creatures instead.',
               properties: {
                 challengeRating: {
                   oneOf: [
@@ -783,7 +783,7 @@ export class CompendiumTools {
           note: 'Packs searched in priority order to find most relevant creatures first',
         },
         optimizationNote:
-          'Use creature names to identify suitable options, then call get-compendium-item for final details only',
+          'Use creature names to identify suitable options, then call compendium.get-item for final details only',
       };
     } catch (error) {
       this.logger.error('Failed to list creatures by criteria', error);

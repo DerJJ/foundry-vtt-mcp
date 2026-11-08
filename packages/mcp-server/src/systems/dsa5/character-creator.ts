@@ -33,7 +33,7 @@ export class DSA5CharacterCreator {
       {
         name: 'create-dsa5-character-from-archetype',
         description:
-          'Create a DSA5 character from an archetype (e.g., Allacaya, Wulfgrimm). Allows customization of name, age, biography, and other details. Use search-compendium first to find available archetypes in DSA5 character packs.',
+          'Create a DSA5 character from an archetype (e.g., Allacaya, Wulfgrimm). Allows customization of name, age, biography, and other details. Use compendium.search first to find available archetypes in DSA5 character packs.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -45,7 +45,7 @@ export class DSA5CharacterCreator {
             archetypeId: {
               type: 'string',
               description:
-                'ID of the archetype within the pack (get from search-compendium results)',
+                'ID of the archetype within the pack (get from compendium.search results)',
             },
             characterName: {
               type: 'string',

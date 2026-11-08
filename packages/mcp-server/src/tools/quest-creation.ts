@@ -154,7 +154,7 @@ export class QuestCreationTools {
       {
         name: 'update-quest-journal',
         description:
-          'Update an existing quest journal with new progress information. By default updates the FIRST text page. Use pageId to target a specific page, or newPageName to create a new page.\n\nFor Foundry VTT v13 ProseMirror editor compatibility:\n\n✅ USE QUEST-STYLE HTML: Match create-quest-journal formatting\n✅ OR USE PLAIN TEXT: Will be wrapped in <p> tags with line breaks as <br>\n❌ DO NOT USE MARKDOWN: **bold**, *italic*, # headers will be stripped to plain text\n\nQuest-style HTML examples:\n• Sections: "<h2 class=\\"spaced\\">New Discovery</h2>"\n• GM Notes: "<div class=\\"gmnote\\"><p>GM info here</p></div>"\n• Player Info: "<div class=\\"readaloud\\"><p>Player-facing content</p></div>"\n• Plain text: "The party discovered the secret chamber"\n• Avoid: "**The party** discovered the *secret chamber*" (Markdown will be stripped)',
+          'Update an existing quest journal with new progress information. By default updates the FIRST text page. Use pageId to target a specific page, or newPageName to create a new page.\n\nFor Foundry VTT v13 ProseMirror editor compatibility:\n\n✅ USE QUEST-STYLE HTML: Match journals.create-quest formatting\n✅ OR USE PLAIN TEXT: Will be wrapped in <p> tags with line breaks as <br>\n❌ DO NOT USE MARKDOWN: **bold**, *italic*, # headers will be stripped to plain text\n\nQuest-style HTML examples:\n• Sections: "<h2 class=\\"spaced\\">New Discovery</h2>"\n• GM Notes: "<div class=\\"gmnote\\"><p>GM info here</p></div>"\n• Player Info: "<div class=\\"readaloud\\"><p>Player-facing content</p></div>"\n• Plain text: "The party discovered the secret chamber"\n• Avoid: "**The party** discovered the *secret chamber*" (Markdown will be stripped)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -175,7 +175,7 @@ export class QuestCreationTools {
             pageId: {
               type: 'string',
               description:
-                'ID of a specific page to update. If omitted, updates the first text page. Get page IDs from list-journals.',
+                'ID of a specific page to update. If omitted, updates the first text page. Get page IDs from journals.list.',
             },
             newPageName: {
               type: 'string',
@@ -189,7 +189,7 @@ export class QuestCreationTools {
       {
         name: 'replace-journal-page',
         description:
-          'Replace the ENTIRE content of a specific journal page. Use this to overwrite/rewrite a page. For appending progress, use update-quest-journal instead.',
+          'Replace the ENTIRE content of a specific journal page. Use this to overwrite/rewrite a page. For appending progress, use journals.update-quest instead.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -200,7 +200,7 @@ export class QuestCreationTools {
             pageId: {
               type: 'string',
               description:
-                'ID of the page whose content will be replaced. Get page IDs from list-journals.',
+                'ID of the page whose content will be replaced. Get page IDs from journals.list.',
             },
             newContent: {
               type: 'string',
@@ -247,7 +247,7 @@ export class QuestCreationTools {
       {
         name: 'search-journals',
         description:
-          'Search through all pages of all journal entries for specific content or keywords. Returns which specific page matched, so you can read it with list-journals using journalId + pageId.',
+          'Search through all pages of all journal entries for specific content or keywords. Returns which specific page matched, so you can read it with journals.list using journalId + pageId.',
         inputSchema: {
           type: 'object',
           properties: {

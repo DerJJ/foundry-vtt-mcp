@@ -56,7 +56,7 @@ export class DnD5eFeaturesFromCompendiumTools {
           '  - Non-dnd5e systems → this tool is dnd5e-exclusive\n\n' +
           'Returns a detailed report: features added ✅, skipped (already on actor) ⏭️, ' +
           'not found in compendium ❌, and failed during import ⚠️.\n' +
-          'Use list-characters or get-character first to find the actorIdentifier.',
+          'Use actors.list or actors.get first to find the actorIdentifier.',
         inputSchema: {
           type: 'object',
           properties: {

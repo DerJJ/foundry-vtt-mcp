@@ -52,8 +52,8 @@ export class WFRP4eAddItemsTools {
           'added as a blank custom item. Use "advances" to set a skill\'s advances, "quantity" for ' +
           'gear counts, and "setCurrent" to make a career the active one. Pass "type" and/or ' +
           '"pack" to disambiguate a name found in several places. USE THIS to build out a ' +
-          "character's items. To create the actor itself use create-actor-from-compendium; to " +
-          'change characteristics/wounds or bump a skill the actor already has, use wfrp4e-update-actor.',
+          "character's items. To create the actor itself use actors.create-from-compendium; to " +
+          'change characteristics/wounds or bump a skill the actor already has, use actors.wfrp4e-update.',
         inputSchema: {
           type: 'object',
           properties: {
