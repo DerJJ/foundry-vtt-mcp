@@ -28,7 +28,7 @@ try {
   if (!identical) throw new Error('tools/list differs from the golden snapshot');
   const unk = await ask('call_tool', { name: 'nope', args: {} });
   console.log('unknown tool ->', JSON.stringify(unk.result));
-  const real = await ask('call_tool', { name: 'get-world-info', args: {} });
+  const real = await ask('call_tool', { name: 'world', args: { action: 'info' } });
   console.log('real tool (no Foundry) ->', JSON.stringify(real.result).slice(0, 160));
   ok = true;
 } finally { child.kill(); }
