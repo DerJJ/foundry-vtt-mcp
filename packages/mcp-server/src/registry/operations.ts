@@ -23,6 +23,10 @@ import { ChatTools } from '../tools/chat.js';
 import { ScriptExecutionTools } from '../tools/script-execution.js';
 import { TableTools } from '../tools/table-tools.js';
 import { PermissionsTools } from '../tools/permissions.js';
+import { FolderManagementTools } from '../tools/folder-management.js';
+import { CompendiumManagementTools } from '../tools/compendium-management.js';
+import { CompendiumEntryTools } from '../tools/compendium-entries.js';
+import { ImageUploadTools } from '../tools/image-upload.js';
 import { SceneBuilderTools } from '../tools/scene-builder.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
 import { DSA5CharacterCreator } from '../systems/dsa5/character-creator.js';
@@ -125,7 +129,7 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     handlers: bindMethods(dnd5eAddFeatureTool, { 'dnd5e-add-feature': 'handleAddFeature' }),
   });
 
-  const dnd5eNpcTools = new DnD5eNpcTools(base);
+  const dnd5eNpcTools = new DnD5eNpcTools({ ...base, addFeatureTool: dnd5eAddFeatureTool });
   registry.registerModule({
     definitions: dnd5eNpcTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(dnd5eNpcTools, { 'dnd5e-create-npc': 'handleCreateNpc' }),
@@ -266,6 +270,34 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: permissionsTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(permissionsTools, { 'get-permissions': 'handleGetPermissions' }),
+  });
+
+  const folderManagementTools = new FolderManagementTools(base);
+  registry.registerModule({
+    definitions: folderManagementTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(folderManagementTools, { 'manage-folders': 'handleManageFolders' }),
+  });
+
+  const compendiumManagementTools = new CompendiumManagementTools(base);
+  registry.registerModule({
+    definitions: compendiumManagementTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(compendiumManagementTools, {
+      'manage-compendiums': 'handleManageCompendiums',
+    }),
+  });
+
+  const compendiumEntryTools = new CompendiumEntryTools(base);
+  registry.registerModule({
+    definitions: compendiumEntryTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(compendiumEntryTools, {
+      'manage-compendium-entries': 'handleManageCompendiumEntries',
+    }),
+  });
+
+  const imageUploadTools = new ImageUploadTools(base);
+  registry.registerModule({
+    definitions: imageUploadTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(imageUploadTools, { 'upload-image': 'handleUploadImage' }),
   });
 
   return registry;

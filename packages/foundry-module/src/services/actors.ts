@@ -1,3 +1,4 @@
+import type { FolderableType } from './library.js';
 import { MODULE_ID, ERROR_MESSAGES } from '../constants.js';
 import { permissionManager } from '../permissions.js';
 import { transactionManager } from '../transaction-manager.js';
@@ -752,10 +753,7 @@ export class ActorService {
   /**
    * Get or create a folder for organizing MCP-generated content
    */
-  async getOrCreateFolder(
-    folderName: string,
-    type: 'Actor' | 'JournalEntry'
-  ): Promise<string | null> {
+  async getOrCreateFolder(folderName: string, type: FolderableType): Promise<string | null> {
     try {
       // Look for existing folder
       const existingFolder = game.folders?.find(
@@ -1012,7 +1010,15 @@ export class ActorService {
    * Merges supplied fields into the actor (top-level keys overwrite).
    */
   async updateActors(
-    updates: Array<{ id: string; name?: string; img?: string; system?: Record<string, any> }>
+    updates: Array<{
+      id: string;
+      name?: string;
+      img?: string;
+      system?: Record<string, any>;
+      prototypeToken?: Record<string, any>;
+      tokenImg?: string;
+      folderSegments?: string[] | null;
+    }>
   ): Promise<{ updated: Array<{ id: string; name: string }>; total: number }> {
     const updatedActors: Array<{ id: string; name: string }> = [];
 
@@ -1023,6 +1029,16 @@ export class ActorService {
       const patch: Record<string, any> = {};
       if (u.name !== undefined) patch.name = u.name;
       if (u.img !== undefined) patch.img = u.img;
+      if (u.prototypeToken !== undefined) patch.prototypeToken = u.prototypeToken;
+      // The actor's default artwork for tokens placed from now on. Foundry stores
+      // it at prototypeToken.texture.src, mirroring a placed token's texture.src.
+      if (u.tokenImg !== undefined) patch['prototypeToken.texture.src'] = u.tokenImg;
+      if (u.folderSegments !== undefined) {
+        // null files the actor at the root; a path creates missing folders on the way.
+        patch.folder = u.folderSegments
+          ? (await this.access.library.createFolderByPath(u.folderSegments, 'Actor')).id
+          : null;
+      }
       if (u.system !== undefined) {
         // Build a single patch.system nested object so Foundry deep-merges everything
         // in one pass without flat-key vs nested-key conflicts.
@@ -1058,7 +1074,13 @@ export class ActorService {
    */
   async updateActorItems(
     actorIdentifier: string,
-    itemUpdates: Array<{ id: string; name?: string; img?: string; system?: Record<string, any> }>
+    itemUpdates: Array<{
+      id: string;
+      name?: string;
+      img?: string;
+      system?: Record<string, any>;
+      flags?: Record<string, any>;
+    }>
   ): Promise<{ updated: Array<{ id: string; name: string }>; total: number }> {
     const actor =
       (game.actors.get(actorIdentifier) as any) ??
@@ -1077,6 +1099,7 @@ export class ActorService {
       if (u.name !== undefined) patch.name = u.name;
       if (u.img !== undefined) patch.img = u.img;
       if (u.system !== undefined) patch.system = u.system;
+      if (u.flags !== undefined) patch.flags = u.flags;
 
       await item.update(patch);
       updated.push({ id: item.id, name: u.name ?? item.name });

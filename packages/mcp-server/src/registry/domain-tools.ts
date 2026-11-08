@@ -398,6 +398,54 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
       'get-entry': { operation: 'get-compendium-entry-full', risk: 'read' },
       'list-packs': { operation: 'list-compendium-packs', risk: 'read' },
       'find-creatures': { operation: 'list-creatures-by-criteria', risk: 'read' },
+      packs: {
+        operation: 'manage-compendiums',
+        risk: 'read',
+        fixed: { action: 'list' },
+        summary: 'List compendium packs with their lock and write state.',
+      },
+      'create-pack': {
+        operation: 'manage-compendiums',
+        risk: 'write',
+        fixed: { action: 'create' },
+        summary: 'Create a world compendium pack.',
+      },
+      'delete-pack': {
+        operation: 'manage-compendiums',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        summary: 'Delete a world compendium pack (system and module packs are refused).',
+      },
+      'list-entries': {
+        operation: 'manage-compendium-entries',
+        risk: 'read',
+        fixed: { action: 'list' },
+        summary: 'List the entries of a compendium pack.',
+      },
+      'create-entries': {
+        operation: 'manage-compendium-entries',
+        risk: 'write',
+        fixed: { action: 'create' },
+        summary: 'Add entries to an unlocked world pack.',
+      },
+      'update-entries': {
+        operation: 'manage-compendium-entries',
+        risk: 'write',
+        fixed: { action: 'update' },
+        summary: 'Change entries of an unlocked world pack.',
+      },
+      'delete-entries': {
+        operation: 'manage-compendium-entries',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        summary: 'Delete entries from an unlocked world pack.',
+      },
+      'copy-entry': {
+        operation: 'manage-compendium-entries',
+        risk: 'write',
+        fixed: { action: 'copy' },
+        summary: 'Copy a document into a pack by UUID.',
+      },
     },
   },
 
@@ -570,6 +618,52 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: {},
         summary: 'Stop the clock.',
       },
+    },
+  },
+
+  {
+    name: 'folders',
+    purpose:
+      'Folders in the world sidebar or inside a compendium pack, addressed by "Parent/Child" paths.',
+    actions: {
+      list: {
+        operation: 'manage-folders',
+        risk: 'read',
+        fixed: { action: 'list' },
+        summary: 'List the folder tree of a document type, or of a pack.',
+      },
+      create: {
+        operation: 'manage-folders',
+        risk: 'write',
+        fixed: { action: 'create' },
+        summary: 'Create a folder at a path; missing parents are created.',
+      },
+      rename: {
+        operation: 'manage-folders',
+        risk: 'write',
+        fixed: { action: 'rename' },
+        summary: 'Rename a folder in place.',
+      },
+      move: {
+        operation: 'manage-folders',
+        risk: 'write',
+        fixed: { action: 'move' },
+        summary: 'Move a folder under another parent (null for the root).',
+      },
+      delete: {
+        operation: 'manage-folders',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        summary: 'Delete a folder; its contents move up unless told otherwise.',
+      },
+    },
+  },
+
+  {
+    name: 'media',
+    purpose: 'Bring local files into the world.',
+    actions: {
+      'upload-image': { operation: 'upload-image', risk: 'write' },
     },
   },
 

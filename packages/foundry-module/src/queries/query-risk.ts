@@ -12,6 +12,9 @@ type RiskOf = Risk | ((data: any) => Risk);
 const read: string[] = [
   'ping',
   'getCapabilities',
+  'listFolders',
+  'listPacks',
+  'listPackEntries',
   'getPermissions',
   'getChatMessages',
   'findActor',
@@ -86,6 +89,14 @@ const write: string[] = [
   'updateWfrp4eActor',
   'updateWorldItems',
   'upload-generated-map',
+  'upload-image',
+  'createFolder',
+  'renameFolder',
+  'moveFolder',
+  'createPack',
+  'createPackEntries',
+  'updatePackEntries',
+  'copyPackEntry',
   'useItem',
 ];
 
@@ -95,6 +106,9 @@ const destructive: string[] = [
   'deleteActorItems',
   'deleteActors',
   'removeActorItems',
+  'deleteFolder',
+  'deletePack',
+  'deletePackEntries',
 ];
 
 export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {

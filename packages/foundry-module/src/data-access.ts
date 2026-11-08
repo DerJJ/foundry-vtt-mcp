@@ -2,6 +2,7 @@ import { CharacterService } from './services/characters.js';
 import { CompendiumService } from './services/compendium.js';
 import { WorldService } from './services/world.js';
 import { AudioService } from './services/audio.js';
+import { LibraryService } from './services/library.js';
 import { JournalService } from './services/journals.js';
 import { ActorService } from './services/actors.js';
 import { EffectService } from './services/effects.js';
@@ -22,6 +23,7 @@ export class FoundryDataAccess {
   readonly compendium = new CompendiumService();
   readonly world = new WorldService(this);
   readonly audio = new AudioService(this);
+  readonly library = new LibraryService();
   readonly journals = new JournalService(this);
   readonly actors = new ActorService(this);
   readonly effects = new EffectService();

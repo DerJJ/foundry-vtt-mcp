@@ -337,6 +337,7 @@ export class WorldService {
         id: scene.id,
         name: scene.name,
         active: scene.active,
+        viewed: scene.isView,
         dimensions: {
           width: scene.dimensions?.width || scene.width || 0,
           height: scene.dimensions?.height || scene.height || 0,
@@ -382,8 +383,18 @@ export class WorldService {
         throw new Error(`Scene not found: "${options.scene_identifier}"`);
       }
 
-      // Activate the scene
-      await targetScene.activate();
+      // Activate the scene (mode 'view': nur der GM wechselt, Spieler bleiben)
+      if ((options as any).mode === 'view') {
+        await targetScene.view();
+      } else {
+        await targetScene.activate();
+        // Auch Spieler holen, die selbst auf eine andere Szene gewechselt sind
+        for (const user of (game.users as any).filter(
+          (u: any) => u.active && !u.isGM && u.viewedScene !== targetScene.id
+        )) {
+          (game.socket as any).emit('pullToScene', targetScene.id, user.id);
+        }
+      }
 
       // Optimize view if requested (default true)
       if (options.optimize_view !== false && typeof canvas !== 'undefined' && canvas?.scene) {

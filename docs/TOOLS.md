@@ -24,7 +24,7 @@ Scenes: look at the current one, list them, switch, and set scene music.
 | --- | --- | --- | --- | --- |
 | `current` | read | all | includeTokens, includeHidden | Get information about the currently active scene, including tokens, layout, and the music binding (playlist + playlistSound) |
 | `list` | read | all | filter, include_active_only | List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSound) for each scene |
-| `activate` | write | all | **scene_identifier**, optimize_view | Switch to a different Foundry VTT scene by name or ID |
+| `activate` | write | all | **scene_identifier**, optimize_view, mode | Switch to a different Foundry VTT scene by name or ID |
 | `set-music` | write | all | **scene_identifier**, playlist, playlist_sound | Set or clear the music binding of a scene. |
 | `ping` | write | all | sceneIdentifier, target, x, y | Ping a token or a point on the scene the GM browser is showing. |
 | `pull-players` | write | all | sceneIdentifier, target, x, y | Ping and pull every player view to a token or point. |
@@ -112,7 +112,7 @@ Actors (characters, NPCs, monsters): read, search, create, change, delete, place
 | `list-ownership` | read | all | actorIdentifier, playerIdentifier | List current ownership permissions for actors, showing which players have what access levels. |
 | `party-status` | read | all | includeFeatures | Compact live status of all player characters in one call (dnd5e or pf2e). |
 | `creature-card` | read | all | target, actor, sceneIdentifier | Compact stat block with derived values for a token on the scene (target) or a world actor (actor: name, id or uuid): CR, HP, AC, initiative, speed, abilities, proficient saves and skills, senses, resistances/immunities, legendary actions, and actions with activation, to-hit, save DC, damage, uses or recharge. |
-| `create-npc` | write | dnd5e | **name**, **creatureType**, creatureSubtype, **size**, alignment, **cr**, **hpAverage**, **hpFormula**, **acMode**, acValue, **abilities**, savingThrows, walkSpeed, flySpeed, swimSpeed, climbSpeed, burrowSpeed, hover, darkvision, blindsight, tremorsense, truesight, specialSenses, skills, damageImmunities, damageResistances, damageVulnerabilities, conditionImmunities, languages, languagesCustom, biography, sourceBook, sourcePage, sourceRules | [D&D 5e only] Create a new NPC actor from scratch with a full Level-2 stat block: identity (name, type, size, alignment, CR), ability scores, saving throw proficiencies, HP (average + formula), AC (default or flat), movement speeds, senses, skill proficiencies, damage immunities/resistances/vulnerabilities, condition immunities, languages, and biography. |
+| `create-npc` | write | dnd5e | **name**, **creatureType**, creatureSubtype, **size**, alignment, **cr**, **hpAverage**, **hpFormula**, **acMode**, acValue, **abilities**, savingThrows, walkSpeed, flySpeed, swimSpeed, climbSpeed, burrowSpeed, hover, darkvision, blindsight, tremorsense, truesight, specialSenses, skills, damageImmunities, damageResistances, damageVulnerabilities, conditionImmunities, languages, languagesCustom, biography, sourceBook, sourcePage, sourceRules, features | [D&D 5e only] Create a new NPC actor from scratch with a full Level-2 stat block: identity (name, type, size, alignment, CR), ability scores, saving throw proficiencies, HP (average + formula), AC (default or flat), movement speeds, senses, skill proficiencies, damage immunities/resistances/vulnerabilities, condition immunities, languages, and biography. |
 | `add-feature` | write | dnd5e | **featureType**, **actorIdentifier**, featureName, description, activationType, uses, damageParts, saveAbility, saveDC, halfOnSave, saveDamageParts, saveOnSave, areaType, areaSize, areaUnits, affectsType, attackType, weaponClass, abilityModifier, attackBonus, proficient, equipped, reachFt, rangeFt, longRangeFt, properties, spellcastingClass, spellcastingLevel, spellcastingAbility, spellNames, compendiumPacks, sourceRules, sourceBook, sourcePage | [D&D 5e only] Add a feature, attack, spellcasting setup, or spells to an existing actor. |
 | `add-features-from-compendium` | write | dnd5e | **actorIdentifier**, **featureNames**, compendiumPacks | [D&D 5e only] Import class features and monster features from an official compendium pack onto an actor (NPC or PC). |
 | `wfrp4e-update` | write | wfrp4e | **actor**, characteristics, wounds, skills, career, movement, biography | [WFRP4e only] Update an existing actor's stat block: characteristic initial/advances/modifier, wounds (current value and max), the advances on skills the actor already has, which career is current, base movement, and/or the biography text. |
@@ -131,6 +131,14 @@ Compendium packs: search, read entries, list packs, and find creatures by criter
 | `get-entry` | read | all | **packId**, **entryId** | Retrieve complete stat block data including items, spells, and abilities for actor creation |
 | `list-packs` | read | all | type | List all available compendium packs |
 | `find-creatures` | read | all | challengeRating, creatureType, size, hasSpells, hasLegendaryActions, level, traits, rarity, tier, role, hasInvestiture, hitPoints, defensesMin, deflectMin, limit, fallbackToNameSearch | MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria. |
+| `packs` | read | all | label, type, name, identifier, confirmDelete | List compendium packs with their lock and write state. |
+| `create-pack` | write | all | label, type, name, identifier, confirmDelete | Create a world compendium pack. |
+| `delete-pack` | delete | all | label, type, name, identifier, confirmDelete | Delete a world compendium pack (system and module packs are refused). |
+| `list-entries` | read | all | pack, nameFilter, type, entries, updates, identifiers, confirmDelete, source, newName, folder | List the entries of a compendium pack. |
+| `create-entries` | write | all | pack, nameFilter, type, entries, updates, identifiers, confirmDelete, source, newName, folder | Add entries to an unlocked world pack. |
+| `update-entries` | write | all | pack, nameFilter, type, entries, updates, identifiers, confirmDelete, source, newName, folder | Change entries of an unlocked world pack. |
+| `delete-entries` | delete | all | pack, nameFilter, type, entries, updates, identifiers, confirmDelete, source, newName, folder | Delete entries from an unlocked world pack. |
+| `copy-entry` | write | all | pack, nameFilter, type, entries, updates, identifiers, confirmDelete, source, newName, folder | Copy a document into a pack by UUID. |
 
 ## `journals`
 
@@ -190,6 +198,26 @@ The real-time clock of Simple Calendar Reborn, run in the primary GM browser. Ne
 | `start` | write | all | (none) | Start the clock; it stays paused while the game is paused or a combat runs. |
 | `pause` | write | all | (none) | Pause the clock. |
 | `stop` | write | all | (none) | Stop the clock. |
+
+## `folders`
+
+Folders in the world sidebar or inside a compendium pack, addressed by "Parent/Child" paths.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `list` | read | all | path, documentType, pack, newName, newParentPath, deleteContents, confirmDelete | List the folder tree of a document type, or of a pack. |
+| `create` | write | all | path, documentType, pack, newName, newParentPath, deleteContents, confirmDelete | Create a folder at a path; missing parents are created. |
+| `rename` | write | all | path, documentType, pack, newName, newParentPath, deleteContents, confirmDelete | Rename a folder in place. |
+| `move` | write | all | path, documentType, pack, newName, newParentPath, deleteContents, confirmDelete | Move a folder under another parent (null for the root). |
+| `delete` | delete | all | path, documentType, pack, newName, newParentPath, deleteContents, confirmDelete | Delete a folder; its contents move up unless told otherwise. |
+
+## `media`
+
+Bring local files into the world.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `upload-image` | write | all | **path**, subfolder, filename | Upload a local image file (on the machine running this MCP server) into the active Foundry world, returning the Foundry-relative path to use as an actor portrait (manage-actors img), a prototype-token image (manage-actors tokenImg), or a placed token's image (update-token img). |
 
 ## `macros`
 

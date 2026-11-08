@@ -20,7 +20,7 @@
   },
   {
     "name": "scenes",
-    "description": "Scenes: look at the current one, list them, switch, and set scene music.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- current(includeTokens?, includeHidden?): Get information about the currently active scene, including tokens, layout, and the music binding (playlist +…\n- list(filter?, include_active_only?): List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSou…\n- activate(scene_identifier*, optimize_view?): Switch to a different Foundry VTT scene by name or ID\n- set-music(scene_identifier*, playlist?, playlist_sound?): Set or clear the music binding of a scene.\n- ping(sceneIdentifier?, target?, x?, y?): Ping a token or a point on the scene the GM browser is showing.\n- pull-players(sceneIdentifier?, target?, x?, y?): Ping and pull every player view to a token or point.\n- reset-fog(sceneIdentifier?) (delete): Reset the fog of war of a scene.\n- set-weather(weather*, sceneIdentifier?): Set the weather effect of a scene (an empty string clears it).\n- create(sceneData*): Create a scene from scene data.\n- update(sceneIdentifier*, sceneData*): Change a scene.\n- create-documents(sceneIdentifier*, documentType*, documents*): Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.\n- update-documents(sceneIdentifier*, documentType*, documents*): Change embedded documents of a scene (each entry needs its _id).\n- delete-documents(sceneIdentifier*, documentType*, ids*) (delete): Delete embedded documents of a scene.\n- list-documents(sceneIdentifier*, documentType*): List the embedded documents of a scene.\n- list-weather(): List the available weather effects.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "description": "Scenes: look at the current one, list them, switch, and set scene music.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- current(includeTokens?, includeHidden?): Get information about the currently active scene, including tokens, layout, and the music binding (playlist +…\n- list(filter?, include_active_only?): List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSou…\n- activate(scene_identifier*, optimize_view?, mode?): Switch to a different Foundry VTT scene by name or ID\n- set-music(scene_identifier*, playlist?, playlist_sound?): Set or clear the music binding of a scene.\n- ping(sceneIdentifier?, target?, x?, y?): Ping a token or a point on the scene the GM browser is showing.\n- pull-players(sceneIdentifier?, target?, x?, y?): Ping and pull every player view to a token or point.\n- reset-fog(sceneIdentifier?) (delete): Reset the fog of war of a scene.\n- set-weather(weather*, sceneIdentifier?): Set the weather effect of a scene (an empty string clears it).\n- create(sceneData*): Create a scene from scene data.\n- update(sceneIdentifier*, sceneData*): Change a scene.\n- create-documents(sceneIdentifier*, documentType*, documents*): Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.\n- update-documents(sceneIdentifier*, documentType*, documents*): Change embedded documents of a scene (each entry needs its _id).\n- delete-documents(sceneIdentifier*, documentType*, ids*) (delete): Delete embedded documents of a scene.\n- list-documents(sceneIdentifier*, documentType*): List the embedded documents of a scene.\n- list-weather(): List the available weather effects.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -134,7 +134,7 @@
   },
   {
     "name": "compendium",
-    "description": "Compendium packs: search, read entries, list packs, and find creatures by criteria.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- search(query*, packType?, filters?, limit?): Search through compendium packs by name.\n- get-item(packId*, itemId*, compact?): Retrieve detailed information about a specific compendium item.\n- get-entry(packId*, entryId*): Retrieve complete stat block data including items, spells, and abilities for actor creation\n- list-packs(type?): List all available compendium packs\n- find-creatures(challengeRating?, creatureType?, size?, hasSpells?, hasLegendaryActions?, level?, traits?, rarity?, …+8): MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "description": "Compendium packs: search, read entries, list packs, and find creatures by criteria.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- search(query*, packType?, filters?, limit?): Search through compendium packs by name.\n- get-item(packId*, itemId*, compact?): Retrieve detailed information about a specific compendium item.\n- get-entry(packId*, entryId*): Retrieve complete stat block data including items, spells, and abilities for actor creation\n- list-packs(type?): List all available compendium packs\n- find-creatures(challengeRating?, creatureType?, size?, hasSpells?, hasLegendaryActions?, level?, traits?, rarity?, …+8): MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria.\n- packs(label?, type?, name?, identifier?, confirmDelete?): List compendium packs with their lock and write state.\n- create-pack(label?, type?, name?, identifier?, confirmDelete?): Create a world compendium pack.\n- delete-pack(label?, type?, name?, identifier?, confirmDelete?) (delete): Delete a world compendium pack (system and module packs are refused).\n- list-entries(pack?, nameFilter?, type?, entries?, updates?, identifiers?, confirmDelete?, source?, …+2): List the entries of a compendium pack.\n- create-entries(pack?, nameFilter?, type?, entries?, updates?, identifiers?, confirmDelete?, source?, …+2): Add entries to an unlocked world pack.\n- update-entries(pack?, nameFilter?, type?, entries?, updates?, identifiers?, confirmDelete?, source?, …+2): Change entries of an unlocked world pack.\n- delete-entries(pack?, nameFilter?, type?, entries?, updates?, identifiers?, confirmDelete?, source?, …+2) (delete): Delete entries from an unlocked world pack.\n- copy-entry(pack?, nameFilter?, type?, entries?, updates?, identifiers?, confirmDelete?, source?, …+2): Copy a document into a pack by UUID.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -211,6 +211,44 @@
   {
     "name": "time",
     "description": "The real-time clock of Simple Calendar Reborn, run in the primary GM browser. Needs that module.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- status(): Whether the clock is started, paused or stopped.\n- start(): Start the clock; it stays paused while the game is paused or a combat runs.\n- pause(): Pause the clock.\n- stop(): Stop the clock.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "folders",
+    "description": "Folders in the world sidebar or inside a compendium pack, addressed by \"Parent/Child\" paths.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- list(path?, documentType?, pack?, newName?, newParentPath?, deleteContents?, confirmDelete?): List the folder tree of a document type, or of a pack.\n- create(path?, documentType?, pack?, newName?, newParentPath?, deleteContents?, confirmDelete?): Create a folder at a path; missing parents are created.\n- rename(path?, documentType?, pack?, newName?, newParentPath?, deleteContents?, confirmDelete?): Rename a folder in place.\n- move(path?, documentType?, pack?, newName?, newParentPath?, deleteContents?, confirmDelete?): Move a folder under another parent (null for the root).\n- delete(path?, documentType?, pack?, newName?, newParentPath?, deleteContents?, confirmDelete?) (delete): Delete a folder; its contents move up unless told otherwise.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "media",
+    "description": "Bring local files into the world.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- upload-image(path*, subfolder?, filename?): Upload a local image file (on the machine running this MCP server) into the active Foundry world, returning t…\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {
