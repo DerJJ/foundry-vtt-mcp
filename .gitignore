@@ -104,3 +104,7 @@ VISUAL-CONFIRMATION.md
 /MISSING_*.md
 /REGISTRY_*.md
 /TOOL_INVENTORY.md
+
+# Captures from real worlds: never commit (see packages/foundry-module/src/__fixtures__/README.md)
+packages/foundry-module/src/__fixtures__/local/
+fixtures-*.json

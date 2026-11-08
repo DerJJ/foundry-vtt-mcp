@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export interface WorldFixtures {
+  /** True for the invented fixtures that are committed; absent in a capture from a real world. */
+  synthetic?: boolean;
   exportedAt: string;
   foundry: { version: string; release?: number };
   system: { id: string; version: string };
@@ -22,15 +24,32 @@ export interface WorldFixtures {
   }>;
 }
 
-const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__');
+export const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__');
+/** Captures from real worlds live here. Git ignores it; they are never committed. */
+export const LOCAL_FIXTURE_DIR = join(FIXTURE_DIR, 'local');
 
-/** Newest fixture file captured for a game system, or undefined if there is none. */
-export function loadFixtures(systemId: string): WorldFixtures | undefined {
-  if (!existsSync(FIXTURE_DIR)) return undefined;
-  const files = readdirSync(FIXTURE_DIR)
+function newestIn(dir: string, systemId: string): string | undefined {
+  if (!existsSync(dir)) return undefined;
+  const files = readdirSync(dir)
     .filter(name => name.startsWith(`${systemId}-`) && name.endsWith('.json'))
     .sort();
   const newest = files[files.length - 1];
-  if (!newest) return undefined;
-  return JSON.parse(readFileSync(join(FIXTURE_DIR, newest), 'utf8')) as WorldFixtures;
+  return newest ? join(dir, newest) : undefined;
+}
+
+/**
+ * Fixtures for a game system: a local capture if there is one, otherwise the committed synthetic
+ * file. Undefined if neither exists.
+ */
+export function loadFixtures(systemId: string): WorldFixtures | undefined {
+  const path = newestIn(LOCAL_FIXTURE_DIR, systemId) ?? newestIn(FIXTURE_DIR, systemId);
+  return path ? (JSON.parse(readFileSync(path, 'utf8')) as WorldFixtures) : undefined;
+}
+
+/** Every fixture file that is committed (top level of the fixture folder). */
+export function committedFixtureFiles(): string[] {
+  if (!existsSync(FIXTURE_DIR)) return [];
+  return readdirSync(FIXTURE_DIR)
+    .filter(name => name.endsWith('.json'))
+    .map(name => join(FIXTURE_DIR, name));
 }

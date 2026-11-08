@@ -1,0 +1,754 @@
+{
+  "synthetic": true,
+  "exportedAt": "2000-01-01T00:00:00.000Z",
+  "foundry": {
+    "version": "14.0.0",
+    "release": 14
+  },
+  "system": {
+    "id": "dnd5e",
+    "version": "0.0.0-synthetic"
+  },
+  "world": {
+    "id": "synthetic-dnd5e",
+    "title": "Synthetic D&D 5e world"
+  },
+  "conditions": ["blinded", "charmed", "frightened", "poisoned", "prone", "stunned"],
+  "actors": [
+    {
+      "_id": "synth00000000001",
+      "name": "Synthetic Fighter",
+      "type": "character",
+      "img": "icons/svg/mystery-man.svg",
+      "folder": null,
+      "sort": 0,
+      "flags": {},
+      "ownership": {
+        "default": 0
+      },
+      "prototypeToken": {
+        "name": "Synthetic Fighter",
+        "actorLink": true
+      },
+      "effects": [],
+      "system": {
+        "abilities": {
+          "str": {
+            "value": 16,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "dex": {
+            "value": 12,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "con": {
+            "value": 14,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "int": {
+            "value": 10,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "wis": {
+            "value": 10,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "cha": {
+            "value": 8,
+            "proficient": 0,
+            "bonuses": {}
+          }
+        },
+        "attributes": {
+          "hp": {
+            "value": 28,
+            "max": 28,
+            "temp": 0,
+            "tempmax": 0
+          },
+          "ac": {
+            "flat": null,
+            "calc": "default"
+          },
+          "movement": {
+            "walk": 30,
+            "units": "ft"
+          }
+        },
+        "details": {
+          "biography": {
+            "value": "Invented for tests.",
+            "public": ""
+          },
+          "level": 3,
+          "xp": {
+            "value": 0
+          }
+        },
+        "skills": {
+          "ath": {
+            "value": 1
+          },
+          "prc": {
+            "value": 0
+          }
+        },
+        "currency": {
+          "pp": 0,
+          "gp": 10,
+          "ep": 0,
+          "sp": 0,
+          "cp": 0
+        }
+      },
+      "items": [
+        {
+          "_id": "synth00000000002",
+          "name": "Synthetic Longsword",
+          "type": "weapon",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic weapon.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "quantity": 1,
+            "equipped": true,
+            "damage": {
+              "base": {
+                "number": 1,
+                "denomination": 8,
+                "bonus": "",
+                "types": ["slashing"]
+              }
+            }
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        },
+        {
+          "_id": "synth00000000003",
+          "name": "Synthetic Shield",
+          "type": "equipment",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic equipment.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "quantity": 1,
+            "equipped": true
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        },
+        {
+          "_id": "synth00000000004",
+          "name": "Synthetic Fighting Style",
+          "type": "feat",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic feat.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "type": {
+              "value": "class"
+            }
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        }
+      ]
+    },
+    {
+      "_id": "synth00000000005",
+      "name": "Synthetic Raider",
+      "type": "npc",
+      "img": "icons/svg/mystery-man.svg",
+      "folder": null,
+      "sort": 0,
+      "flags": {},
+      "ownership": {
+        "default": 0
+      },
+      "prototypeToken": {
+        "name": "Synthetic Raider",
+        "actorLink": false
+      },
+      "effects": [],
+      "system": {
+        "abilities": {
+          "str": {
+            "value": 14,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "dex": {
+            "value": 12,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "con": {
+            "value": 12,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "int": {
+            "value": 8,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "wis": {
+            "value": 10,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "cha": {
+            "value": 8,
+            "proficient": 0,
+            "bonuses": {}
+          }
+        },
+        "attributes": {
+          "hp": {
+            "value": 15,
+            "max": 15,
+            "formula": "3d8+3"
+          },
+          "ac": {
+            "flat": 13,
+            "calc": "flat"
+          },
+          "movement": {
+            "walk": 30,
+            "units": "ft"
+          }
+        },
+        "details": {
+          "cr": 0.5,
+          "type": {
+            "value": "humanoid",
+            "subtype": ""
+          },
+          "alignment": "Neutral",
+          "biography": {
+            "value": ""
+          }
+        },
+        "traits": {
+          "size": "med",
+          "di": {
+            "value": []
+          },
+          "dr": {
+            "value": []
+          },
+          "dv": {
+            "value": []
+          }
+        }
+      },
+      "items": [
+        {
+          "_id": "synth00000000006",
+          "name": "Synthetic Axe",
+          "type": "weapon",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic weapon.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "quantity": 1,
+            "equipped": true,
+            "damage": {
+              "base": {
+                "number": 1,
+                "denomination": 6,
+                "bonus": "",
+                "types": ["slashing"]
+              }
+            }
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        }
+      ]
+    },
+    {
+      "_id": "synth00000000007",
+      "name": "Synthetic Mage",
+      "type": "character",
+      "img": "icons/svg/mystery-man.svg",
+      "folder": null,
+      "sort": 0,
+      "flags": {},
+      "ownership": {
+        "default": 0
+      },
+      "prototypeToken": {
+        "name": "Synthetic Mage",
+        "actorLink": true
+      },
+      "effects": [],
+      "system": {
+        "abilities": {
+          "str": {
+            "value": 8,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "dex": {
+            "value": 14,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "con": {
+            "value": 12,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "int": {
+            "value": 16,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "wis": {
+            "value": 10,
+            "proficient": 0,
+            "bonuses": {}
+          },
+          "cha": {
+            "value": 10,
+            "proficient": 0,
+            "bonuses": {}
+          }
+        },
+        "attributes": {
+          "hp": {
+            "value": 28,
+            "max": 28,
+            "temp": 0,
+            "tempmax": 0
+          },
+          "ac": {
+            "flat": null,
+            "calc": "default"
+          },
+          "movement": {
+            "walk": 30,
+            "units": "ft"
+          }
+        },
+        "details": {
+          "biography": {
+            "value": "Invented for tests.",
+            "public": ""
+          },
+          "level": 3,
+          "xp": {
+            "value": 0
+          }
+        },
+        "skills": {
+          "ath": {
+            "value": 1
+          },
+          "prc": {
+            "value": 0
+          }
+        },
+        "currency": {
+          "pp": 0,
+          "gp": 10,
+          "ep": 0,
+          "sp": 0,
+          "cp": 0
+        },
+        "spells": {
+          "spell1": {
+            "value": 2,
+            "override": null
+          },
+          "spell2": {
+            "value": 0,
+            "override": null
+          }
+        }
+      },
+      "items": [
+        {
+          "_id": "synth00000000008",
+          "name": "Synthetic Bolt",
+          "type": "spell",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic spell.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "level": 0,
+            "school": "evo",
+            "method": "spell",
+            "properties": ["vocal", "somatic"],
+            "activation": {
+              "type": "action",
+              "value": 1
+            }
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        },
+        {
+          "_id": "synth00000000009",
+          "name": "Synthetic Ward",
+          "type": "spell",
+          "img": "icons/svg/item-bag.svg",
+          "system": {
+            "description": {
+              "value": "<p>Synthetic spell.</p>",
+              "chat": ""
+            },
+            "source": {},
+            "level": 1,
+            "school": "abj",
+            "method": "spell",
+            "properties": ["vocal", "somatic"],
+            "activation": {
+              "type": "action",
+              "value": 1
+            }
+          },
+          "effects": [],
+          "folder": null,
+          "sort": 0,
+          "ownership": {
+            "default": 0
+          },
+          "flags": {}
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "_id": "synth00000000010",
+      "name": "Synthetic Rope",
+      "type": "equipment",
+      "img": "icons/svg/item-bag.svg",
+      "system": {
+        "description": {
+          "value": "<p>Synthetic equipment.</p>",
+          "chat": ""
+        },
+        "source": {},
+        "quantity": 1,
+        "weight": {
+          "value": 10,
+          "units": "lb"
+        }
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0
+      },
+      "flags": {}
+    },
+    {
+      "_id": "synth00000000011",
+      "name": "Synthetic Bow",
+      "type": "weapon",
+      "img": "icons/svg/item-bag.svg",
+      "system": {
+        "description": {
+          "value": "<p>Synthetic weapon.</p>",
+          "chat": ""
+        },
+        "source": {},
+        "quantity": 1,
+        "damage": {
+          "base": {
+            "number": 1,
+            "denomination": 8,
+            "bonus": "",
+            "types": ["piercing"]
+          }
+        }
+      },
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "ownership": {
+        "default": 0
+      },
+      "flags": {}
+    }
+  ],
+  "effects": [
+    {
+      "_id": "synth00000000012",
+      "name": "Synthetic Blessing",
+      "img": "icons/svg/aura.svg",
+      "disabled": false,
+      "transfer": false,
+      "duration": {
+        "rounds": 10
+      },
+      "changes": [
+        {
+          "key": "system.attributes.ac.bonus",
+          "mode": 2,
+          "value": "1",
+          "priority": null
+        }
+      ],
+      "statuses": [],
+      "flags": {}
+    }
+  ],
+  "scene": {
+    "_id": "synth00000000013",
+    "name": "Synthetic Scene",
+    "width": 4000,
+    "height": 3000,
+    "padding": 0.25,
+    "grid": {
+      "type": 1,
+      "size": 100,
+      "distance": 5,
+      "units": "ft"
+    },
+    "tokens": [],
+    "lights": [],
+    "walls": [],
+    "notes": [],
+    "sounds": [],
+    "tiles": [],
+    "drawings": [],
+    "playlist": null,
+    "playlistSound": null,
+    "active": true,
+    "flags": {}
+  },
+  "chat": [
+    {
+      "_id": "synth00000000014",
+      "type": "base",
+      "author": "user",
+      "timestamp": 946684800000,
+      "content": "<p>Synthetic message.</p>",
+      "flavor": "",
+      "speaker": {
+        "scene": null,
+        "actor": null,
+        "alias": "Synthetic"
+      },
+      "whisper": [],
+      "blind": false,
+      "rolls": [],
+      "flags": {},
+      "system": {},
+      "style": 0,
+      "emote": false
+    }
+  ],
+  "packs": [
+    {
+      "collection": "synthetic.pack-1",
+      "documentName": "Actor",
+      "title": "Synthetic Pack 1",
+      "total": 25,
+      "rows": [
+        {
+          "_id": "synth00000000015",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 1.1",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-1.Actor.synth00000000015",
+          "pack": "synthetic.pack-1"
+        },
+        {
+          "_id": "synth00000000016",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 1.2",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-1.Actor.synth00000000016",
+          "pack": "synthetic.pack-1"
+        },
+        {
+          "_id": "synth00000000017",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 1.3",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-1.Actor.synth00000000017",
+          "pack": "synthetic.pack-1"
+        },
+        {
+          "_id": "synth00000000018",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 1.4",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-1.Actor.synth00000000018",
+          "pack": "synthetic.pack-1"
+        },
+        {
+          "_id": "synth00000000019",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 1.5",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-1.Actor.synth00000000019",
+          "pack": "synthetic.pack-1"
+        }
+      ]
+    },
+    {
+      "collection": "synthetic.pack-2",
+      "documentName": "Actor",
+      "title": "Synthetic Pack 2",
+      "total": 25,
+      "rows": [
+        {
+          "_id": "synth00000000020",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 2.1",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-2.Actor.synth00000000020",
+          "pack": "synthetic.pack-2"
+        },
+        {
+          "_id": "synth00000000021",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 2.2",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-2.Actor.synth00000000021",
+          "pack": "synthetic.pack-2"
+        },
+        {
+          "_id": "synth00000000022",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 2.3",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-2.Actor.synth00000000022",
+          "pack": "synthetic.pack-2"
+        },
+        {
+          "_id": "synth00000000023",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 2.4",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-2.Actor.synth00000000023",
+          "pack": "synthetic.pack-2"
+        },
+        {
+          "_id": "synth00000000024",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 2.5",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-2.Actor.synth00000000024",
+          "pack": "synthetic.pack-2"
+        }
+      ]
+    },
+    {
+      "collection": "synthetic.pack-3",
+      "documentName": "Actor",
+      "title": "Synthetic Pack 3",
+      "total": 25,
+      "rows": [
+        {
+          "_id": "synth00000000025",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 3.1",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-3.Actor.synth00000000025",
+          "pack": "synthetic.pack-3"
+        },
+        {
+          "_id": "synth00000000026",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 3.2",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-3.Actor.synth00000000026",
+          "pack": "synthetic.pack-3"
+        },
+        {
+          "_id": "synth00000000027",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 3.3",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-3.Actor.synth00000000027",
+          "pack": "synthetic.pack-3"
+        },
+        {
+          "_id": "synth00000000028",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 3.4",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-3.Actor.synth00000000028",
+          "pack": "synthetic.pack-3"
+        },
+        {
+          "_id": "synth00000000029",
+          "folder": null,
+          "img": "icons/svg/mystery-man.svg",
+          "name": "Synthetic Entry 3.5",
+          "type": "npc",
+          "uuid": "Compendium.synthetic.pack-3.Actor.synth00000000029",
+          "pack": "synthetic.pack-3"
+        }
+      ]
+    }
+  ]
+}
