@@ -1,9 +1,10 @@
 import * as net from 'net';
 import type { ToolRegistry } from '../registry/tool-registry.js';
+import { resolveControlPort } from '../instance.js';
 
 export const CONTROL_HOST = '127.0.0.1';
 
-export const CONTROL_PORT = 31414;
+export const CONTROL_PORT = resolveControlPort(process.env);
 
 /**
  * Creates the control channel: a TCP server speaking JSON lines, through which the MCP front
@@ -12,6 +13,9 @@ export const CONTROL_PORT = 31414;
 export function createControlChannel(toolRegistry: ToolRegistry): net.Server {
   return net.createServer(socket => {
     socket.setEncoding('utf8');
+
+    // A wrapper that disconnects abruptly (ECONNRESET) must not crash the backend.
+    socket.on('error', () => undefined);
 
     let buffer = '';
 

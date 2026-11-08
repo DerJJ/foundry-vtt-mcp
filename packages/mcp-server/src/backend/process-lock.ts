@@ -1,9 +1,9 @@
 import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 import { evaluateLockFile } from '../lock.js';
+import { resolveLockFile } from '../instance.js';
+import { CONTROL_PORT } from './control-channel.js';
 
-const LOCK_FILE = path.join(os.tmpdir(), 'foundry-mcp-backend.lock');
+const LOCK_FILE = resolveLockFile(CONTROL_PORT);
 
 let lockFd: number | null = null;
 
