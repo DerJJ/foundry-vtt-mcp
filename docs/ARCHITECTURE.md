@@ -83,14 +83,15 @@ systems/<id>/              system-specific code: dnd5e and wfrp4e actor services
 
 ## Checks
 
-| Command                      | What it checks                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `npm run typecheck`          | all packages                                                                                                  |
-| `npm test`                   | unit tests of module and server, including the golden snapshots                                               |
-| `npm run test:coverage`      | the unit tests again, failing if a folder drops below its coverage floor (`vitest.config.ts` of each package) |
-| `npm run test:mcp:schema`    | tool schemas load and are objects (needs a build)                                                             |
-| `npm run test:backend:smoke` | starts the built backend and checks its control channel against the snapshot (needs `npm run build:release`)  |
-| `npm run version:check`      | the five manifests agree on the version                                                                       |
+| Command                      | What it checks                                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run typecheck`          | all packages                                                                                                                                                                   |
+| `npm test`                   | unit tests of module and server, including the golden snapshots                                                                                                                |
+| `npm run test:coverage`      | the unit tests again, failing if a folder drops below its coverage floor (`vitest.config.ts` of each package)                                                                  |
+| `npm run test:mcp:schema`    | tool schemas load and are objects (needs a build)                                                                                                                              |
+| `npm run test:backend:smoke` | starts the built backend and checks its control channel against the snapshot (needs `npm run build:release`)                                                                   |
+| `npm run test:live`          | walks every domain tool against the connected Foundry world, cleans up after itself (needs a build and the bridge connected in a GM browser; `-- --chat` also posts a message) |
+| `npm run version:check`      | the five manifests agree on the version                                                                                                                                        |
 
 ## Tests
 
