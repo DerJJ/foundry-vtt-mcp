@@ -67,6 +67,49 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: { sceneIdentifier: false, weather: true },
         summary: 'Set the weather effect of a scene (an empty string clears it).',
       },
+      create: {
+        operation: 'manage-scene',
+        risk: 'write',
+        fixed: { action: 'create-scene' },
+        params: { sceneData: true },
+        summary: 'Create a scene from scene data.',
+      },
+      update: {
+        operation: 'manage-scene',
+        risk: 'write',
+        fixed: { action: 'update-scene' },
+        params: { sceneIdentifier: true, sceneData: true },
+        summary: 'Change a scene.',
+      },
+      'create-documents': {
+        operation: 'manage-scene',
+        risk: 'write',
+        fixed: { action: 'create-documents' },
+        params: { sceneIdentifier: true, documentType: true, documents: true },
+        summary:
+          'Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.',
+      },
+      'update-documents': {
+        operation: 'manage-scene',
+        risk: 'write',
+        fixed: { action: 'update-documents' },
+        params: { sceneIdentifier: true, documentType: true, documents: true },
+        summary: 'Change embedded documents of a scene (each entry needs its _id).',
+      },
+      'delete-documents': {
+        operation: 'manage-scene',
+        risk: 'delete',
+        fixed: { action: 'delete-documents' },
+        params: { sceneIdentifier: true, documentType: true, ids: true },
+        summary: 'Delete embedded documents of a scene.',
+      },
+      'list-documents': {
+        operation: 'manage-scene',
+        risk: 'read',
+        fixed: { action: 'list-documents' },
+        params: { sceneIdentifier: true, documentType: true },
+        summary: 'List the embedded documents of a scene.',
+      },
       'list-weather': {
         operation: 'scene-view',
         risk: 'read',
@@ -490,6 +533,42 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         summary: 'End the combat by deleting it.',
       },
       'apply-damage': { operation: 'apply-damage', risk: 'write' },
+    },
+  },
+
+  {
+    name: 'time',
+    purpose:
+      'The real-time clock of Simple Calendar Reborn, run in the primary GM browser. Needs that module.',
+    actions: {
+      status: {
+        operation: 'calendar-clock',
+        risk: 'read',
+        fixed: { action: 'status' },
+        params: {},
+        summary: 'Whether the clock is started, paused or stopped.',
+      },
+      start: {
+        operation: 'calendar-clock',
+        risk: 'write',
+        fixed: { action: 'start' },
+        params: {},
+        summary: 'Start the clock; it stays paused while the game is paused or a combat runs.',
+      },
+      pause: {
+        operation: 'calendar-clock',
+        risk: 'write',
+        fixed: { action: 'pause' },
+        params: {},
+        summary: 'Pause the clock.',
+      },
+      stop: {
+        operation: 'calendar-clock',
+        risk: 'write',
+        fixed: { action: 'stop' },
+        params: {},
+        summary: 'Stop the clock.',
+      },
     },
   },
 

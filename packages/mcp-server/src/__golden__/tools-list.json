@@ -20,7 +20,7 @@
   },
   {
     "name": "scenes",
-    "description": "Scenes: look at the current one, list them, switch, and set scene music.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- current(includeTokens?, includeHidden?): Get information about the currently active scene, including tokens, layout, and the music binding (playlist +…\n- list(filter?, include_active_only?): List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSou…\n- activate(scene_identifier*, optimize_view?): Switch to a different Foundry VTT scene by name or ID\n- set-music(scene_identifier*, playlist?, playlist_sound?): Set or clear the music binding of a scene.\n- ping(sceneIdentifier?, target?, x?, y?): Ping a token or a point on the scene the GM browser is showing.\n- pull-players(sceneIdentifier?, target?, x?, y?): Ping and pull every player view to a token or point.\n- reset-fog(sceneIdentifier?) (delete): Reset the fog of war of a scene.\n- set-weather(weather*, sceneIdentifier?): Set the weather effect of a scene (an empty string clears it).\n- list-weather(): List the available weather effects.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "description": "Scenes: look at the current one, list them, switch, and set scene music.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- current(includeTokens?, includeHidden?): Get information about the currently active scene, including tokens, layout, and the music binding (playlist +…\n- list(filter?, include_active_only?): List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSou…\n- activate(scene_identifier*, optimize_view?): Switch to a different Foundry VTT scene by name or ID\n- set-music(scene_identifier*, playlist?, playlist_sound?): Set or clear the music binding of a scene.\n- ping(sceneIdentifier?, target?, x?, y?): Ping a token or a point on the scene the GM browser is showing.\n- pull-players(sceneIdentifier?, target?, x?, y?): Ping and pull every player view to a token or point.\n- reset-fog(sceneIdentifier?) (delete): Reset the fog of war of a scene.\n- set-weather(weather*, sceneIdentifier?): Set the weather effect of a scene (an empty string clears it).\n- create(sceneData*): Create a scene from scene data.\n- update(sceneIdentifier*, sceneData*): Change a scene.\n- create-documents(sceneIdentifier*, documentType*, documents*): Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.\n- update-documents(sceneIdentifier*, documentType*, documents*): Change embedded documents of a scene (each entry needs its _id).\n- delete-documents(sceneIdentifier*, documentType*, ids*) (delete): Delete embedded documents of a scene.\n- list-documents(sceneIdentifier*, documentType*): List the embedded documents of a scene.\n- list-weather(): List the available weather effects.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -192,6 +192,25 @@
   {
     "name": "combat",
     "description": "The combat tracker of a scene: read it, run it, and apply damage or healing.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- status(sceneIdentifier?): Round, turn and combatants with initiative, HP, AC and state.\n- add(targets?, include?, sceneIdentifier?): Put tokens into the combat; creates the combat if there is none.\n- remove(targets*, sceneIdentifier?): Take tokens out of the combat.\n- roll-initiative(who?, targets?, sceneIdentifier?): Roll initiative as a GM roll.\n- set-initiative(targets*, initiative*, sceneIdentifier?): Set the initiative of tokens.\n- begin(sceneIdentifier?): Start round 1.\n- next-turn(sceneIdentifier?): Advance to the next turn.\n- previous-turn(sceneIdentifier?): Go back one turn.\n- next-round(sceneIdentifier?): Advance to the next round.\n- previous-round(sceneIdentifier?): Go back one round.\n- defeated(targets*, defeated?, sceneIdentifier?): Mark tokens defeated (defeated=false undoes it).\n- end(sceneIdentifier?) (delete): End the combat by deleting it.\n- apply-damage(targets*, amount*, sceneIdentifier?, type?, multiplier?, allMatches?): Apply damage or healing to tokens (dnd5e or pf2e).\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "time",
+    "description": "The real-time clock of Simple Calendar Reborn, run in the primary GM browser. Needs that module.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- status(): Whether the clock is started, paused or stopped.\n- start(): Start the clock; it stays paused while the game is paused or a combat runs.\n- pause(): Pause the clock.\n- stop(): Stop the clock.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {

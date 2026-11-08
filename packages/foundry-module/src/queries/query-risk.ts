@@ -111,6 +111,13 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   sceneView: (data: any): Risk =>
     data?.action === 'list-weather' ? 'read' : data?.action === 'reset-fog' ? 'delete' : 'write',
   creatureCard: 'read' as Risk,
+  manageScene: (data: any): Risk =>
+    data?.action === 'list-documents'
+      ? 'read'
+      : data?.action === 'delete-documents'
+        ? 'delete'
+        : 'write',
+  calendarClock: (data: any): Risk => (data?.action === 'status' ? 'read' : 'write'),
   executeScript: 'execute' as Risk,
   manageMacros: (data: any): Risk =>
     data?.action === 'execute'

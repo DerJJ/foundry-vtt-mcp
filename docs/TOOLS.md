@@ -29,6 +29,12 @@ Scenes: look at the current one, list them, switch, and set scene music.
 | `pull-players` | write | all | sceneIdentifier, target, x, y | Ping and pull every player view to a token or point. |
 | `reset-fog` | delete | all | sceneIdentifier | Reset the fog of war of a scene. |
 | `set-weather` | write | all | sceneIdentifier, **weather** | Set the weather effect of a scene (an empty string clears it). |
+| `create` | write | all | **sceneData** | Create a scene from scene data. |
+| `update` | write | all | **sceneIdentifier**, **sceneData** | Change a scene. |
+| `create-documents` | write | all | **sceneIdentifier**, **documentType**, **documents** | Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene. |
+| `update-documents` | write | all | **sceneIdentifier**, **documentType**, **documents** | Change embedded documents of a scene (each entry needs its _id). |
+| `delete-documents` | delete | all | **sceneIdentifier**, **documentType**, **ids** | Delete embedded documents of a scene. |
+| `list-documents` | read | all | **sceneIdentifier**, **documentType** | List the embedded documents of a scene. |
 | `list-weather` | read | all | (none) | List the available weather effects. |
 
 ## `playlists`
@@ -172,6 +178,17 @@ The combat tracker of a scene: read it, run it, and apply damage or healing.
 | `defeated` | write | all | **targets**, defeated, sceneIdentifier | Mark tokens defeated (defeated=false undoes it). |
 | `end` | delete | all | sceneIdentifier | End the combat by deleting it. |
 | `apply-damage` | write | all | sceneIdentifier, **targets**, **amount**, type, multiplier, allMatches | Apply damage or healing to tokens (dnd5e or pf2e). |
+
+## `time`
+
+The real-time clock of Simple Calendar Reborn, run in the primary GM browser. Needs that module.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `status` | read | all | (none) | Whether the clock is started, paused or stopped. |
+| `start` | write | all | (none) | Start the clock; it stays paused while the game is paused or a combat runs. |
+| `pause` | write | all | (none) | Pause the clock. |
+| `stop` | write | all | (none) | Stop the clock. |
 
 ## `macros`
 

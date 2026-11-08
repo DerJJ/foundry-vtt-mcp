@@ -18,6 +18,7 @@ import { MapGenerationQueries } from './queries/map-generation.js';
 import { UtilityQueries } from './queries/utility.js';
 import { ScriptingQueries } from './queries/scripting.js';
 import { TableQueries } from './queries/table.js';
+import { SceneBuilderQueries } from './queries/scene-builder.js';
 import { Dnd5eQueries } from './systems/dnd5e/queries.js';
 import { Wfrp4eQueries } from './systems/wfrp4e/queries.js';
 
@@ -50,6 +51,7 @@ export class QueryHandlers {
       new UtilityQueries(),
       new ScriptingQueries(),
       new TableQueries(),
+      new SceneBuilderQueries(),
       new Dnd5eQueries(this.dataAccess),
       new Wfrp4eQueries(this.dataAccess),
     ]);
