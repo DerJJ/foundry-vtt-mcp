@@ -335,6 +335,11 @@ export class CompendiumTools {
               maximum: 1000,
               default: 500,
             },
+            fallbackToNameSearch: {
+              type: 'boolean',
+              description:
+                'Only if the creature index cannot be used (still building): answer from a slower search by name only, with different results. Off by default.',
+            },
           },
           required: [],
         },
@@ -722,6 +727,9 @@ export class CompendiumTools {
         ])
         .optional()
         .default(100),
+
+      // Answer from a slower name-only search when the creature index cannot be used.
+      fallbackToNameSearch: z.boolean().optional(),
     });
 
     let params;

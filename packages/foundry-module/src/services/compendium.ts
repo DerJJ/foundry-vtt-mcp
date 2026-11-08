@@ -19,6 +19,19 @@ import { passesPF2eCriteria } from '../systems/pf2e/creature-criteria.js';
 export class CompendiumService {
   private persistentIndex: PersistentCreatureIndex = new PersistentCreatureIndex();
 
+  /** Builds the enhanced creature index in the background if it is missing or out of date. */
+  async ensureCreatureIndex(): Promise<void> {
+    await this.persistentIndex.ensureIndex();
+  }
+
+  /** Whether the creature index is building, and how far it is. */
+  getCreatureIndexStatus(): {
+    building: boolean;
+    progress: { done: number; total: number; current: string };
+  } {
+    return this.persistentIndex.getStatus();
+  }
+
   /**
    * Force rebuild of enhanced creature index
    */
@@ -470,6 +483,8 @@ export class CompendiumService {
     hasSpells?: boolean;
     hasLegendaryActions?: boolean;
     limit?: number;
+    /** Answer from a slower name-only search if the index cannot be used, instead of failing. */
+    fallbackToNameSearch?: boolean;
   }): Promise<{ creatures: any[]; searchSummary: any }> {
     const limit = criteria.limit || 500;
 
@@ -626,8 +641,11 @@ export class CompendiumService {
       };
     } catch (error) {
       console.error(`[${MODULE_ID}] Enhanced creature search failed:`, error);
-      // Fallback to basic search if enhanced index fails
-      return this.fallbackBasicCreatureSearch(criteria, limit);
+      // A different search gives different results, so it only runs when it is asked for.
+      if (criteria.fallbackToNameSearch === true) {
+        return this.fallbackBasicCreatureSearch(criteria, limit);
+      }
+      throw error;
     }
   }
 

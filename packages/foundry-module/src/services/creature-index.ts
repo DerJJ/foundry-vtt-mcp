@@ -9,6 +9,33 @@ import type {
   PersistentEnhancedIndex,
 } from './types.js';
 
+export interface IndexProgress {
+  done: number;
+  total: number;
+  current: string;
+}
+
+/**
+ * Raised instead of blocking or silently answering from something else while the index builds.
+ * The message is written for the model: it says how far the build is and what to do.
+ */
+export class IndexBuildingError extends Error {
+  constructor(readonly progress: IndexProgress) {
+    const where =
+      progress.total > 0
+        ? `${progress.done} of ${progress.total} packs done, now ${progress.current || 'starting'}`
+        : 'starting';
+    super(
+      `The creature index is still building (${where}). Try again in a minute, ` +
+        `or pass fallbackToNameSearch: true for a slower search by name only.`
+    );
+    this.name = 'IndexBuildingError';
+  }
+}
+
+/** How long a request waits for a build before it reports progress instead. */
+const BUILD_WAIT_MS = 20_000;
+
 /**
  * Persistent Enhanced Creature Index System
  * Stores pre-computed creature data in JSON file within Foundry world directory for instant filtering
@@ -20,6 +47,10 @@ export class PersistentCreatureIndex {
   private readonly INDEX_FILENAME = 'enhanced-creature-index.json';
   private buildInProgress = false;
   private hooksRegistered = false;
+  private buildPromise: Promise<EnhancedCreatureIndex[]> | null = null;
+  /** Creatures of packs that are unchanged since the saved index, by pack id. */
+  private reusable = new Map<string, EnhancedCreatureIndex[]>();
+  private progress: IndexProgress = { done: 0, total: 0, current: '' };
 
   /**
    * Check whether informational notifications should be shown (user setting)
@@ -51,25 +82,102 @@ export class PersistentCreatureIndex {
   }
 
   /**
-   * Get or build the enhanced creature index
+   * The enhanced creature index. A saved index that is still valid is returned at once. Otherwise
+   * a build starts in the background, reusing the packs that did not change, and the request
+   * waits a short time for it; if the build is not done by then, it reports its progress.
    */
   async getEnhancedIndex(): Promise<EnhancedCreatureIndex[]> {
-    // Check if we have a valid persistent index
     const existingIndex = await this.loadPersistedIndex();
 
     if (existingIndex && this.isIndexValid(existingIndex)) {
       return existingIndex.creatures;
     }
 
-    // Build new index if needed
-    return await this.buildEnhancedIndex();
+    const build = this.startBuild(existingIndex);
+    const finished = await Promise.race([
+      build.then(
+        () => true,
+        () => true
+      ),
+      new Promise<boolean>(resolve => setTimeout(() => resolve(false), BUILD_WAIT_MS)),
+    ]);
+    if (finished) return await build;
+    throw new IndexBuildingError(this.progress);
   }
 
   /**
-   * Force rebuild of the enhanced index
+   * Make sure an index exists, without waiting for it: used when the world loads, so that the
+   * first search does not pay for the build.
+   */
+  async ensureIndex(): Promise<void> {
+    const existingIndex = await this.loadPersistedIndex();
+    if (existingIndex && this.isIndexValid(existingIndex)) return;
+    void this.startBuild(existingIndex).catch(() => undefined);
+  }
+
+  /** Where the index stands: building (with progress) or not. */
+  getStatus(): { building: boolean; progress: IndexProgress } {
+    return {
+      building: this.buildInProgress || this.buildPromise !== null,
+      progress: { ...this.progress },
+    };
+  }
+
+  /**
+   * Force rebuild of the enhanced index, from scratch
    */
   async rebuildIndex(): Promise<EnhancedCreatureIndex[]> {
-    return await this.buildEnhancedIndex(true);
+    return await this.startBuild(null);
+  }
+
+  /** Starts a build, or joins the one that is running. */
+  private startBuild(existing: PersistentEnhancedIndex | null): Promise<EnhancedCreatureIndex[]> {
+    if (this.buildPromise) return this.buildPromise;
+    this.reusable = existing ? this.unchangedPacks(existing) : new Map();
+    const actorPacks = Array.from(game.packs.values()).filter(
+      pack => pack.metadata.type === 'Actor'
+    );
+    this.progress = { done: 0, total: actorPacks.length, current: '' };
+    const build = this.buildEnhancedIndex(true).finally(() => {
+      this.buildPromise = null;
+      this.reusable = new Map();
+    });
+    this.buildPromise = build;
+    return build;
+  }
+
+  /** The creatures of every pack whose fingerprint matches the saved index. */
+  private unchangedPacks(existing: PersistentEnhancedIndex): Map<string, EnhancedCreatureIndex[]> {
+    const unchanged = new Map<string, EnhancedCreatureIndex[]>();
+    if (
+      existing.metadata.version !== this.INDEX_VERSION ||
+      existing.metadata.gameSystem !== (game as any).system.id
+    ) {
+      return unchanged;
+    }
+    for (const pack of game.packs.values()) {
+      if (pack.metadata.type !== 'Actor') continue;
+      const saved = existing.metadata.packFingerprints.get(pack.metadata.id);
+      if (saved && this.fingerprintsMatch(this.generatePackFingerprint(pack), saved)) {
+        unchanged.set(
+          pack.metadata.id,
+          existing.creatures.filter(creature => (creature as any).pack === pack.metadata.id)
+        );
+      }
+    }
+    return unchanged;
+  }
+
+  /** Extracts a pack's creatures, or reuses the saved ones if the pack is unchanged. */
+  private async extractOrReuse<T extends { creatures: any[]; errors: number }>(
+    pack: any,
+    extract: () => Promise<T>
+  ): Promise<{ creatures: any[]; errors: number }> {
+    this.progress.current = pack.metadata.label;
+    const saved = this.reusable.get(pack.metadata.id);
+    const result = saved ? { creatures: saved, errors: 0 } : await extract();
+    this.progress.done++;
+    return result;
   }
 
   /**
@@ -323,10 +431,6 @@ export class PersistentCreatureIndex {
    * Build enhanced creature index from all Actor packs with detailed progress tracking
    */
   private async buildEnhancedIndex(force = false): Promise<EnhancedCreatureIndex[]> {
-    if (this.buildInProgress && !force) {
-      throw new Error('Index build already in progress');
-    }
-
     // Detect game system ONCE at build time
     const gameSystem = (game as any).system.id;
 
@@ -405,7 +509,9 @@ export class PersistentCreatureIndex {
           }
 
           // Process creatures in this pack
-          const packResult = await this.extractDnD5eDataFromPack(pack);
+          const packResult = await this.extractOrReuse(pack, () =>
+            this.extractDnD5eDataFromPack(pack)
+          );
           enhancedCreatures.push(...packResult.creatures);
           totalErrors += packResult.errors;
 
@@ -736,7 +842,7 @@ export class PersistentCreatureIndex {
         const fingerprint = await this.generatePackFingerprint(pack);
         packFingerprints.set(pack.metadata.id, fingerprint);
 
-        const result = await this.extractPF2eDataFromPack(pack);
+        const result = await this.extractOrReuse(pack, () => this.extractPF2eDataFromPack(pack));
         enhancedCreatures.push(...result.creatures);
         totalErrors += result.errors;
       }
@@ -991,7 +1097,9 @@ export class PersistentCreatureIndex {
 
           packFingerprints.set(pack.metadata.id, this.generatePackFingerprint(pack));
 
-          const packResult = await this.extractCosmereRpgDataFromPack(pack);
+          const packResult = await this.extractOrReuse(pack, () =>
+            this.extractCosmereRpgDataFromPack(pack)
+          );
           enhancedCreatures.push(...packResult.creatures);
           totalErrors += packResult.errors;
 
@@ -1097,7 +1205,7 @@ export class PersistentCreatureIndex {
         }
 
         try {
-          const result = await this.extractMGT2eDataFromPack(pack);
+          const result = await this.extractOrReuse(pack, () => this.extractMGT2eDataFromPack(pack));
           enhancedCreatures.push(...result.creatures);
           totalErrors += result.errors;
         } catch (error) {

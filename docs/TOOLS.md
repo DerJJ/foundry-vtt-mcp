@@ -116,7 +116,7 @@ Compendium packs: search, read entries, list packs, and find creatures by criter
 | `get-item` | read | all | **packId**, **itemId**, compact | Retrieve detailed information about a specific compendium item. |
 | `get-entry` | read | all | **packId**, **entryId** | Retrieve complete stat block data including items, spells, and abilities for actor creation |
 | `list-packs` | read | all | type | List all available compendium packs |
-| `find-creatures` | read | all | challengeRating, creatureType, size, hasSpells, hasLegendaryActions, level, traits, rarity, tier, role, hasInvestiture, hitPoints, defensesMin, deflectMin, limit | MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria. |
+| `find-creatures` | read | all | challengeRating, creatureType, size, hasSpells, hasLegendaryActions, level, traits, rarity, tier, role, hasInvestiture, hitPoints, defensesMin, deflectMin, limit, fallbackToNameSearch | MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria. |
 
 ## `journals`
 
