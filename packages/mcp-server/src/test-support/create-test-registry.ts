@@ -9,9 +9,19 @@ import { CosmereRpgAdapter } from '../systems/cosmere-rpg/adapter.js';
 import { WFRP4eAdapter } from '../systems/wfrp4e/adapter.js';
 import { MGT2eAdapter } from '../systems/mgt2e/adapter.js';
 import { createToolRegistry } from '../registry/create-tool-registry.js';
+import { createOperationCatalog, type ToolRegistryDeps } from '../registry/operations.js';
 
 /** The real tool registry, built against a Foundry client that is never connected. */
 export function createTestToolRegistry() {
+  return createToolRegistry(testDeps());
+}
+
+/** Every operation behind the domain tools, built against a client that is never connected. */
+export function createTestOperationCatalog() {
+  return createOperationCatalog(testDeps());
+}
+
+function testDeps(): ToolRegistryDeps {
   const logger = new Logger({ level: 'error', enableConsole: false, enableFile: false });
   const foundryClient = new FoundryClient(config.foundry, logger);
 
@@ -23,5 +33,5 @@ export function createTestToolRegistry() {
   systemRegistry.register(new WFRP4eAdapter());
   systemRegistry.register(new MGT2eAdapter());
 
-  return createToolRegistry({ foundryClient, logger, systemRegistry, backendComfyUIHandlers: {} });
+  return { foundryClient, logger, systemRegistry, backendComfyUIHandlers: {} };
 }

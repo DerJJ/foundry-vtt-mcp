@@ -30,15 +30,23 @@ backend/
   map-generation.ts        map generation job handling
 registry/
   tool-registry.ts         ToolRegistry: definitions + handlers, list() and call()
-  create-tool-registry.ts  creates every tool class and registers it
-tools/                     one class per group of tools: getToolDefinitions() + handle* methods
+  create-tool-registry.ts  builds the domain tools the client sees
+  domain-tools.ts          the domain tools and their actions: operation, risk, parameters
+  domain-tool.ts           builds one domain tool: action dispatch, describe, access check, paging
+  domain-context.ts        the connected world as the domain tools see it: system, capabilities
+  access.ts, validate-params.ts   risks and access levels; the check on an action's params
+  operations.ts            creates every operation (the tool classes below) as a catalog
+  tools-doc.ts             renders docs/TOOLS.md from the specs
+tools/                     one class per group of operations: getToolDefinitions() + handle* methods
 systems/<id>/              server-side game system adapters (formatting, filters, index building)
 foundry-client.ts, foundry-connector.ts, webrtc-peer.ts   transport to Foundry
 ```
 
-**A tool call** is `ToolRegistry.call(name, args)`. There is no switch over tool names: `createToolRegistry` registers each tool class's definitions together with a `tool name -> method` table (`bindMethods`, checked by the compiler). Registering a tool without a handler, a handler without a tool or a duplicate name throws at start-up.
+**A tool call** is `ToolRegistry.call(name, args)` on a _domain tool_ ([ADR-0004](adr/0004-domain-tools-with-actions-and-schema-discovery.md)): `{ action, params }`. The domain tool looks up the action, checks the game system and the access level ([ADR-0005](adr/0005-access-levels-and-action-risk.md)), validates `params` against the action's schema, and calls the _operation_ that implements the action. Operations are the tool classes in `tools/`; each registers with a `name -> method` table (`bindMethods`, checked by the compiler) in `registry/operations.ts`, and no client sees them directly. `describe` returns the actions of the connected world's game system, or the full schema of one action.
 
-**Adding a tool:** add the definition to the tool class's `getToolDefinitions()`, add the handler method, and add one line to that class's table in `registry/create-tool-registry.ts`. Update the golden snapshot (see below) in the same commit, because the tool surface changes.
+**Adding an action:** add the operation (definition in the tool class's `getToolDefinitions()`, a handler method and a line in `registry/operations.ts`), then one entry in `registry/domain-tools.ts` with its risk, and the bridge query it uses needs a risk in `foundry-module/src/queries/query-risk.ts`. Regenerate the snapshots and `docs/TOOLS.md` (see below) in the same commit. Contract tests fail if an operation has no action, an action names a parameter its operation lacks, or the listing grows past its size budget.
+
+[docs/TOOLS.md](TOOLS.md) lists every action with its risk, parameters and the v0.8.6 tool it replaced.
 
 ## Bridge (`packages/foundry-module/src`)
 
@@ -60,7 +68,7 @@ systems/<id>/              system-specific code: dnd5e and wfrp4e actor services
                            spellcasting and creature-criteria helpers for pf2e, dnd5e, dsa5, mgt2e, cosmere-rpg
 ```
 
-**A query** has two halves. A _query group_ (`queries/<category>.ts`) validates the request and checks GM access; a _service_ (`services/<category>.ts`) does the work. `QueryRegistry` publishes each group's routes as `foundry-mcp-bridge.<name>` in `CONFIG.queries` and wraps every handler in `guardQueryHandler`, because Foundry's `User#query` makes `CONFIG.queries` reachable for every connected user.
+**A query** has two halves. A _query group_ (`queries/<category>.ts`) validates the request and checks GM access; a _service_ (`services/<category>.ts`) does the work. `QueryRegistry` publishes each group's routes as `foundry-mcp-bridge.<name>` in `CONFIG.queries` and wraps every handler in `guardQueryHandler`, because Foundry's `User#query` makes `CONFIG.queries` reachable for every connected user. Inside that guard, `guardRisk` checks the query's risk (`queries/query-risk.ts`; a query without one is refused) against the world's access level (`access-level.ts`).
 
 **Adding a query:** add the handler to the group, add its name to that group's `routes()`, put the work in the matching service, and update the golden snapshot.
 
@@ -68,10 +76,10 @@ systems/<id>/              system-specific code: dnd5e and wfrp4e actor services
 
 [ADR-0002](adr/0002-golden-snapshot-guards-the-restructure.md). Two files store what an MCP client and the Foundry side can see:
 
-- `packages/mcp-server/src/__golden__/tools-list.json`: the full `tools/list` output.
+- `packages/mcp-server/src/__golden__/tools-list.json`: the full `tools/list` output. `upstream-tools.json` beside it records the 50 tools of v0.8.6 that the domain tools replaced.
 - `packages/foundry-module/src/__golden__/query-names.json`: the registered query names.
 
-`tool-surface.test.ts` and `query-surface.test.ts` compare the code against them. A change to the surface regenerates them on purpose: `UPDATE_GOLDEN=1 npm test`.
+`tool-surface.test.ts` and `query-surface.test.ts` compare the code against them, and `registry/tools-doc.test.ts` does the same for `docs/TOOLS.md`. A change to the surface regenerates them on purpose: `UPDATE_GOLDEN=1 npm test`.
 
 ## Checks
 

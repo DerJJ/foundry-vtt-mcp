@@ -1,5 +1,19 @@
 ## Unreleased
 
+### Breaking
+
+- **50 tools became 10 domain tools** (`world`, `scenes`, `playlists`, `effects`, `tokens`, `items`, `actors`, `compendium`, `journals`, `chat`) plus `image-generation`. Each takes `{ "action", "params" }`; `describe` returns the parameters of an action, or the actions of the world's game system. The tool descriptions and schemas a client loads shrink from about 75,000 to about 13,000 characters. System-specific actions (D&D 5e NPCs and features, WFRP4e, DSA5) are no longer listed; they appear in `describe` when the world uses that system. The old tool names are gone with no aliases: [docs/TOOLS.md](docs/TOOLS.md) maps every old tool to its new tool and action. See ADR-0004.
+- **Access level replaces "Allow Write Operations".** One world setting, _Read only_, _Read & write_ (default) or _Full access_. Deleting needs Full access, which the old setting never asked for. Script and macro execution has its own checkbox, off by default. See ADR-0005. Change it under Module Settings, Foundry MCP Bridge.
+- **Image generation (ComfyUI) is off by default.** Switch it on under Module Settings. The tool is always listed and refuses while the setting is off.
+- `list` actions take `limit` (default 50) and `offset` and return `total` and `hasMore`.
+
+### Fixes
+
+- **Playlists can be created** (`playlists` `create`). It failed on every system with `game.playlists.createDocuments is not a function` (#2).
+- **PF2e effect creation** explains that PF2e models effects as items, instead of failing without a reason (#3).
+- **Switching worlds** no longer leaves tools behaving as the previous game system; the server forgets the detected system when the bridge reconnects (#4).
+- The server's WebRTC signalling port is closed when the connector stops, and can be set with `FOUNDRY_WEBRTC_SIGNALING_PORT` (default 31416).
+
 ### Internal
 
 - **Restructure, no behaviour change.** The tool list (50 tools) and the bridge's query names are identical to v0.8.6; a golden snapshot of both is now tested. The server routes tool calls through a `ToolRegistry` instead of a `switch`, and `backend.ts` is split into focused modules under `src/backend/`. In the bridge, the 12,000-line `data-access.ts` becomes services by category, the 2,300-line `queries.ts` becomes query groups published by a `QueryRegistry`, and per-system helpers move under `systems/<id>/`. See `docs/ARCHITECTURE.md` and `docs/adr/`. The internal handle `window.foundryMCPBridge.dataAccess` now exposes the services as properties (`dataAccess.characters.getCharacterInfo(...)`); the old flat calls (`dataAccess.getCharacterInfo(...)`) still work, with a one-time deprecation warning in the console.
