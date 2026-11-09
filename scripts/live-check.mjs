@@ -312,17 +312,28 @@ if (canWrite) {
         }
       }
       try {
-        await call('compendium', 'create-pack', {
-          label: `${PREFIX} ${type}`,
-          type,
-          name: packNameOf(type),
-        });
+        let reused = false;
+        try {
+          await call('compendium', 'create-pack', {
+            label: `${PREFIX} ${type}`,
+            type,
+            name: packNameOf(type),
+          });
+        } catch (error) {
+          // a leftover of an earlier run that could not be deleted: use it
+          if (!/already exists/.test(String(error.message))) throw error;
+          reused = true;
+        }
         fixturePackTypes.push(type);
-        const r = await call('documents', 'create', {
-          type,
-          pack: `world.${packNameOf(type)}`,
-          data: entry,
-        });
+        const packId = `world.${packNameOf(type)}`;
+        const existing = reused
+          ? await call('documents', 'list', { type, pack: packId, limit: 1 })
+          : null;
+        if (existing?.total > 0) {
+          made.push(`${type} (reused)`);
+          continue;
+        }
+        const r = await call('documents', 'create', { type, pack: packId, data: entry });
         expect(
           r?.created?.length === 1,
           `${type} entry not created: ${JSON.stringify(r).slice(0, 120)}`
