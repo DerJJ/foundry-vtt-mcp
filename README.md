@@ -137,7 +137,7 @@ Fifteen tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool 
 
 | Tool         | For                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `world`      | world information and `capabilities` (game system, access level, what is switched on)                                                                                           |
+| `world`      | world information, `capabilities` (game system, access level, what is switched on), reloading the GM browser                                                                    |
 | `documents`  | list, read, create, change and delete any document: actors and their items, scenes and their walls, journals, playlists, macros, folders, pack entries; `schema` for the fields |
 | `actors`     | a compact actor view, using items and casting spells, placing on the scene, ownership, party and creature cards                                                                 |
 | `compendium` | search packs, read an entry of any type, find creatures by criteria, make and delete world packs                                                                                |
@@ -147,6 +147,7 @@ Fifteen tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool 
 | `chat`       | speak as an actor or the GM, read the chat log, GM rolls, roll tables, ask players to roll                                                                                      |
 | `journals`   | quests, campaign dashboards, searching journals                                                                                                                                 |
 | `modules`    | the installed and running Foundry modules, switching them on or off (applied after a reload)                                                                                    |
+| `settings`   | read and change Foundry settings (not the bridge's own, the module list, permissions or secrets)                                                                                |
 | `time`       | the Simple Calendar Reborn clock                                                                                                                                                |
 | `audio`      | playing playlists and sounds                                                                                                                                                    |
 | `macros`     | run macros and scripts (off unless "Allow script and macro execution" is on)                                                                                                    |

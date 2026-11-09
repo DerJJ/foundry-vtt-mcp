@@ -472,7 +472,7 @@ jobs:
 
           AI-powered campaign management for Foundry VTT through MCP. **Compatible with Foundry VTT v13 and v14.** Verified on Pathfinder 2e and D&D 5e.
 
-          **Upgrading from v0.8.6:** the 50 tools were replaced by 14 domain tools, without aliases. See the migration table in [docs/TOOLS.md](https://github.com/DerJJ/foundry-vtt-mcp/blob/master/docs/TOOLS.md) and the new "Access level" setting in the module. The full list of changes is in the [changelog](https://github.com/DerJJ/foundry-vtt-mcp/blob/master/CHANGELOG.md).
+          **Upgrading from v0.8.6:** the 50 tools were replaced by 15 domain tools, without aliases. See the migration table in [docs/TOOLS.md](https://github.com/DerJJ/foundry-vtt-mcp/blob/master/docs/TOOLS.md) and the new "Access level" setting in the module. The full list of changes is in the [changelog](https://github.com/DerJJ/foundry-vtt-mcp/blob/master/CHANGELOG.md).
 
           ### Installation Options
 
@@ -503,7 +503,7 @@ jobs:
           4. Ask it to call the `world` tool with `capabilities`
 
           ### Features
-          - 14 domain tools with an `action` each; `describe` lists the actions of the world's game system
+          - 15 domain tools with an `action` each; `describe` lists the actions of the world's game system
           - Access levels (Read only, Read & write, Full access) and a separate switch for running scripts
           - Multi-system support: Pathfinder 2e and D&D 5e verified; DSA5, WFRP4e, Cosmere RPG and Mongoose Traveller 2e included but unverified
           - One `documents` tool for actors, items, scenes, journals, playlists, macros, folders and pack entries; plus combat, chat, modules and more
