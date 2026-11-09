@@ -13,7 +13,6 @@ export class JournalQueries implements QueryGroup {
       getJournalContent: this.handleGetJournalContent.bind(this),
       getJournalPageContent: this.handleGetJournalPageContent.bind(this),
       updateJournalContent: this.handleUpdateJournalContent.bind(this),
-      updateCampaignProgress: this.handleUpdateCampaignProgress.bind(this),
     };
   }
 
@@ -162,41 +161,6 @@ export class JournalQueries implements QueryGroup {
     } catch (error) {
       throw new Error(
         `Failed to update journal content: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Handle campaign progress update request
-   */
-  async handleUpdateCampaignProgress(data: {
-    campaignId: string;
-    partId: string;
-    newStatus: string;
-  }): Promise<any> {
-    try {
-      // SECURITY: Silent GM validation
-      const gmCheck = validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      validateFoundryState();
-
-      // For now, this is a pass-through to the MCP server
-      // In the future, campaign data might be stored in Foundry world flags
-      // Currently, the campaign dashboard regeneration happens server-side
-
-      return {
-        success: true,
-        message: `Campaign progress updated: ${data.partId} is now ${data.newStatus}`,
-        campaignId: data.campaignId,
-        partId: data.partId,
-        newStatus: data.newStatus,
-      };
-    } catch (error) {
-      throw new Error(
-        `Failed to update campaign progress: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

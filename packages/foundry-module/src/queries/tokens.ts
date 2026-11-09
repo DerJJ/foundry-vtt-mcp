@@ -8,15 +8,7 @@ export class TokenQueries implements QueryGroup {
 
   routes(): Record<string, QueryHandler> {
     return {
-      moveToken: this.handleMoveToken.bind(this),
-      updateToken: this.handleUpdateToken.bind(this),
-      deleteTokens: this.handleDeleteTokens.bind(this),
-      getTokenDetails: this.handleGetTokenDetails.bind(this),
-      toggleTokenCondition: this.handleToggleTokenCondition.bind(this),
-      getAvailableConditions: this.handleGetAvailableConditions.bind(this),
       'move-token': this.handleMoveToken.bind(this),
-      'update-token': this.handleUpdateToken.bind(this),
-      'delete-tokens': this.handleDeleteTokens.bind(this),
       'get-token-details': this.handleGetTokenDetails.bind(this),
       'toggle-token-condition': this.handleToggleTokenCondition.bind(this),
       'get-available-conditions': this.handleGetAvailableConditions.bind(this),
@@ -54,62 +46,6 @@ export class TokenQueries implements QueryGroup {
     } catch (error) {
       throw new Error(
         `Failed to move token: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Handle update token request
-   */
-  private async handleUpdateToken(data: {
-    tokenId: string;
-    updates: Record<string, any>;
-  }): Promise<any> {
-    try {
-      // SECURITY: Silent GM validation
-      const gmCheck = validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      validateFoundryState();
-
-      if (!data.tokenId) {
-        throw new Error('tokenId is required');
-      }
-      if (!data.updates || typeof data.updates !== 'object') {
-        throw new Error('updates object is required');
-      }
-
-      return await this.dataAccess.tokens.updateToken(data);
-    } catch (error) {
-      throw new Error(
-        `Failed to update token: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Handle delete tokens request
-   */
-  private async handleDeleteTokens(data: { tokenIds: string[] }): Promise<any> {
-    try {
-      // SECURITY: Silent GM validation
-      const gmCheck = validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      validateFoundryState();
-
-      if (!data.tokenIds || !Array.isArray(data.tokenIds) || data.tokenIds.length === 0) {
-        throw new Error('tokenIds array is required and must not be empty');
-      }
-
-      return await this.dataAccess.tokens.deleteTokens(data);
-    } catch (error) {
-      throw new Error(
-        `Failed to delete tokens: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

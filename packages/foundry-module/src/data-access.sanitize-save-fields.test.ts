@@ -33,58 +33,6 @@ describe('FoundryDataAccess save-field sanitization', () => {
     vi.unstubAllGlobals();
   });
 
-  it('preserves Activity save configuration through getCharacterEntity', async () => {
-    const system = createActivitySystem();
-    const item = {
-      id: 'item-1',
-      name: 'Saving Throw Feature',
-      type: 'feat',
-      img: 'icons/feat.svg',
-      system,
-      effects: { contents: [] },
-      toObject: () => ({
-        _id: 'item-1',
-        name: 'Saving Throw Feature',
-        type: 'feat',
-        img: 'icons/feat.svg',
-        system,
-        effects: [],
-      }),
-    };
-    const actor = {
-      id: 'actor-1',
-      name: 'Test Character',
-      items: { contents: [item] },
-      effects: { contents: [] },
-      system: {},
-    };
-
-    vi.stubGlobal('game', {
-      ready: true,
-      world: { id: 'world-1' },
-      user: { id: 'user-1', name: 'GM' },
-      system: { id: 'dnd5e' },
-      actors: { contents: [actor] },
-    });
-
-    const result = await makeDataAccess().characters.getCharacterEntity({
-      characterIdentifier: actor.id,
-      entityIdentifier: item.id,
-    });
-
-    expect(result.entity.system.activities[ACTIVITY_ID].save).toEqual({
-      ability: ['wis'],
-      dc: {
-        calculation: '',
-        formula: '10 + @abilities.int.mod + @prof',
-      },
-    });
-    expect(result.entity.system.activities[ACTIVITY_ID].activation).toEqual({
-      type: 'action',
-      value: 1,
-    });
-  });
-
   it('preserves Activity save configuration through getCompendiumDocumentFull', async () => {
     const system = createActivitySystem();
     const document = {

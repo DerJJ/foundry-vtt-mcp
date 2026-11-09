@@ -62,15 +62,18 @@ queries/
 data-access.ts             composition root: one service per category
 services/
   <category>.ts            the operations themselves (characters, compendium, world, audio, journals,
-                           actors, effects, items, rolls, ownership, chat, tokens, library)
+                           actors, items, rolls, ownership, chat, tokens, library)
+  documents.ts, modules.ts, settings.ts, document-kinds.ts
+                           the generic documents tool (any document at any depth, with the kinds of
+                           item per game system), the Foundry modules, and Foundry settings
   chat-log.ts, script-runner.ts, table-actions.ts
                            standalone: the chat log reader, scripts and macros, combat, damage,
                            hidden rolls, tables, scene view and creature cards
   creature-index.ts        persistent creature index
   support.ts               sanitising, audit log and Foundry state checks
   types.ts, helpers.ts     shared types and helpers
-systems/<id>/              system-specific code: dnd5e and wfrp4e actor services and query groups,
-                           spellcasting and creature-criteria helpers for pf2e, dnd5e, dsa5, mgt2e, cosmere-rpg
+systems/<id>/              system-specific code: spellcasting, rolls, table actions and
+                           creature-criteria helpers for pf2e, dnd5e, dsa5, mgt2e, cosmere-rpg
 ```
 
 **A query** has two halves. A _query group_ (`queries/<category>.ts`) validates the request and checks GM access; a _service_ (`services/<category>.ts`) does the work. `QueryRegistry` publishes each group's routes as `foundry-mcp-bridge.<name>` in `CONFIG.queries` and wraps every handler in `guardQueryHandler`, because Foundry's `User#query` makes `CONFIG.queries` reachable for every connected user. Inside that guard, `guardRisk` checks the query's risk (`queries/query-risk.ts`; a query without one is refused) against the world's access level (`access-level.ts`).

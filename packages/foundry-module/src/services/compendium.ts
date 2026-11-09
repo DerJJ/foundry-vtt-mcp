@@ -9,7 +9,7 @@ import type {
   CompendiumEntryFull,
 } from './types.js';
 import { PersistentCreatureIndex } from './creature-index.js';
-import { sanitizeData, validateFoundryState } from './support.js';
+import { sanitizeData } from './support.js';
 
 import { passesMGT2eCriteria } from '../systems/mgt2e/creature-criteria.js';
 import { passesCosmereRpgCriteria } from '../systems/cosmere-rpg/creature-criteria.js';
@@ -22,14 +22,6 @@ export class CompendiumService {
   /** Builds the enhanced creature index in the background if it is missing or out of date. */
   async ensureCreatureIndex(): Promise<void> {
     await this.persistentIndex.ensureIndex();
-  }
-
-  /** Whether the creature index is building, and how far it is. */
-  getCreatureIndexStatus(): {
-    building: boolean;
-    progress: { done: number; total: number; current: string };
-  } {
-    return this.persistentIndex.getStatus();
   }
 
   /**
@@ -308,106 +300,6 @@ export class CompendiumService {
 
     // Check if any filters are actually specified
     return Object.keys(filters).some(key => filters[key] !== undefined);
-  }
-
-  /**
-   * Check if entry passes all specified filters
-   * @unused - Replaced with simple index-only approach
-   */
-  // @ts-ignore - Unused method kept for compatibility
-  private passesFilters(
-    entry: any,
-    filters: {
-      challengeRating?: number | { min?: number; max?: number };
-      creatureType?: string;
-      size?: string;
-      alignment?: string;
-      hasLegendaryActions?: boolean;
-      spellcaster?: boolean;
-    }
-  ): boolean {
-    const system = entry.system || {};
-
-    // Challenge Rating filter
-    if (filters.challengeRating !== undefined) {
-      // Try multiple possible CR locations in D&D 5e data structure
-      let entryCR =
-        system.details?.cr?.value || system.details?.cr || system.cr?.value || system.cr || 0;
-
-      // Handle fractional CRs (common in D&D 5e)
-      if (typeof entryCR === 'string') {
-        if (entryCR === '1/8') entryCR = 0.125;
-        else if (entryCR === '1/4') entryCR = 0.25;
-        else if (entryCR === '1/2') entryCR = 0.5;
-        else entryCR = parseFloat(entryCR) || 0;
-      }
-
-      if (typeof filters.challengeRating === 'number') {
-        // Exact CR match
-        if (entryCR !== filters.challengeRating) {
-          return false;
-        }
-      } else if (typeof filters.challengeRating === 'object') {
-        // CR range
-        const { min, max } = filters.challengeRating;
-        if (min !== undefined && entryCR < min) {
-          return false;
-        }
-        if (max !== undefined && entryCR > max) {
-          return false;
-        }
-      }
-    }
-
-    // Creature Type filter
-    if (filters.creatureType) {
-      const entryType = system.details?.type?.value || system.type?.value || '';
-      if (entryType.toLowerCase() !== filters.creatureType.toLowerCase()) {
-        return false;
-      }
-    }
-
-    // Size filter
-    if (filters.size) {
-      const entrySize = system.traits?.size || system.size || '';
-      if (entrySize.toLowerCase() !== filters.size.toLowerCase()) {
-        return false;
-      }
-    }
-
-    // Alignment filter
-    if (filters.alignment) {
-      const entryAlignment = system.details?.alignment || system.alignment || '';
-      if (!entryAlignment.toLowerCase().includes(filters.alignment.toLowerCase())) {
-        return false;
-      }
-    }
-
-    // Legendary Actions filter
-    if (filters.hasLegendaryActions !== undefined) {
-      const hasLegendary = !!(
-        system.resources?.legact ||
-        system.legendary ||
-        (system.resources?.legres && system.resources.legres.value > 0)
-      );
-      if (hasLegendary !== filters.hasLegendaryActions) {
-        return false;
-      }
-    }
-
-    // Spellcaster filter
-    if (filters.spellcaster !== undefined) {
-      const isSpellcaster = !!(
-        system.spells ||
-        system.attributes?.spellcasting ||
-        (system.details?.spellLevel && system.details.spellLevel > 0)
-      );
-      if (isSpellcaster !== filters.spellcaster) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
@@ -712,148 +604,6 @@ export class CompendiumService {
   }
 
   /**
-   * Prioritize compendium packs by likelihood of containing relevant creatures
-   * @unused - Replaced by enhanced persistent index system
-   */
-  // @ts-ignore - Unused method kept for compatibility
-  private prioritizePacksForCreatures(packs: any[]): any[] {
-    const priorityOrder = [
-      // Tier 1: Core D&D 5e content (highest priority)
-      { pattern: /^dnd5e\.monsters/, priority: 100 }, // Core D&D 5e monsters
-      { pattern: /^dnd5e\.actors/, priority: 95 }, // Core D&D 5e actors
-      { pattern: /ddb.*monsters/i, priority: 90 }, // D&D Beyond monsters
-
-      // Tier 2: Official modules and supplements
-      { pattern: /^world\..*ddb.*monsters/i, priority: 85 }, // World-specific DDB monsters
-      { pattern: /monsters/i, priority: 80 }, // Any pack with "monsters"
-
-      // Tier 3: Campaign and adventure content
-      { pattern: /^world\.(?!.*summon|.*hero)/i, priority: 70 }, // World packs (not summons/heroes)
-
-      // Tier 4: Specialized content
-      { pattern: /summon|familiar/i, priority: 40 }, // Summons and familiars
-
-      // Tier 5: Unlikely to contain monsters (lowest priority)
-      { pattern: /hero|player|pc/i, priority: 10 }, // Player characters
-    ];
-
-    return packs.sort((a, b) => {
-      const aScore = this.getPackPriority(a.metadata.id, a.metadata.label, priorityOrder);
-      const bScore = this.getPackPriority(b.metadata.id, b.metadata.label, priorityOrder);
-
-      if (aScore !== bScore) {
-        return bScore - aScore; // Higher score first
-      }
-
-      // Secondary sort by pack label alphabetically
-      return a.metadata.label.localeCompare(b.metadata.label);
-    });
-  }
-
-  /**
-   * Get priority score for a pack based on ID and label
-   */
-  private getPackPriority(
-    packId: string,
-    packLabel: string,
-    priorityOrder: { pattern: RegExp; priority: number }[]
-  ): number {
-    for (const rule of priorityOrder) {
-      if (rule.pattern.test(packId) || rule.pattern.test(packLabel)) {
-        return rule.priority;
-      }
-    }
-    // Default priority for unmatched packs
-    return 50;
-  }
-
-  /**
-   * Check if creature entry passes the given criteria
-   * @unused - Legacy method replaced by passesEnhancedCriteria
-   */
-  // @ts-ignore - Legacy method kept for compatibility
-  private passesCriteria(
-    entry: any,
-    criteria: {
-      challengeRating?: number | { min?: number; max?: number };
-      creatureType?: string;
-      size?: string;
-      hasSpells?: boolean;
-      hasLegendaryActions?: boolean;
-    }
-  ): boolean {
-    const system = entry.system || {};
-
-    // Challenge Rating filter - enhanced extraction
-    if (criteria.challengeRating !== undefined) {
-      // Try multiple possible CR locations in D&D 5e data structure
-      let entryCR =
-        system.details?.cr?.value || system.details?.cr || system.cr?.value || system.cr || 0;
-
-      // Handle fractional CRs (common in D&D 5e)
-      if (typeof entryCR === 'string') {
-        if (entryCR === '1/8') entryCR = 0.125;
-        else if (entryCR === '1/4') entryCR = 0.25;
-        else if (entryCR === '1/2') entryCR = 0.5;
-        else entryCR = parseFloat(entryCR) || 0;
-      }
-
-      if (typeof criteria.challengeRating === 'number') {
-        if (entryCR !== criteria.challengeRating) {
-          return false;
-        }
-      } else if (typeof criteria.challengeRating === 'object') {
-        const { min = 0, max = 30 } = criteria.challengeRating;
-        if (entryCR < min || entryCR > max) {
-          return false;
-        }
-      }
-    }
-
-    // Creature Type filter - enhanced extraction
-    if (criteria.creatureType) {
-      // Try multiple possible type locations in D&D 5e data structure
-      const entryType =
-        system.details?.type?.value ||
-        system.details?.type ||
-        system.type?.value ||
-        system.type ||
-        '';
-      if (entryType.toLowerCase() !== criteria.creatureType.toLowerCase()) {
-        return false;
-      }
-    }
-
-    // Size filter
-    if (criteria.size) {
-      const entrySize = system.traits?.size || system.size || '';
-      if (entrySize.toLowerCase() !== criteria.size.toLowerCase()) return false;
-    }
-
-    // Spellcaster filter
-    if (criteria.hasSpells !== undefined) {
-      const isSpellcaster = !!(
-        system.spells ||
-        system.attributes?.spellcasting ||
-        (system.details?.spellLevel && system.details.spellLevel > 0)
-      );
-      if (isSpellcaster !== criteria.hasSpells) return false;
-    }
-
-    // Legendary Actions filter
-    if (criteria.hasLegendaryActions !== undefined) {
-      const hasLegendary = !!(
-        system.resources?.legact ||
-        system.legendary ||
-        (system.resources?.legres && system.resources.legres.value > 0)
-      );
-      if (hasLegendary !== criteria.hasLegendaryActions) return false;
-    }
-
-    return true;
-  }
-
-  /**
    * Simple name/description-based matching for creatures using index data only
    */
   private matchesSearchCriteria(
@@ -902,34 +652,6 @@ export class CompendiumService {
       system: pack.metadata.system,
       private: pack.metadata.private,
     }));
-  }
-
-  /**
-   * Return a compendium pack's index entries as a plain array.
-   * `fields` requests extra (dot-notation) fields be included in the index —
-   * e.g. ['type', 'system.details.species.value'] — so callers can filter
-   * without loading every full document. Mirrors the getIndex({ fields })
-   * pattern used elsewhere, with a fallback for older Foundry APIs.
-   */
-  async getPackIndex(packId: string, fields?: string[]): Promise<any[]> {
-    const pack = game.packs.get(packId);
-    if (!pack) {
-      throw new Error(`Compendium pack not found: ${packId}`);
-    }
-
-    let packIndex: any;
-    try {
-      packIndex = await (pack as any).getIndex(
-        fields && fields.length > 0 ? { fields } : undefined
-      );
-    } catch {
-      // Fallback: older Foundry API without the fields option
-      packIndex = await (pack as any).getIndex();
-    }
-
-    const source =
-      packIndex && typeof packIndex.values === 'function' ? packIndex : (pack as any).index;
-    return Array.from((source as any).values()).map((entry: any) => sanitizeData(entry));
   }
 
   /**
@@ -1020,17 +742,5 @@ export class CompendiumService {
 
     // Return best fuzzy match
     return exactResults.length > 0 ? exactResults[0] : null;
-  }
-
-  /**
-   * Get enhanced creature index for campaign analysis
-   */
-  async getEnhancedCreatureIndex(): Promise<any[]> {
-    validateFoundryState();
-
-    // Get the enhanced creature index (builds if needed)
-    const enhancedCreatures = await this.persistentIndex.getEnhancedIndex();
-
-    return enhancedCreatures || [];
   }
 }

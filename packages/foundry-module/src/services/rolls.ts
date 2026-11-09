@@ -746,19 +746,6 @@ export class RollService {
   }
 
   /**
-   * Get roll button state from ChatMessage flags
-   */
-  getRollStateFromMessage(chatMessage: any, buttonId: string): any {
-    try {
-      const rollButtons = chatMessage.getFlag(MODULE_ID, 'rollButtons');
-      return rollButtons?.[buttonId] || null;
-    } catch (error) {
-      console.error(`[${MODULE_ID}] Error getting roll state from message:`, error);
-      return null;
-    }
-  }
-
-  /**
    * Update the ChatMessage to replace button with rolled state
    */
   async updateRollButtonMessage(
@@ -840,48 +827,6 @@ export class RollService {
         });
     } catch (error) {
       console.error(`[${MODULE_ID}] Error in legacy requestRollStateSave redirect:`, error);
-    }
-  }
-
-  /**
-   * Broadcast roll state change to all connected users for real-time sync
-   */
-  broadcastRollState(_buttonId: string, _rollState: any): void {
-    // LEGACY METHOD - No longer needed with ChatMessage.update() system
-    // ChatMessage.update() automatically broadcasts to all clients, so this method is no longer needed
-  }
-
-  /**
-   * Clean up old roll states (optional maintenance)
-   * Removes roll states older than 30 days to prevent storage bloat
-   */
-  async cleanOldRollStates(): Promise<number> {
-    validateFoundryState();
-
-    try {
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const rollStates = game.settings.get(MODULE_ID, 'rollStates') || {};
-      let cleanedCount = 0;
-
-      // Remove old roll states
-      for (const [buttonId, rollState] of Object.entries(rollStates)) {
-        if (rollState && typeof rollState === 'object' && 'timestamp' in rollState) {
-          const timestamp = (rollState as any).timestamp;
-          if (typeof timestamp === 'number' && timestamp < thirtyDaysAgo) {
-            delete rollStates[buttonId];
-            cleanedCount++;
-          }
-        }
-      }
-
-      if (cleanedCount > 0) {
-        await game.settings.set(MODULE_ID, 'rollStates', rollStates);
-      }
-
-      return cleanedCount;
-    } catch (error) {
-      console.error(`[${MODULE_ID}] Error cleaning old roll states:`, error);
-      return 0;
     }
   }
 

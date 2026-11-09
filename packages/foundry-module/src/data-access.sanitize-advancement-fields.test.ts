@@ -90,50 +90,6 @@ describe('FoundryDataAccess Advancement sanitization', () => {
     vi.unstubAllGlobals();
   });
 
-  it('returns complete serialized Advancement data through getCharacterEntity', async () => {
-    const item = createItemDocument();
-    const actor = {
-      id: 'actor-1',
-      name: 'Test Character',
-      items: { contents: [item] },
-      effects: { contents: [] },
-      system: {},
-    };
-
-    vi.stubGlobal('game', {
-      ready: true,
-      world: { id: 'world-1' },
-      user: { id: 'user-1', name: 'GM' },
-      system: { id: 'dnd5e' },
-      actors: { contents: [actor] },
-    });
-
-    const result = await makeDataAccess().characters.getCharacterEntity({
-      characterIdentifier: actor.id,
-      entityIdentifier: item.id,
-    });
-    const advancement = result.entity.system.advancement;
-
-    expect(Object.keys(advancement)).toEqual([
-      'itemGrant0000001',
-      'hitPoints0000001',
-      'trait0000000001',
-    ]);
-    expect(advancement.itemGrant0000001.configuration.items).toEqual([
-      {
-        uuid: 'Compendium.dnd5e.classfeatures.Item.ActionSurge',
-        optional: false,
-      },
-    ]);
-    expect(advancement.hitPoints0000001.value).toEqual({ '1': 'max', '2': 6 });
-    expect(advancement.trait0000000001.configuration.choices).toEqual([
-      { count: 2, pool: ['skills:acr', 'skills:ath'] },
-    ]);
-    expect(advancement.trait0000000001.value).toEqual({ chosen: ['skills:ath'] });
-    expect(result.entity.system.identifier).toBe('fighter');
-    expect(item.getLiveAdvancement).not.toHaveBeenCalled();
-  });
-
   it('returns serialized Advancement in both compendium system views without following live cycles', async () => {
     const document = createItemDocument();
     const pack = {

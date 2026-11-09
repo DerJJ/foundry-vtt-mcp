@@ -12,9 +12,7 @@ type RiskOf = Risk | ((data: any) => Risk);
 const read: string[] = [
   'ping',
   'getCapabilities',
-  'listFolders',
   'listPacks',
-  'listPackEntries',
   'getPermissions',
   'getChatMessages',
   'findActor',
@@ -23,94 +21,49 @@ const read: string[] = [
   'get-token-details',
   'getActiveScene',
   'getActorOwnership',
-  'getAvailableConditions',
   'getAvailablePacks',
-  'getCharacterEntity',
   'getCharacterInfo',
   'getCompendiumDocumentFull',
   'getConnectedPlayers',
-  'getEnhancedCreatureIndex',
   'getFriendlyNPCs',
   'getJournalContent',
   'getJournalPageContent',
-  'getPackIndex',
   'getPartyCharacters',
   'getSystemSchema',
-  'getTokenDetails',
   'getWorldInfo',
   'getWorldItem',
   'list-scenes',
-  'listActors',
   'listCreaturesByCriteria',
   'listJournals',
   'listWorldItems',
-  'searchCharacterItems',
   'searchCompendium',
-  'validateWritePermissions',
   'check-map-status',
 ];
 
 const write: string[] = [
   'addActorItems',
   'addActorsToScene',
-  'addAttackToActor',
-  'addAttackWithSaveToActor',
-  'addAuraToActor',
-  'addFeaturesFromCompendium',
-  'addPassiveFeatureToActor',
-  'addSaveFeatureToActor',
-  'addSpellsToActor',
-  'addWfrp4eItems',
   'cancel-map-job',
   'control-playlist',
-  'createActorFromCompendium',
   'createActorFromData',
-  'createActors',
   'createChatMessage',
   'createJournalEntry',
-  'createNpcActor',
   'createWorldItems',
   'generate-map',
   'move-token',
-  'moveToken',
   'request-player-rolls',
   'setActorOwnership',
-  'setActorSpellcasting',
   'switch-scene',
   'toggle-token-condition',
-  'toggleTokenCondition',
-  'update-scene-music',
-  'update-token',
-  'updateToken',
-  'updateActorItems',
-  'updateActors',
-  'updateCampaignProgress',
   'updateJournalContent',
-  'updateWfrp4eActor',
   'updateWorldItems',
   'upload-generated-map',
   'upload-image',
-  'importCompendiumDocument',
-  'createFolder',
-  'renameFolder',
-  'moveFolder',
   'createPack',
-  'createPackEntries',
-  'updatePackEntries',
-  'copyPackEntry',
   'useItem',
 ];
 
-const destructive: string[] = [
-  'delete-tokens',
-  'deleteTokens',
-  'deleteActorItems',
-  'deleteActors',
-  'removeActorItems',
-  'deleteFolder',
-  'deletePack',
-  'deletePackEntries',
-];
+const destructive: string[] = ['removeActorItems', 'deletePack'];
 
 export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   ...Object.fromEntries(read.map(name => [name, 'read' as Risk])),
@@ -125,7 +78,6 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
       : data?.action === 'create' || data?.action === 'update'
         ? 'write'
         : 'read',
-  manageEffects: (data: any): Risk => (data?.action === 'delete' ? 'delete' : 'write'),
   combatControl: (data: any): Risk =>
     data?.action === 'status' ? 'read' : data?.action === 'end' ? 'delete' : 'write',
   applyDamage: 'write' as Risk,
@@ -136,12 +88,6 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   sceneView: (data: any): Risk =>
     data?.action === 'list-weather' ? 'read' : data?.action === 'reset-fog' ? 'delete' : 'write',
   creatureCard: 'read' as Risk,
-  manageScene: (data: any): Risk =>
-    data?.action === 'list-documents'
-      ? 'read'
-      : data?.action === 'delete-documents'
-        ? 'delete'
-        : 'write',
   calendarClock: (data: any): Risk => (data?.action === 'status' ? 'read' : 'write'),
   executeScript: 'execute' as Risk,
   manageMacros: (data: any): Risk =>
@@ -152,8 +98,6 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
         : data?.action === 'list' || data?.action === 'get'
           ? 'read'
           : 'write',
-  'manage-playlists': (data: any): Risk =>
-    data?.action === 'delete' ? 'delete' : data?.action === 'describe' ? 'read' : 'write',
 };
 
 /** The risk of a call to this query, or undefined if the query has no entry. */

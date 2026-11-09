@@ -377,10 +377,7 @@ export class SocketBridge {
             `[foundry-mcp-bridge] Scene background did not persist on create (got "${scene.background?.src}"), repairing via update()...`
           );
           await scene.update({ background: { src: expectedBackgroundSrc } });
-          console.log(
-            `[foundry-mcp-bridge] Scene background after repair:`,
-            scene.background?.src
-          );
+          console.log(`[foundry-mcp-bridge] Scene background after repair:`, scene.background?.src);
         }
       }
 

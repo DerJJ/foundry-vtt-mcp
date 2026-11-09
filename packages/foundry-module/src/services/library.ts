@@ -460,42 +460,6 @@ export class LibraryService {
     return folder?.id;
   }
 
-  async listPackEntries(params: {
-    pack: string;
-    nameFilter?: string;
-    type?: string;
-  }): Promise<any> {
-    validateFoundryState();
-    const pack = this.resolvePack(params.pack);
-    await pack.getIndex();
-
-    const folderPathById = new Map<string, string>();
-    for (const f of Array.from<any>(pack.folders ?? [])) {
-      folderPathById.set(f.id, this.folderPathOf(f));
-    }
-
-    let entries = Array.from<any>(pack.index ?? []);
-    if (params.nameFilter) {
-      const needle = params.nameFilter.toLowerCase();
-      entries = entries.filter(e => e.name?.toLowerCase().includes(needle));
-    }
-    if (params.type) {
-      entries = entries.filter(e => e.type === params.type);
-    }
-
-    return {
-      pack: pack.metadata?.id,
-      type: pack.metadata?.type,
-      total: entries.length,
-      entries: entries.map(e => ({
-        id: e._id,
-        name: e.name,
-        type: e.type ?? null,
-        folder: e.folder ? (folderPathById.get(e.folder) ?? null) : null,
-      })),
-    };
-  }
-
   async createPackEntries(params: { pack: string; entries: any[] }): Promise<any> {
     validateFoundryState();
     const pack = this.requireWritablePack(params.pack);

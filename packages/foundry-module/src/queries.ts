@@ -8,7 +8,6 @@ import { WorldQueries } from './queries/world.js';
 import { AudioQueries } from './queries/audio.js';
 import { JournalQueries } from './queries/journals.js';
 import { ActorQueries } from './queries/actors.js';
-import { EffectQueries } from './queries/effects.js';
 import { ItemQueries } from './queries/items.js';
 import { RollQueries } from './queries/rolls.js';
 import { OwnershipQueries } from './queries/ownership.js';
@@ -24,8 +23,6 @@ import { DocumentsQueries } from './queries/documents.js';
 import { ModulesQueries } from './queries/modules.js';
 import { SettingsQueries } from './queries/settings.js';
 import { DocumentsService } from './services/documents.js';
-import { Dnd5eQueries } from './systems/dnd5e/queries.js';
-import { Wfrp4eQueries } from './systems/wfrp4e/queries.js';
 
 /**
  * The bridge's queries. Each group of related queries lives in its own file; the registry
@@ -46,7 +43,6 @@ export class QueryHandlers {
       new AudioQueries(this.dataAccess),
       new JournalQueries(this.dataAccess),
       new ActorQueries(this.dataAccess),
-      new EffectQueries(this.dataAccess),
       new ItemQueries(this.dataAccess),
       new RollQueries(this.dataAccess),
       new OwnershipQueries(this.dataAccess),
@@ -63,8 +59,6 @@ export class QueryHandlers {
       new DocumentsQueries(
         new DocumentsService(this.dataAccess.library, () => this.dataAccess.items.getSystemSchema())
       ),
-      new Dnd5eQueries(this.dataAccess),
-      new Wfrp4eQueries(this.dataAccess),
     ]);
   }
 

@@ -1,6 +1,5 @@
 import { MODULE_ID } from '../constants.js';
 import { validateFoundryState } from '../services/support.js';
-import type { FolderableType } from '../services/library.js';
 import type { FoundryDataAccess } from '../data-access.js';
 import { validateGMAccess } from './gm-access.js';
 import type { QueryGroup, QueryHandler } from './query-registry.js';
@@ -12,43 +11,10 @@ export class LibraryQueries implements QueryGroup {
   routes(): Record<string, QueryHandler> {
     return {
       'upload-image': this.handleUploadImage.bind(this),
-      importCompendiumDocument: this.handleImportCompendiumDocument.bind(this),
-      listFolders: this.handleListFolders.bind(this),
-      createFolder: this.handleCreateFolder.bind(this),
-      renameFolder: this.handleRenameFolder.bind(this),
-      moveFolder: this.handleMoveFolder.bind(this),
-      deleteFolder: this.handleDeleteFolder.bind(this),
       listPacks: this.handleListPacks.bind(this),
       createPack: this.handleCreatePack.bind(this),
       deletePack: this.handleDeletePack.bind(this),
-      listPackEntries: this.handleListPackEntries.bind(this),
-      createPackEntries: this.handleCreatePackEntries.bind(this),
-      updatePackEntries: this.handleUpdatePackEntries.bind(this),
-      deletePackEntries: this.handleDeletePackEntries.bind(this),
-      copyPackEntry: this.handleCopyPackEntry.bind(this),
     };
-  }
-
-  /** Handle importing one compendium document into the world. */
-  async handleImportCompendiumDocument(data: {
-    packId: string;
-    documentId: string;
-    folderSegments?: string[];
-  }): Promise<any> {
-    try {
-      // SECURITY: Silent GM validation
-      const gmCheck = validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      validateFoundryState();
-      return await this.dataAccess.library.importCompendiumDocument(data);
-    } catch (error) {
-      throw new Error(
-        `Failed to import compendium document: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
   }
 
   /**
@@ -153,66 +119,6 @@ export class LibraryQueries implements QueryGroup {
     }
   }
 
-  async handleListFolders(data: { documentType: FolderableType; pack?: string }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    return this.dataAccess.library.listFolders(data);
-  }
-
-  async handleCreateFolder(data: {
-    segments: string[];
-    documentType: FolderableType;
-    pack?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!Array.isArray(data?.segments) || data.segments.length === 0) {
-      throw new Error('segments array is required');
-    }
-    return this.dataAccess.library.createFolderPath(data);
-  }
-
-  async handleRenameFolder(data: {
-    segments: string[];
-    documentType: FolderableType;
-    newName: string;
-    pack?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.newName) {
-      throw new Error('newName is required');
-    }
-    return this.dataAccess.library.renameFolderPath(data);
-  }
-
-  async handleMoveFolder(data: {
-    segments: string[];
-    documentType: FolderableType;
-    newParentSegments: string[] | null;
-    pack?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    return this.dataAccess.library.moveFolderPath(data);
-  }
-
-  async handleDeleteFolder(data: {
-    segments: string[];
-    documentType: FolderableType;
-    deleteContents: boolean;
-    pack?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    return this.dataAccess.library.deleteFolderPath(data);
-  }
-
   async handleListPacks(): Promise<any> {
     const gmCheck = validateGMAccess();
     if (!gmCheck.allowed) return { error: 'Access denied', success: false };
@@ -238,64 +144,5 @@ export class LibraryQueries implements QueryGroup {
       throw new Error('identifier is required');
     }
     return this.dataAccess.library.deletePack(data);
-  }
-
-  async handleListPackEntries(data: {
-    pack: string;
-    nameFilter?: string;
-    type?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.pack) {
-      throw new Error('pack is required');
-    }
-    return this.dataAccess.library.listPackEntries(data);
-  }
-
-  async handleCreatePackEntries(data: { pack: string; entries: any[] }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.pack || !Array.isArray(data?.entries) || data.entries.length === 0) {
-      throw new Error('pack and a non-empty entries array are required');
-    }
-    return this.dataAccess.library.createPackEntries(data);
-  }
-
-  async handleUpdatePackEntries(data: { pack: string; updates: any[] }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.pack || !Array.isArray(data?.updates) || data.updates.length === 0) {
-      throw new Error('pack and a non-empty updates array are required');
-    }
-    return this.dataAccess.library.updatePackEntries(data);
-  }
-
-  async handleDeletePackEntries(data: { pack: string; identifiers: string[] }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.pack || !Array.isArray(data?.identifiers) || data.identifiers.length === 0) {
-      throw new Error('pack and a non-empty identifiers array are required');
-    }
-    return this.dataAccess.library.deletePackEntries(data);
-  }
-
-  async handleCopyPackEntry(data: {
-    pack: string;
-    source: string;
-    folderSegments?: string[];
-    newName?: string;
-  }): Promise<any> {
-    const gmCheck = validateGMAccess();
-    if (!gmCheck.allowed) return { error: 'Access denied', success: false };
-    validateFoundryState();
-    if (!data?.pack || !data?.source) {
-      throw new Error('pack and source are required');
-    }
-    return this.dataAccess.library.copyPackEntry(data);
   }
 }

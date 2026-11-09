@@ -88,7 +88,7 @@ describe('QueryHandlers.registerHandlers', () => {
     const queries = register();
     const bridgeKeys = Object.keys(queries).filter(k => k.startsWith('foundry-mcp-bridge.'));
 
-    expect(bridgeKeys.length).toBeGreaterThanOrEqual(76);
+    expect(bridgeKeys.length).toBeGreaterThanOrEqual(60);
 
     for (const key of bridgeKeys) {
       await expect(

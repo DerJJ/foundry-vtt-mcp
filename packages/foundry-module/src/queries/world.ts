@@ -14,7 +14,6 @@ export class WorldQueries implements QueryGroup {
       getWorldInfo: this.handleGetWorldInfo.bind(this),
       getCapabilities: this.handleGetCapabilities.bind(this),
       addActorsToScene: this.handleAddActorsToScene.bind(this),
-      validateWritePermissions: this.handleValidateWritePermissions.bind(this),
     };
   }
 
@@ -97,33 +96,6 @@ export class WorldQueries implements QueryGroup {
     } catch (error) {
       throw new Error(
         `Failed to add actors to scene: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Handle validate write permissions request
-   */
-  private async handleValidateWritePermissions(data: {
-    operation: 'createActor' | 'modifyScene';
-  }): Promise<any> {
-    try {
-      // SECURITY: Silent GM validation
-      const gmCheck = validateGMAccess();
-      if (!gmCheck.allowed) {
-        return { error: 'Access denied', success: false };
-      }
-
-      validateFoundryState();
-
-      if (!data.operation) {
-        throw new Error('operation is required');
-      }
-
-      return await this.dataAccess.world.validateWritePermissions(data.operation);
-    } catch (error) {
-      throw new Error(
-        `Failed to validate write permissions: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

@@ -285,32 +285,6 @@ export class WorldService {
   }
 
   /**
-   * Validate write operation permissions
-   */
-  async validateWritePermissions(operation: 'createActor' | 'modifyScene'): Promise<{
-    allowed: boolean;
-    reason?: string;
-    requiresConfirmation?: boolean;
-    warnings?: string[];
-  }> {
-    validateFoundryState();
-
-    const permissionCheck = permissionManager.checkWritePermission(operation);
-
-    // Audit the permission check
-    permissionManager.auditPermissionCheck(operation, permissionCheck);
-
-    return {
-      allowed: permissionCheck.allowed,
-      ...(permissionCheck.reason ? { reason: permissionCheck.reason } : {}),
-      ...(permissionCheck.requiresConfirmation
-        ? { requiresConfirmation: permissionCheck.requiresConfirmation }
-        : {}),
-      ...(permissionCheck.warnings ? { warnings: permissionCheck.warnings } : {}),
-    };
-  }
-
-  /**
    * List all scenes with filtering options
    */
   async listScenes(

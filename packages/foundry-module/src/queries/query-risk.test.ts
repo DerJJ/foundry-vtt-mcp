@@ -39,11 +39,11 @@ describe('query risk table', () => {
   });
 
   it('reads the risk from the payload for queries that serve several actions', () => {
-    expect(riskOfQuery('manageEffects', { action: 'create' })).toBe('write');
-    expect(riskOfQuery('manageEffects', { action: 'delete' })).toBe('delete');
-    expect(riskOfQuery('manage-playlists', { action: 'describe' })).toBe('read');
-    expect(riskOfQuery('manage-playlists', { action: 'delete' })).toBe('delete');
-    expect(riskOfQuery('manage-playlists', {})).toBe('write');
+    expect(riskOfQuery('documents', { action: 'create' })).toBe('write');
+    expect(riskOfQuery('documents', { action: 'delete' })).toBe('delete');
+    expect(riskOfQuery('documents', { action: 'list' })).toBe('read');
+    expect(riskOfQuery('modules', { action: 'set-active' })).toBe('write');
+    expect(riskOfQuery('modules', { action: 'list' })).toBe('read');
   });
 
   it('treats running a script or a macro as execute, whatever the level', () => {
@@ -67,11 +67,11 @@ describe('risk guard', () => {
 
   it.each<[AccessLevel, string, boolean]>([
     ['readonly', 'getWorldInfo', true],
-    ['readonly', 'createActors', false],
-    ['readonly', 'deleteActors', false],
-    ['readwrite', 'createActors', true],
-    ['readwrite', 'deleteActors', false],
-    ['full', 'deleteActors', true],
+    ['readonly', 'createChatMessage', false],
+    ['readonly', 'removeActorItems', false],
+    ['readwrite', 'createChatMessage', true],
+    ['readwrite', 'removeActorItems', false],
+    ['full', 'removeActorItems', true],
     ['full', 'getWorldInfo', true],
   ])('at %s, %s is allowed: %s', async (accessLevel, query, allowed) => {
     stubSettings({ accessLevel });
@@ -81,15 +81,15 @@ describe('risk guard', () => {
 
   it('tells the caller which level would allow the query', async () => {
     stubSettings({ accessLevel: 'readonly' });
-    await expect(call('createActors')).rejects.toThrow('Read & write');
+    await expect(call('createChatMessage')).rejects.toThrow('Read & write');
     stubSettings({ accessLevel: 'readwrite' });
-    await expect(call('deleteActors')).rejects.toThrow('Full access');
+    await expect(call('removeActorItems')).rejects.toThrow('Full access');
   });
 
   it('refuses a deleting action of a mixed query below full access', async () => {
     stubSettings({ accessLevel: 'readwrite' });
-    await expect(call('manageEffects', { action: 'create' })).resolves.toBe('done');
-    await expect(call('manageEffects', { action: 'delete' })).rejects.toThrow('Full access');
+    await expect(call('documents', { action: 'create' })).resolves.toBe('done');
+    await expect(call('documents', { action: 'delete' })).rejects.toThrow('Full access');
   });
 
   it('refuses a gated feature while its setting is off, whatever the level', async () => {
@@ -108,7 +108,7 @@ describe('risk guard', () => {
 
   it('defaults to read & write when the setting is missing', async () => {
     stubSettings({});
-    await expect(call('createActors')).resolves.toBe('done');
-    await expect(call('deleteActors')).rejects.toThrow('Full access');
+    await expect(call('createChatMessage')).resolves.toBe('done');
+    await expect(call('removeActorItems')).rejects.toThrow('Full access');
   });
 });
