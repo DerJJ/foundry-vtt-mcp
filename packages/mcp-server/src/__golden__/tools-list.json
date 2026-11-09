@@ -1,7 +1,7 @@
 [
   {
     "name": "world",
-    "description": "Information about the connected Foundry world and what the MCP may do in it.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- info(): Get basic information about the Foundry world and system\n- permissions(identifier?, documentType?): Show Foundry world permissions by user role.\n- capabilities(): The game system, the access level, and which gated features are on. Call it first.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "description": "Information about the connected Foundry world and what the MCP may do in it.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- info(): Get basic information about the Foundry world and system\n- permissions(identifier?, documentType?): Show Foundry world permissions by user role.\n- reload(): Reload this GM browser, which applies a module switch. The bridge reconnects by itself; players are not reloaded.\n- capabilities(): The game system, the access level, and which gated features are on. Call it first.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -154,6 +154,25 @@
   {
     "name": "journals",
     "description": "Journals and quests: read and search them, and build quest journals and campaign dashboards. Changing a page is `documents` (type `JournalEntryPage`).\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- list(filterQuests?, includeContent?, journalId?, pageId?): List journals and their pages, or read one journal or page.\n- search(searchQuery*, searchType?): Search through all pages of all journal entries for specific content or keywords.\n- create-quest(questTitle*, questDescription*, questType?, difficulty?, location?, questGiver?, npcName?, rewards?, …+2): Create a new quest journal entry with AI-generated content based on natural language description\n- update-quest(journalId*, newContent*, updateType*, pageId?, newPageName?): Update an existing quest journal with new progress information.\n- link-quest(journalId*, npcName*, relationship*): Link an existing quest journal to an NPC in the world\n- create-dashboard(campaignTitle*, campaignDescription*, template*, customParts?, defaultQuestGiver?, defaultLocation?): Create a comprehensive campaign dashboard journal with navigation, progress tracking, and part management\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "settings",
+    "description": "Foundry settings of the core, the game system and the modules: find, read and change them. The settings of the bridge module itself, the module list (use modules), the player role permissions and anything that looks like a secret cannot be changed from here.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- list(query?, namespace?, scope?, all?, limit?, offset?): Settings with their value and default; the ones Foundry shows in its settings window unless all is set.\n- get(key*): One setting: value, default, hint, choices and whether it can be changed from here.\n- set(key*, value*): Change a setting. Says when it needs a reload. A client setting is stored in this GM browser only.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
       "type": "object",
       "properties": {

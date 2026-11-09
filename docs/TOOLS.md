@@ -14,6 +14,7 @@ Information about the connected Foundry world and what the MCP may do in it.
 | --- | --- | --- | --- | --- |
 | `info` | read | all | (none) | Get basic information about the Foundry world and system |
 | `permissions` | read | all | identifier, documentType | Show Foundry world permissions by user role. |
+| `reload` | write | all | (none) | Reload this GM browser, which applies a module switch. The bridge reconnects by itself; players are not reloaded. |
 | `capabilities` | read | all | (none) | The game system, the access level, and which gated features are on. Call it first. |
 
 ## `documents`
@@ -123,6 +124,16 @@ Journals and quests: read and search them, and build quest journals and campaign
 | `update-quest` | write | all | **journalId**, **newContent**, **updateType**, pageId, newPageName | Update an existing quest journal with new progress information. |
 | `link-quest` | write | all | **journalId**, **npcName**, **relationship** | Link an existing quest journal to an NPC in the world |
 | `create-dashboard` | write | all | **campaignTitle**, **campaignDescription**, **template**, customParts, defaultQuestGiver, defaultLocation | Create a comprehensive campaign dashboard journal with navigation, progress tracking, and part management |
+
+## `settings`
+
+Foundry settings of the core, the game system and the modules: find, read and change them. The settings of the bridge module itself, the module list (use modules), the player role permissions and anything that looks like a secret cannot be changed from here.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `list` | read | all | query, namespace, scope, all, limit, offset | Settings with their value and default; the ones Foundry shows in its settings window unless all is set. |
+| `get` | read | all | **key** | One setting: value, default, hint, choices and whether it can be changed from here. |
+| `set` | write | all | **key**, **value** | Change a setting. Says when it needs a reload. A client setting is stored in this GM browser only. |
 
 ## `time`
 

@@ -20,6 +20,7 @@ import { ImageUploadTools } from '../tools/image-upload.js';
 import { ActorPlacementTools } from '../tools/actor-placement.js';
 import { DocumentsTools } from '../tools/documents.js';
 import { ModulesTools } from '../tools/modules.js';
+import { SettingsTools } from '../tools/settings.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
 import { DSA5JsonActorImporter } from '../systems/dsa5/json-actor-importer.js';
 import { bindMethods, ToolRegistry, type ToolDefinition } from './tool-registry.js';
@@ -215,6 +216,15 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: modulesTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(modulesTools, { modules: 'handleModules' }),
+  });
+
+  const settingsTools = new SettingsTools(base);
+  registry.registerModule({
+    definitions: settingsTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(settingsTools, {
+      settings: 'handleSettings',
+      'reload-browser': 'handleReloadBrowser',
+    }),
   });
 
   return registry;

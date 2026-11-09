@@ -106,6 +106,7 @@ for (const tool of [
   'chat',
   'journals',
   'modules',
+  'settings',
   'time',
   'audio',
   'macros',
@@ -222,6 +223,63 @@ await step('modules.set-active to the state a module already has changes nothing
   const r = await call('modules', 'set-active', { id: library.id, active: true });
   expect(r.reloadRequired === false && r.changed.length === 0, 'it changed something');
   return library.id;
+});
+
+// --- settings ---------------------------------------------------------------------------------
+let someSetting;
+await step('settings.list', async () => {
+  const r = await call('settings', 'list', { limit: 500 });
+  expect(r.total > 0 && r.settings.length > 0, 'no settings');
+  expect(
+    r.settings.every(s => s.key && s.scope),
+    'a setting without key or scope'
+  );
+  someSetting = r.settings.find(
+    s =>
+      !s.key.startsWith('foundry-mcp-bridge.') &&
+      !s.key.startsWith('core.moduleConfiguration') &&
+      !s.key.startsWith('core.permissions') &&
+      s.value !== '[hidden]' &&
+      (typeof s.value === 'boolean' || typeof s.value === 'number')
+  );
+  const ns = await call('settings', 'list', { namespace: 'core', limit: 500 });
+  expect(
+    ns.settings.every(s => s.key.startsWith('core.')),
+    'namespace filter does not filter'
+  );
+  return `${r.total} settings`;
+});
+await step('settings.get', async () => {
+  if (!someSetting) skip('no simple setting to read');
+  const r = await call('settings', 'get', { key: someSetting.key });
+  expect(r.key === someSetting.key && 'default' in r, 'incomplete answer');
+});
+await step('settings.get says the bridge settings cannot be changed here', async () => {
+  const r = await call('settings', 'get', { key: 'foundry-mcp-bridge.accessLevel' });
+  expect(r.changeable === false, 'the access level is changeable through the tool');
+});
+await step('settings.set refuses the bridge settings, the module list and secrets', async () => {
+  if (!canWrite) skip('read only');
+  for (const key of [
+    'foundry-mcp-bridge.accessLevel',
+    'foundry-mcp-bridge.allowExecute',
+    'core.moduleConfiguration',
+  ]) {
+    try {
+      await call('settings', 'set', { key, value: key.endsWith('Configuration') ? {} : 'full' });
+    } catch (error) {
+      continue;
+    }
+    throw new Error(`${key} was changed`);
+  }
+  return 'all refused';
+});
+await step('settings.set to the value a setting already has changes nothing', async () => {
+  if (!canWrite) skip('read only');
+  if (!someSetting) skip('no simple setting to change');
+  const r = await call('settings', 'set', { key: someSetting.key, value: someSetting.value });
+  expect(JSON.stringify(r.from) === JSON.stringify(r.to), 'the value changed');
+  return someSetting.key;
 });
 
 // --- compendium entries of every document type -------------------------------------------------

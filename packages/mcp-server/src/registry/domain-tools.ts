@@ -102,6 +102,12 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
     actions: {
       info: { operation: 'get-world-info', risk: 'read' },
       permissions: { operation: 'get-permissions', risk: 'read' },
+      reload: {
+        operation: 'reload-browser',
+        risk: 'write',
+        summary:
+          'Reload this GM browser, which applies a module switch. The bridge reconnects by itself; players are not reloaded.',
+      },
       capabilities: {
         risk: 'read',
         summary:
@@ -456,6 +462,39 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
       'update-quest': { operation: 'update-quest-journal', risk: 'write' },
       'link-quest': { operation: 'link-quest-to-npc', risk: 'write' },
       'create-dashboard': { operation: 'create-campaign-dashboard', risk: 'write' },
+    },
+  },
+
+  {
+    name: 'settings',
+    purpose:
+      'Foundry settings of the core, the game system and the modules: find, read and change them. The settings of the bridge module itself, the module list (use modules), the player role permissions and anything that looks like a secret cannot be changed from here.',
+    actions: {
+      list: {
+        operation: 'settings',
+        risk: 'read',
+        fixed: { action: 'list' },
+        params: { query: false, namespace: false, scope: false, all: false },
+        paged: 'settings',
+        summary:
+          'Settings with their value and default; the ones Foundry shows in its settings window unless all is set.',
+      },
+      get: {
+        operation: 'settings',
+        risk: 'read',
+        fixed: { action: 'get' },
+        params: { key: true },
+        summary:
+          'One setting: value, default, hint, choices and whether it can be changed from here.',
+      },
+      set: {
+        operation: 'settings',
+        risk: 'write',
+        fixed: { action: 'set' },
+        params: { key: true, value: true },
+        summary:
+          'Change a setting. Says when it needs a reload. A client setting is stored in this GM browser only.',
+      },
     },
   },
 
