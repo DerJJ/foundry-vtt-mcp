@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
-import { DOMAIN_TOOLS } from './registry/domain-tools.js';
+import { DOMAIN_TOOLS, MERGED_OPERATIONS } from './registry/domain-tools.js';
 import { createTestToolRegistry } from './test-support/create-test-registry.js';
 
 const GOLDEN_FILE = path.join(
@@ -54,6 +54,8 @@ describe('MCP tool surface', () => {
       DOMAIN_TOOLS.flatMap(tool => Object.values(tool.actions).map(a => a.operation))
     );
     expect(upstream).toHaveLength(50);
-    expect(upstream.filter(name => !answered.has(name))).toEqual([]);
+    expect(upstream.filter(name => !answered.has(name) && !(name in MERGED_OPERATIONS))).toEqual(
+      []
+    );
   });
 });

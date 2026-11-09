@@ -1,5 +1,6 @@
 import { SYSTEM_VERIFICATION } from '../systems/verification.js';
 import type { ActionSpec, DomainToolSpec, OperationCatalog } from './domain-tool.js';
+import { MERGED_OPERATIONS } from './domain-tools.js';
 
 type Schema = { properties?: Record<string, unknown>; required?: string[] };
 
@@ -97,6 +98,11 @@ export function renderToolsDoc(
     }
   }
   for (const old of upstreamTools) {
+    const merged = MERGED_OPERATIONS[old];
+    if (merged) {
+      out.push(`| \`${old}\` | ${merged.into} | ${merged.note} |`);
+      continue;
+    }
     for (const entry of where.get(old) ?? ['(not mapped)|']) {
       const [now, fixed] = entry.split('|');
       out.push(`| \`${old}\` | ${now} | ${fixed || '-'} |`);

@@ -90,7 +90,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     definitions: actorCreationTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(actorCreationTools, {
       'create-actor-from-compendium': 'handleCreateActorFromCompendium',
-      'get-compendium-entry-full': 'handleGetCompendiumEntryFull',
     }),
   });
 

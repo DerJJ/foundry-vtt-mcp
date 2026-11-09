@@ -127,8 +127,7 @@ Compendium packs: search, read entries, list packs, and find creatures by criter
 | Action | Risk | Game system | Parameters | Does |
 | --- | --- | --- | --- | --- |
 | `search` | read | all | **query**, packType, filters, limit | Search through compendium packs by name. |
-| `get-item` | read | all | **packId**, **itemId**, compact | Retrieve detailed information about a specific compendium item. |
-| `get-entry` | read | all | **packId**, **entryId** | Retrieve complete stat block data including items, spells, and abilities for actor creation |
+| `get` | read | all | **packId**, **itemId**, compact | Read one pack entry: full data, or compact stats with compact: true. |
 | `list-packs` | read | all | type | List all available compendium packs |
 | `find-creatures` | read | all | challengeRating, creatureType, size, hasSpells, hasLegendaryActions, level, traits, rarity, tier, role, hasInvestiture, hitPoints, defensesMin, deflectMin, limit, fallbackToNameSearch | MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria. |
 | `packs` | read | all | label, type, name, identifier, confirmDelete | List compendium packs with their lock and write state. |
@@ -275,14 +274,14 @@ The old tool names are gone (no aliases). Each one is now an action of a domain 
 | `manage-world-items` | items `system-notes` | action: describe |
 | `search-character-items` | actors `search-items` | - |
 | `search-compendium` | compendium `search` | - |
-| `get-compendium-item` | compendium `get-item` | - |
+| `get-compendium-item` | compendium `get` | - |
 | `list-creatures-by-criteria` | compendium `find-creatures` | - |
 | `list-compendium-packs` | compendium `list-packs` | - |
 | `get-current-scene` | scenes `current` | - |
 | `get-world-info` | world `info` | - |
 | `update-scene-music` | scenes `set-music` | - |
 | `create-actor-from-compendium` | actors `create-from-compendium` | - |
-| `get-compendium-entry-full` | compendium `get-entry` | - |
+| `get-compendium-entry-full` | compendium `get` | full data is the default; `entryId` is now `itemId` |
 | `manage-actors` | actors `create` | action: create |
 | `manage-actors` | actors `update` | action: update |
 | `manage-actors` | actors `delete` | action: delete |

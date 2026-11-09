@@ -56,7 +56,7 @@ export class CompendiumTools {
       {
         name: 'search-compendium',
         description:
-          'Search through compendium packs by name. IMPORTANT LIMITATIONS: (1) Text search only matches entity NAMES - descriptions and traits are NOT searchable. (2) Filters use name heuristics only (not actual system data) and only work on Actor packs - challengeRating and creatureType filters search for keywords like "ancient", "legendary", "humanoid", etc. in entity names. For accurate filtering by level/CR, traits, or rarity, use compendium.find-creatures instead. For best results, use broad name-based searches (e.g., "dragon", "knight") and inspect individual items with compendium.get-item.',
+          'Search through compendium packs by name. IMPORTANT LIMITATIONS: (1) Text search only matches entity NAMES - descriptions and traits are NOT searchable. (2) Filters use name heuristics only (not actual system data) and only work on Actor packs - challengeRating and creatureType filters search for keywords like "ancient", "legendary", "humanoid", etc. in entity names. For accurate filtering by level/CR, traits, or rarity, use compendium.find-creatures instead. For best results, use broad name-based searches (e.g., "dragon", "knight") and inspect individual items with compendium.get.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -791,7 +791,7 @@ export class CompendiumTools {
           note: 'Packs searched in priority order to find most relevant creatures first',
         },
         optimizationNote:
-          'Use creature names to identify suitable options, then call compendium.get-item for final details only',
+          'Use creature names to identify suitable options, then call compendium.get for final details only',
       };
     } catch (error) {
       this.logger.error('Failed to list creatures by criteria', error);

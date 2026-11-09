@@ -89,25 +89,6 @@ export class ActorCreationTools {
           required: ['packId', 'itemId', 'names'],
         },
       },
-      {
-        name: 'get-compendium-entry-full',
-        description:
-          'Retrieve complete stat block data including items, spells, and abilities for actor creation',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            packId: {
-              type: 'string',
-              description: 'Compendium pack identifier',
-            },
-            entryId: {
-              type: 'string',
-              description: 'Entry identifier within the pack',
-            },
-          },
-          required: ['packId', 'entryId'],
-        },
-      },
     ];
   }
 
@@ -190,68 +171,6 @@ export class ActorCreationTools {
     } catch (error) {
       this.errorHandler.handleToolError(error, 'create-actor-from-compendium', 'actor creation');
     }
-  }
-
-  /**
-   * Handle getting full compendium entry data
-   */
-  async handleGetCompendiumEntryFull(args: any): Promise<any> {
-    const schema = z.object({
-      packId: z.string().min(1, 'Pack ID cannot be empty'),
-      entryId: z.string().min(1, 'Entry ID cannot be empty'),
-    });
-
-    const { packId, entryId } = schema.parse(args);
-
-    this.logger.info('Getting full compendium entry', { packId, entryId });
-
-    try {
-      const fullEntry = await this.foundryClient.query(
-        'foundry-mcp-bridge.getCompendiumDocumentFull',
-        {
-          packId,
-          documentId: entryId,
-        }
-      );
-
-      this.logger.debug('Successfully retrieved full compendium entry', {
-        packId,
-        entryId,
-        name: fullEntry.name,
-        hasItems: !!fullEntry.items?.length,
-        hasEffects: !!fullEntry.effects?.length,
-      });
-
-      return this.formatCompendiumEntryResponse(fullEntry);
-    } catch (error) {
-      this.errorHandler.handleToolError(error, 'get-compendium-entry-full', 'compendium retrieval');
-    }
-  }
-
-  /**
-   * Format compendium entry response
-   */
-  private formatCompendiumEntryResponse(entry: any): any {
-    const itemsInfo =
-      entry.items?.length > 0
-        ? `\n📦 Items: ${entry.items.map((item: any) => item.name).join(', ')}`
-        : '';
-
-    const effectsInfo =
-      entry.effects?.length > 0
-        ? `\n✨ Effects: ${entry.effects.map((effect: any) => effect.name).join(', ')}`
-        : '';
-
-    return {
-      name: entry.name,
-      type: entry.type,
-      pack: entry.packLabel,
-      system: entry.system,
-      fullData: entry.fullData,
-      items: entry.items || [],
-      effects: entry.effects || [],
-      summary: `📊 **${entry.name}** (${entry.type} from ${entry.packLabel})${itemsInfo}${effectsInfo}`,
-    };
   }
 
   /**

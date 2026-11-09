@@ -6,6 +6,17 @@
 
 import type { DomainToolSpec } from './domain-tool.js';
 
+/**
+ * Operations of v0.8.6 that are no longer separate: their action is another action's behaviour.
+ * The migration table in docs/TOOLS.md and the surface test read this.
+ */
+export const MERGED_OPERATIONS: Readonly<Record<string, { into: string; note: string }>> = {
+  'get-compendium-entry-full': {
+    into: 'compendium `get`',
+    note: 'full data is the default; `entryId` is now `itemId`',
+  },
+};
+
 export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   {
     name: 'world',
@@ -394,8 +405,11 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
     purpose: 'Compendium packs: search, read entries, list packs, and find creatures by criteria.',
     actions: {
       search: { operation: 'search-compendium', risk: 'read' },
-      'get-item': { operation: 'get-compendium-item', risk: 'read' },
-      'get-entry': { operation: 'get-compendium-entry-full', risk: 'read' },
+      get: {
+        operation: 'get-compendium-item',
+        risk: 'read',
+        summary: 'Read one pack entry: full data, or compact stats with compact: true.',
+      },
       'list-packs': { operation: 'list-compendium-packs', risk: 'read' },
       'find-creatures': { operation: 'list-creatures-by-criteria', risk: 'read' },
       packs: {
