@@ -84,22 +84,6 @@ async function startBackend(): Promise<void> {
     });
 
     logger.info('Map generation backend components initialized (ComfyUI on localhost:31411)');
-
-    // Auto-start ComfyUI if installed and autoStart is enabled
-    if (mapGenerationComfyUIClient && (mapGenerationComfyUIClient as any).config?.autoStart) {
-      const isInstalled = await (mapGenerationComfyUIClient as any).checkInstallation();
-      if (isInstalled) {
-        logger.info('Auto-starting ComfyUI service...');
-        try {
-          await (mapGenerationComfyUIClient as any).startService();
-          logger.info('ComfyUI service auto-started successfully');
-        } catch (error) {
-          logger.warn('Failed to auto-start ComfyUI service', { error });
-        }
-      } else {
-        logger.info('ComfyUI not installed, skipping auto-start');
-      }
-    }
   } catch (error) {
     logger.warn('Failed to initialize map generation components', { error });
   }
@@ -127,21 +111,40 @@ async function startBackend(): Promise<void> {
     logger.error('Foundry connector failed to start', e);
   });
 
-  const autoStartComfyUI = async () => {
+  // ComfyUI is started only for a world whose "Image generation" setting is on: the bridge reports
+  // that after it connects, so nothing starts, fails or logs while the setting is off.
+  let comfyUIStarted = false;
+  const startImageGeneration = async () => {
+    if (comfyUIStarted) return;
+    comfyUIStarted = true;
     try {
-      logger.info('Auto-starting ComfyUI service...');
-
+      logger.info('Image generation is on: starting ComfyUI');
+      if (mapGenerationComfyUIClient && (await mapGenerationComfyUIClient.checkInstallation())) {
+        await mapGenerationComfyUIClient.startService();
+      }
       const result = await startComfyUIService(logger);
-
-      logger.info('ComfyUI auto-start result', result);
+      logger.info('ComfyUI start result', result);
     } catch (error: any) {
-      logger.warn('ComfyUI auto-start failed', {
+      comfyUIStarted = false;
+      logger.warn('ComfyUI could not be started', {
         error: error instanceof Error ? error.message : String(error),
       });
-
-      // Don't throw - backend should continue even if ComfyUI fails to start
     }
   };
+  const startImageGenerationIfOn = async () => {
+    if (!foundryClient.isConnected()) return;
+    try {
+      const caps = (await foundryClient.query('foundry-mcp-bridge.getCapabilities')) as {
+        imageGenerationEnabled?: boolean;
+      };
+      if (caps?.imageGenerationEnabled) await startImageGeneration();
+    } catch (error) {
+      logger.debug('Could not read whether image generation is on', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+  foundryClient.onConnectionChange(() => void startImageGenerationIfOn());
 
   // Control channel (TCP JSON-lines)
 
@@ -156,8 +159,6 @@ async function startBackend(): Promise<void> {
 
     server.on('error', reject);
   });
-
-  void autoStartComfyUI();
 
   // Shutdown hooks
 

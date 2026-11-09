@@ -384,6 +384,11 @@ class FoundryMCPBridge {
    */
   async startComfyUIMonitoring(): Promise<void> {
     try {
+      // Image generation is off by default; nothing to monitor, nothing to log, until it is on
+      if (!this.settings.getSetting('imageGenerationEnabled')) {
+        return;
+      }
+
       // Check if ComfyUI monitoring is needed
       const autoStart = this.settings.getSetting('mapGenAutoStart') || false;
       if (!autoStart) {
