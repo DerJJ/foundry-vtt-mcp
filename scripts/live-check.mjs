@@ -47,7 +47,8 @@ async function step(name, run) {
     results.push({ name, status: 'pass', detail: typeof detail === 'string' ? detail : '' });
   } catch (error) {
     if (error instanceof Skip) results.push({ name, status: 'skip', detail: error.message });
-    else results.push({ name, status: 'FAIL', detail: String(error.message ?? error).slice(0, 200) });
+    else
+      results.push({ name, status: 'FAIL', detail: String(error.message ?? error).slice(0, 200) });
   }
 }
 
@@ -134,6 +135,55 @@ await step('actors.list-ownership', () => call('actors', 'list-ownership', {}));
 await step('items.list', () => call('items', 'list', {}));
 await step('items.system-notes', () => call('items', 'system-notes'));
 await step('actors.system-notes', () => call('actors', 'system-notes'));
+
+// --- compendium entries of every document type -------------------------------------------------
+const DOCUMENT_TYPES = [
+  'Item',
+  'Actor',
+  'JournalEntry',
+  'RollTable',
+  'Scene',
+  'Macro',
+  'Playlist',
+  'Cards',
+  'Adventure',
+];
+const sample = {};
+async function firstEntry(type) {
+  if (type in sample) return sample[type];
+  sample[type] = null;
+  const packs = (await call('compendium', 'list-packs', { type })).packs ?? [];
+  for (const pack of packs.slice(0, 5)) {
+    const listed = await call('compendium', 'list-entries', { pack: pack.id });
+    const entry = listed.entries?.[0];
+    if (entry) {
+      sample[type] = { packId: pack.id, itemId: entry.id, name: entry.name };
+      break;
+    }
+  }
+  return sample[type];
+}
+for (const type of DOCUMENT_TYPES) {
+  await step(`compendium.get (${type})`, async () => {
+    const found = await firstEntry(type);
+    if (!found) skip(`no ${type} pack with entries in this world`);
+    const full = await call('compendium', 'get', { packId: found.packId, itemId: found.itemId });
+    expect(full && typeof full === 'object' && !full.error, 'no entry returned');
+    if (type !== 'Item' && type !== 'Actor') {
+      expect(full.documentName === type, `documentName is ${full.documentName}, expected ${type}`);
+    }
+    const compact = await call('compendium', 'get', {
+      packId: found.packId,
+      itemId: found.itemId,
+      compact: true,
+    });
+    expect(
+      JSON.stringify(compact).length <= JSON.stringify(full).length,
+      'compact is longer than full'
+    );
+    return `${found.name} (${found.packId})`;
+  });
+}
 
 // --- access guard ---------------------------------------------------------------------------
 await step('guard: delete is refused below full access', async () => {
@@ -280,6 +330,52 @@ if (system === 'dnd5e') {
   });
 }
 
+// Imports go into one throwaway folder per document type; deleting the folders with their
+// contents at the end removes everything again.
+const IMPORT_FOLDER = `${PREFIX}-import`;
+const importedTypes = [];
+for (const type of [
+  'Item',
+  'Actor',
+  'JournalEntry',
+  'RollTable',
+  'Scene',
+  'Macro',
+  'Playlist',
+  'Cards',
+]) {
+  await step(`compendium.import (${type})`, async () => {
+    if (!canWrite) skip('read only');
+    const found = await firstEntry(type);
+    if (!found) skip(`no ${type} pack with entries in this world`);
+    const r = await call('compendium', 'import', {
+      packId: found.packId,
+      itemId: found.itemId,
+      folder: IMPORT_FOLDER,
+    });
+    importedTypes.push(type);
+    expect(r?.success && r.imported?.id, 'no imported document in the answer');
+    expect(r.imported.documentName === type, `imported a ${r.imported.documentName}`);
+    expect(r.imported.folder === IMPORT_FOLDER, `not filed in the folder: ${r.imported.folder}`);
+    return `${r.imported.name}`;
+  });
+}
+await step('compendium.import refuses adventures', async () => {
+  if (!canWrite) skip('read only');
+  const found = await firstEntry('Adventure');
+  if (!found) skip('no Adventure pack in this world');
+  try {
+    await call('compendium', 'import', { packId: found.packId, itemId: found.itemId });
+  } catch (error) {
+    expect(
+      /Adventures cannot be imported/.test(error.message),
+      `unexpected error: ${error.message}`
+    );
+    return 'refused as expected';
+  }
+  throw new Error('the adventure was imported');
+});
+
 if (withChat) {
   await step('chat.post', async () => {
     if (!canWrite) skip('read only');
@@ -299,6 +395,21 @@ for (const id of created.actors) {
     leftovers.push(`actor ${id}: ${String(error.message).slice(0, 80)}`);
   }
 }
+for (const type of importedTypes) {
+  try {
+    if (!canDelete) throw new Error('no delete access');
+    await call('folders', 'delete', {
+      path: IMPORT_FOLDER,
+      documentType: type,
+      deleteContents: true,
+      confirmDelete: true,
+    });
+  } catch (error) {
+    leftovers.push(
+      `folder "${IMPORT_FOLDER}" of ${type} with its contents: ${String(error.message).slice(0, 80)}`
+    );
+  }
+}
 for (const name of created.playlists) leftovers.push(`playlist ${name}`);
 
 // --- report ---------------------------------------------------------------------------------
@@ -311,6 +422,7 @@ console.log(
   `\n${results.filter(r => r.status === 'pass').length} passed, ${failed} failed, ` +
     `${results.filter(r => r.status === 'skip').length} skipped (${system}, ${caps.accessLevel.label})`
 );
-if (leftovers.length) console.log(`\nLeft in the world (delete by hand):\n- ${leftovers.join('\n- ')}`);
+if (leftovers.length)
+  console.log(`\nLeft in the world (delete by hand):\n- ${leftovers.join('\n- ')}`);
 await client.close();
 process.exit(failed ? 1 : 0);
