@@ -20,6 +20,18 @@ _Avoid_: resource tool, manager
 One operation of a domain tool, with its own parameters and one risk.
 _Avoid_: command, operation, sub-tool
 
+**Document**:
+Anything Foundry stores as a record: an actor, an item, a scene, a journal, and the things inside them (an effect on an item, a wall in a scene, a page in a journal).
+_Avoid_: object, entity, entry (a compendium pack's records are entries, in the pack)
+
+**Parent**:
+The document that another document lives in. A wall's parent is a scene, an item's parent can be an actor.
+_Avoid_: owner (that is Foundry's word for who may control a document)
+
+**Kind**:
+A named group of a game system's item types, such as inventory, spells or features. Each system defines its own.
+_Avoid_: category, class
+
 **Risk**:
 The class of an action: read, write, delete or execute. The access level decides which risks are allowed.
 _Avoid_: permission, category

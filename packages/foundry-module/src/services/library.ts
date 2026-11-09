@@ -153,7 +153,7 @@ export class LibraryService {
    * Resolve a compendium pack by id ("world.my-monsters") or by its label.
    * Throws if there is no such pack.
    */
-  private resolvePack(identifier: string): any {
+  resolvePack(identifier: string): any {
     const direct = (game as any).packs?.get(identifier);
     if (direct) return direct;
 
@@ -166,7 +166,7 @@ export class LibraryService {
   }
 
   /** Resolve a pack and assert it is a writable (unlocked, world-level) pack. */
-  private requireWritablePack(identifier: string): any {
+  requireWritablePack(identifier: string): any {
     const pack = this.resolvePack(identifier);
     const packageType = pack.metadata?.packageType ?? pack.metadata?.package;
     if (packageType !== 'world') {
@@ -183,7 +183,7 @@ export class LibraryService {
   }
 
   /** Full "A/B/C" path for a folder, used so listings are unambiguous. */
-  private folderPathOf(folder: any): string {
+  folderPathOf(folder: any): string {
     const names: string[] = [];
     let cursor: any = folder;
 

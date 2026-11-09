@@ -48,6 +48,106 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
+    name: 'documents',
+    purpose:
+      'Any Foundry document, in the world or in a compendium pack: an actor, an item or effect on an actor, a scene and its walls, lights and tiles, a journal and its pages, a playlist, a macro, a folder. Call schema first for the fields of a type in this world; kinds (inventory, spells, features) group the item types of an actor.',
+    actions: {
+      schema: {
+        operation: 'documents',
+        risk: 'read',
+        fixed: { action: 'schema' },
+        params: { type: false, subtype: false },
+        summary:
+          'The types of this world, or the fields, subtypes and an example of one type; also the kinds of item.',
+      },
+      list: {
+        operation: 'documents',
+        risk: 'read',
+        fixed: { action: 'list' },
+        params: {
+          type: true,
+          subtype: false,
+          kind: false,
+          parent: false,
+          pack: false,
+          query: false,
+          filter: false,
+          fields: false,
+          limit: false,
+          offset: false,
+        },
+        summary: 'List documents of a type, in the world, inside a parent, or in a pack; paged.',
+      },
+      get: {
+        operation: 'documents',
+        risk: 'read',
+        fixed: { action: 'get' },
+        params: {
+          type: true,
+          id: false,
+          name: false,
+          parent: false,
+          pack: false,
+          fields: false,
+          maxChars: false,
+        },
+        summary: 'Read one document, or only some of its fields. A very large one is summarised.',
+      },
+      create: {
+        operation: 'documents',
+        risk: 'write',
+        fixed: { action: 'create' },
+        params: {
+          type: true,
+          subtype: false,
+          kind: false,
+          parent: false,
+          pack: false,
+          folder: false,
+          from: false,
+          data: false,
+        },
+        summary:
+          'Create documents from data, or copy a compendium entry with from; inside a parent for embedded ones.',
+      },
+      update: {
+        operation: 'documents',
+        risk: 'write',
+        fixed: { action: 'update' },
+        params: {
+          type: true,
+          subtype: false,
+          id: false,
+          name: false,
+          parent: false,
+          pack: false,
+          folder: false,
+          data: true,
+        },
+        summary: 'Change documents: one by id or name, or a list of changes that each carry an id.',
+      },
+      delete: {
+        operation: 'documents',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        params: {
+          type: true,
+          subtype: false,
+          id: false,
+          name: false,
+          parent: false,
+          pack: false,
+          folder: false,
+          confirm: false,
+          deleteContents: false,
+        },
+        summary:
+          'Delete one document, or several with confirm; a folder, with or without its contents.',
+      },
+    },
+  },
+
+  {
     name: 'scenes',
     purpose: 'Scenes: look at the current one, list them, switch, and set scene music.',
     actions: {

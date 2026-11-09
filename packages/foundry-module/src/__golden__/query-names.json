@@ -34,6 +34,7 @@
   "foundry-mcp-bridge.deletePack",
   "foundry-mcp-bridge.deletePackEntries",
   "foundry-mcp-bridge.deleteTokens",
+  "foundry-mcp-bridge.documents",
   "foundry-mcp-bridge.executeScript",
   "foundry-mcp-bridge.findActor",
   "foundry-mcp-bridge.findPlayers",

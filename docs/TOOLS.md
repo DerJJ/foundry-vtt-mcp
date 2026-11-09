@@ -16,6 +16,19 @@ Information about the connected Foundry world and what the MCP may do in it.
 | `permissions` | read | all | identifier, documentType | Show Foundry world permissions by user role. |
 | `capabilities` | read | all | (none) | The game system, the access level, and which gated features are on. Call it first. |
 
+## `documents`
+
+Any Foundry document, in the world or in a compendium pack: an actor, an item or effect on an actor, a scene and its walls, lights and tiles, a journal and its pages, a playlist, a macro, a folder. Call schema first for the fields of a type in this world; kinds (inventory, spells, features) group the item types of an actor.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `schema` | read | all | type, subtype | The types of this world, or the fields, subtypes and an example of one type; also the kinds of item. |
+| `list` | read | all | **type**, subtype, kind, parent, pack, query, filter, fields, limit, offset | List documents of a type, in the world, inside a parent, or in a pack; paged. |
+| `get` | read | all | **type**, id, name, parent, pack, fields, maxChars | Read one document, or only some of its fields. A very large one is summarised. |
+| `create` | write | all | **type**, subtype, kind, parent, pack, folder, from, data | Create documents from data, or copy a compendium entry with from; inside a parent for embedded ones. |
+| `update` | write | all | **type**, subtype, id, name, parent, pack, folder, **data** | Change documents: one by id or name, or a list of changes that each carry an id. |
+| `delete` | delete | all | **type**, subtype, id, name, parent, pack, folder, confirm, deleteContents | Delete one document, or several with confirm; a folder, with or without its contents. |
+
 ## `scenes`
 
 Scenes: look at the current one, list them, switch, and set scene music.

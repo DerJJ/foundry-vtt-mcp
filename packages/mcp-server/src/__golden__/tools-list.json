@@ -19,6 +19,25 @@
     }
   },
   {
+    "name": "documents",
+    "description": "Any Foundry document, in the world or in a compendium pack: an actor, an item or effect on an actor, a scene and its walls, lights and tiles, a journal and its pages, a playlist, a macro, a folder. Call schema first for the fields of a type in this world; kinds (inventory, spells, features) group the item types of an actor.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- schema(type?, subtype?): The types of this world, or the fields, subtypes and an example of one type; also the kinds of item.\n- list(type*, subtype?, kind?, parent?, pack?, query?, filter?, fields?, …+2): List documents of a type, in the world, inside a parent, or in a pack; paged.\n- get(type*, id?, name?, parent?, pack?, fields?, maxChars?): Read one document, or only some of its fields. A very large one is summarised.\n- create(type*, subtype?, kind?, parent?, pack?, folder?, from?, data?): Create documents from data, or copy a compendium entry with from; inside a parent for embedded ones.\n- update(type*, data*, subtype?, id?, name?, parent?, pack?, folder?): Change documents: one by id or name, or a list of changes that each carry an id.\n- delete(type*, subtype?, id?, name?, parent?, pack?, folder?, confirm?, …+1) (delete): Delete one document, or several with confirm; a folder, with or without its contents.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
     "name": "scenes",
     "description": "Scenes: look at the current one, list them, switch, and set scene music.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- current(includeTokens?, includeHidden?): Get information about the currently active scene, including tokens, layout, and the music binding (playlist +…\n- list(filter?, include_active_only?): List all available Foundry VTT scenes with their details, including the music binding (playlist + playlistSou…\n- activate(scene_identifier*, optimize_view?, mode?): Switch to a different Foundry VTT scene by name or ID\n- set-music(scene_identifier*, playlist?, playlist_sound?): Set or clear the music binding of a scene.\n- ping(sceneIdentifier?, target?, x?, y?): Ping a token or a point on the scene the GM browser is showing.\n- pull-players(sceneIdentifier?, target?, x?, y?): Ping and pull every player view to a token or point.\n- reset-fog(sceneIdentifier?) (delete): Reset the fog of war of a scene.\n- set-weather(weather*, sceneIdentifier?): Set the weather effect of a scene (an empty string clears it).\n- create(sceneData*): Create a scene from scene data.\n- update(sceneIdentifier*, sceneData*): Change a scene.\n- create-documents(sceneIdentifier*, documentType*, documents*): Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.\n- update-documents(sceneIdentifier*, documentType*, documents*): Change embedded documents of a scene (each entry needs its _id).\n- delete-documents(sceneIdentifier*, documentType*, ids*) (delete): Delete embedded documents of a scene.\n- list-documents(sceneIdentifier*, documentType*): List the embedded documents of a scene.\n- list-weather(): List the available weather effects.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {
