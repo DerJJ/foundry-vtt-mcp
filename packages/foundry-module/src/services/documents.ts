@@ -7,6 +7,7 @@
 import { auditLog, sanitizeData, validateFoundryState } from './support.js';
 import { LibraryService, type FolderableType } from './library.js';
 import { hasKindTable, kindsFor, type Kinds } from './document-kinds.js';
+import { applySceneBackground, splitBackground } from './scene-background.js';
 
 export interface DocumentSelector {
   type: string;
@@ -212,7 +213,11 @@ function describeFields(fields: Record<string, any>, depth: number): Record<stri
 // -------------------------------------------------------------------------------------------------
 
 export class DocumentsService {
-  constructor(private readonly library: LibraryService = new LibraryService()) {}
+  constructor(
+    private readonly library: LibraryService = new LibraryService(),
+    /** Extra notes about the fields of the game system (valid keys for enums), if it has any. */
+    private readonly systemNotes: () => Record<string, any> = () => ({})
+  ) {}
 
   async run(request: DocumentsRequest): Promise<any> {
     validateFoundryState();
@@ -531,6 +536,9 @@ export class DocumentsService {
       folderId = folder.id;
     }
 
+    // A scene's background image lives on its first level in Foundry v14: it is set after the create.
+    const isWorldScene = type === 'Scene' && !pack && !request.parent;
+    const backgrounds: Array<string | undefined> = [];
     const payload = entries.map(entry => {
       const merged = base ? deepMerge(base, entry) : { ...entry };
       if (merged.type === undefined && subtypes?.length === 1) merged.type = subtypes[0];
@@ -540,6 +548,11 @@ export class DocumentsService {
         );
       }
       if (folderId !== undefined && merged.folder === undefined) merged.folder = folderId;
+      if (isWorldScene) {
+        const { data, background } = splitBackground(merged);
+        backgrounds.push(background);
+        return data;
+      }
       return merged;
     });
 
@@ -552,6 +565,9 @@ export class DocumentsService {
     } else {
       this.worldCollection(type);
       created = await this.documentClass(type).createDocuments(payload);
+    }
+    for (const [index, background] of backgrounds.entries()) {
+      if (background && created[index]) await applySceneBackground(created[index], background);
     }
 
     auditLog('documents.create', { type, count: created.length, pack: request.pack }, 'success');
@@ -612,6 +628,16 @@ export class DocumentsService {
     }
     if (updates.length === 0) throw new Error('Nothing to update.');
 
+    // A scene's background image lives on its first level in Foundry v14: it is set after the update.
+    const backgrounds = new Map<string, string>();
+    if (type === 'Scene' && !request.pack && !request.parent) {
+      updates.forEach((update, index) => {
+        const { data, background } = splitBackground(update);
+        if (background) backgrounds.set(String(update['_id']), background);
+        updates[index] = data;
+      });
+    }
+
     let updated: any[];
     if (request.parent) {
       const parent = await this.find(request.parent, request.pack);
@@ -622,6 +648,10 @@ export class DocumentsService {
     } else {
       this.worldCollection(type);
       updated = await this.documentClass(type).updateDocuments(updates);
+    }
+    for (const [id, background] of backgrounds) {
+      const scene = this.worldCollection('Scene').get(id);
+      if (scene) await applySceneBackground(scene, background);
     }
 
     auditLog('documents.update', { type, count: updated.length, pack: request.pack }, 'success');
@@ -722,6 +752,7 @@ export class DocumentsService {
   private async schema(request: DocumentsRequest): Promise<any> {
     const system = this.systemId();
     if (!request.type) {
+      const notes = this.systemNotes();
       const embeddedOf = (type: string): string[] => {
         try {
           return Object.keys(this.documentClass(type).metadata?.embedded ?? {});
@@ -739,6 +770,7 @@ export class DocumentsService {
         ),
         kinds: this.itemKinds(),
         kindsAreGuessed: !hasKindTable(system),
+        ...(notes['items'] || notes['description'] ? { systemNotes: notes } : {}),
         note: 'Call schema with a type (and a subtype) for its fields. Folder: documents hold a folder path in `folder` and the type it holds in `subtype`.',
       };
     }
@@ -767,6 +799,7 @@ export class DocumentsService {
     }
 
     const example = await this.exampleOf(type, subtype);
+    const notes = this.systemNotes();
     return {
       documentName: type,
       ...(subtype ? { subtype } : {}),
@@ -778,6 +811,7 @@ export class DocumentsService {
         : { systemNote: 'No data model for system fields; use the example.' }),
       ...(type === 'Item' || type === 'Actor' ? { kinds: this.itemKinds() } : {}),
       example,
+      ...(notes['items'] || notes['description'] ? { systemNotes: notes } : {}),
     };
   }
 

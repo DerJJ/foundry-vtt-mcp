@@ -139,7 +139,7 @@ export class CompendiumManagementTools {
 
     switch (action) {
       case 'list':
-        return this.handleList();
+        return this.handleList(args);
       case 'create':
         return this.handleCreate(args);
       case 'delete':
@@ -149,9 +149,13 @@ export class CompendiumManagementTools {
 
   // ── list ──────────────────────────────────────────────────────────────────
 
-  private async handleList(): Promise<any> {
-    this.logger.info('Listing compendium packs');
-    return this.foundryClient.query('foundry-mcp-bridge.listPacks', {});
+  private async handleList(args: any): Promise<any> {
+    const { type } = z.object({ type: z.string().optional() }).parse(args);
+    this.logger.info('Listing compendium packs', { type });
+    const result = await this.foundryClient.query('foundry-mcp-bridge.listPacks', {});
+    if (!type || !Array.isArray(result?.packs)) return result;
+    const packs = result.packs.filter((pack: any) => pack.type === type);
+    return { ...result, total: packs.length, packs };
   }
 
   // ── create ────────────────────────────────────────────────────────────────
