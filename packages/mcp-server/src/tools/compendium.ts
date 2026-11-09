@@ -19,6 +19,9 @@ import {
 } from '../utils/compendium-filters.js';
 import { readDerived } from '../systems/cosmere-rpg/constants.js';
 
+/** The longest a creature search waits for the index to be built. */
+const INDEX_WAIT_LIMIT_MS = 15 * 60 * 1000;
+
 export interface CompendiumToolsOptions {
   foundryClient: FoundryClient;
   logger: Logger;
@@ -516,6 +519,34 @@ export class CompendiumTools {
     }
   }
 
+  /**
+   * Asks the bridge for creatures and keeps waiting while it builds the creature index: the
+   * bridge answers "still building" after 20 seconds, with its progress, and the search is asked
+   * again until the index is done (or {@link INDEX_WAIT_LIMIT_MS} has passed).
+   */
+  private async queryCreaturesWhenIndexIsReady(params: unknown): Promise<any> {
+    const startedAt = Date.now();
+    for (;;) {
+      try {
+        return await this.foundryClient.query(
+          'foundry-mcp-bridge.listCreaturesByCriteria',
+          params,
+          {
+            timeoutMs: 30000,
+          }
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const building = /creature index is still building/.test(message);
+        if (!building || Date.now() - startedAt > INDEX_WAIT_LIMIT_MS) throw error;
+        this.logger.info('Waiting for the creature index to finish building', {
+          waitedSeconds: Math.round((Date.now() - startedAt) / 1000),
+          status: message.slice(message.indexOf('still building')),
+        });
+      }
+    }
+  }
+
   async handleListCreaturesByCriteria(args: any): Promise<any> {
     // Detect game system for appropriate filtering
     const gameSystem = await this.getGameSystem();
@@ -768,12 +799,7 @@ export class CompendiumTools {
     });
 
     try {
-      const results = await this.foundryClient.query(
-        'foundry-mcp-bridge.listCreaturesByCriteria',
-        params,
-        // The bridge waits up to 20 seconds for a creature index that is still building.
-        { timeoutMs: 30000 }
-      );
+      const results = await this.queryCreaturesWhenIndexIsReady(params);
 
       this.logger.debug('Creature criteria search completed', {
         gameSystem,
