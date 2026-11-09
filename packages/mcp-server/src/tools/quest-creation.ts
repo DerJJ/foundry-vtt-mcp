@@ -29,13 +29,6 @@ interface QuestJournalRequest {
   rewards?: string | undefined;
 }
 
-interface QuestJournalResult {
-  journalId: string;
-  journalName: string;
-  content: string;
-  success: boolean;
-}
-
 export class QuestCreationTools {
   private foundryClient: FoundryClient;
   private logger: Logger;
@@ -184,36 +177,6 @@ export class QuestCreationTools {
             },
           },
           required: ['journalId', 'newContent', 'updateType'],
-        },
-      },
-      {
-        name: 'replace-journal-page',
-        description:
-          'Replace the ENTIRE content of a specific journal page. Use this to overwrite/rewrite a page. For appending progress, use journals.update-quest instead.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            journalId: {
-              type: 'string',
-              description: 'ID of the journal containing the page to replace',
-            },
-            pageId: {
-              type: 'string',
-              description:
-                'ID of the page whose content will be replaced. Get page IDs from journals.list.',
-            },
-            newContent: {
-              type: 'string',
-              description:
-                'The new content for the page. Quest-style HTML or plain text is supported. Plain text gets wrapped in <p> tags. Markdown will be stripped.',
-            },
-            newPageName: {
-              type: 'string',
-              description:
-                'Optional new name for the page (rename the page while replacing its content).',
-            },
-          },
-          required: ['journalId', 'pageId', 'newContent'],
         },
       },
       {
@@ -561,80 +524,6 @@ export class QuestCreationTools {
       };
     } catch (error) {
       this.errorHandler.handleToolError(error, 'update-quest-journal', 'journal update');
-    }
-  }
-
-  /**
-   * Handle replace journal page request
-   * Replaces the ENTIRE content of a specific journal page (no append).
-   */
-  async handleReplaceJournalPage(args: any): Promise<any> {
-    try {
-      const requestSchema = z.object({
-        journalId: z.string().min(1, 'Journal ID is required'),
-        pageId: z.string().min(1, 'Page ID is required'),
-        newContent: z.string().min(1, 'New content is required'),
-        newPageName: z.string().optional(),
-      });
-
-      const request = requestSchema.parse(args);
-
-      // Auto-convert Markdown to plain text with warning (don't block)
-      request.newContent = this.convertMarkdownToPlainText(request.newContent);
-
-      // Format the replacement content for Foundry
-      const replacementContent = this.formatUpdateContentForFoundry(request.newContent);
-
-      // Send the replacement via the module handler (Mode 2 replaces, no concat)
-      const result = await this.foundryClient.query('foundry-mcp-bridge.updateJournalContent', {
-        journalId: request.journalId,
-        content: replacementContent,
-        pageId: request.pageId,
-      });
-
-      if (!result) {
-        throw new Error('Failed to replace journal page: No response from Foundry');
-      }
-
-      if (result.error) {
-        throw new Error(`Failed to replace journal page: ${result.error}`);
-      }
-
-      if (!result.success) {
-        throw new Error('Failed to replace journal page: Update operation returned failure');
-      }
-
-      // Optionally rename the page after replacing content
-      if (request.newPageName) {
-        await this.foundryClient.query('foundry-mcp-bridge.updateJournalContent', {
-          journalId: request.journalId,
-          pageId: request.pageId,
-          content: replacementContent,
-          newPageName: request.newPageName,
-        });
-      }
-
-      // Verify the replacement by reading the content back
-      const verifyResult = await this.foundryClient.query(
-        'foundry-mcp-bridge.getJournalPageContent',
-        {
-          journalId: request.journalId,
-          pageId: request.pageId,
-        }
-      );
-      const verifyContent = verifyResult?.content || '';
-
-      return {
-        success: true,
-        message: `Page content replaced successfully`,
-        pageId: result.pageId,
-        pageName: request.newPageName || result.pageName,
-        verified: verifyContent.length > 0,
-        details: `Page content replaced. New content length: ${verifyContent.length} characters.`,
-        updatedContent: verifyContent,
-      };
-    } catch (error) {
-      this.errorHandler.handleToolError(error, 'replace-journal-page', 'journal page replacement');
     }
   }
 

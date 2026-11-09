@@ -19,6 +19,80 @@ export const MERGED_OPERATIONS: Readonly<Record<string, { into: string; note: st
     into: 'compendium `get`',
     note: 'full data is the default; `entryId` is now `itemId`',
   },
+  'get-character-entity': {
+    into: 'documents `get`',
+    note: 'type `Item` or `ActiveEffect` with the actor as `parent`',
+  },
+  'list-characters': {
+    into: 'documents `list`',
+    note: 'type `Actor`; `subtype` for the actor type',
+  },
+  'search-character-items': {
+    into: 'documents `list`',
+    note: 'type `Item` with the actor as `parent`; `query`, `kind` or `filter` to search',
+  },
+  'manage-world-items': {
+    into: 'documents',
+    note: 'list, get, create, update on type `Item`; add and remove on an actor with the actor as `parent`; `schema` replaces `describe`',
+  },
+  'manage-actors': {
+    into: 'documents, and actors `place`',
+    note: 'create, update and delete on type `Actor`; items on an actor with `parent`; `place` stays an action of `actors`',
+  },
+  'manage-effects': {
+    into: 'documents',
+    note: 'type `ActiveEffect` with an actor or an item as `parent`',
+  },
+  'create-actor-from-compendium': {
+    into: 'documents `create`',
+    note: 'type `Actor` with `from: {packId, itemId}` and `data: {name}`; `actors` `place` puts them on the scene',
+  },
+  'update-scene-music': {
+    into: 'documents `update`',
+    note: 'type `Scene`, `data: {playlist, playlistSound}` with ids',
+  },
+  'manage-playlists': {
+    into: 'documents, and audio `control`',
+    note: 'types `Playlist` and `PlaylistSound`',
+  },
+  'update-token': { into: 'documents `update`', note: 'type `Token` with the scene as `parent`' },
+  'delete-tokens': { into: 'documents `delete`', note: 'type `Token` with the scene as `parent`' },
+  'replace-journal-page': {
+    into: 'documents `update`',
+    note: 'type `JournalEntryPage` with the journal as `parent`',
+  },
+  'dnd5e-create-npc': {
+    into: 'documents `create`',
+    note: 'type `Actor`, `subtype: npc`, with the fields that `schema` shows (no stat block builder)',
+  },
+  'dnd5e-add-feature': {
+    into: 'documents `create`',
+    note: 'type `Item`, `kind: features`, the actor as `parent`; or copy one with `from`',
+  },
+  'dnd5e-add-features-from-compendium': {
+    into: 'documents `create`',
+    note: 'type `Item` with `from: {packId, itemId}` and the actor as `parent`; `compendium` `search` finds them',
+  },
+  'wfrp4e-update-actor': {
+    into: 'documents `update`',
+    note: 'type `Actor`; the fields are the ones `schema` shows',
+  },
+  'wfrp4e-add-items': {
+    into: 'documents `create`',
+    note: 'type `Item` with the actor as `parent`',
+  },
+  'create-dsa5-character-from-archetype': {
+    into: 'documents `create`',
+    note: 'type `Actor` with `from` set to the archetype entry',
+  },
+  'list-dsa5-archetypes': {
+    into: 'documents `list`',
+    note: 'with `pack` set to the archetype pack',
+  },
+  'list-compendium-packs': {
+    into: 'compendium `packs`',
+    note: 'also shows lock and write state; `type` filters',
+  },
 };
 
 export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
@@ -148,13 +222,82 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
+    name: 'actors',
+    purpose:
+      'What is more than a data change on an actor: a compact view, using an item or casting a spell, placing it on the scene, who owns it, the party and creature cards. Creating, changing and deleting actors and the items and effects on them is `documents`.',
+    actions: {
+      get: { operation: 'get-character', risk: 'read' },
+      use: {
+        operation: 'use-item',
+        risk: 'write',
+        summary:
+          "Use an item, cast a spell or use a feature of an actor with the system's own rules.",
+      },
+      place: {
+        operation: 'place-actors',
+        risk: 'write',
+        summary: 'Drop existing actors on the current scene as tokens.',
+      },
+      'set-ownership': { operation: 'assign-actor-ownership', risk: 'write' },
+      'remove-ownership': { operation: 'remove-actor-ownership', risk: 'write' },
+      'list-ownership': { operation: 'list-actor-ownership', risk: 'read' },
+      'party-status': { operation: 'party-status', risk: 'read' },
+      'creature-card': { operation: 'creature-card', risk: 'read' },
+      // Exists for one game system only: described, not listed.
+      import: {
+        operation: 'import-dsa5-actor-from-json',
+        risk: 'write',
+        systems: ['dsa5'],
+        summary: 'Create an actor from an outside format (DSA5: Optolith, custom JSON).',
+      },
+    },
+  },
+
+  {
+    name: 'compendium',
+    purpose:
+      'Compendium packs: search, read an entry of any type, list packs, find creatures by criteria, and make or delete world packs. Entries of a pack are `documents` with `pack`; copying one into the world is `documents` `create` with `from`.',
+    actions: {
+      search: { operation: 'search-compendium', risk: 'read' },
+      get: {
+        operation: 'get-compendium-item',
+        risk: 'read',
+        summary:
+          'Read one pack entry of any type (item, actor, journal, roll table, scene, macro, playlist, cards, adventure); compact: true shortens it.',
+      },
+      'find-creatures': { operation: 'list-creatures-by-criteria', risk: 'read' },
+      packs: {
+        operation: 'manage-compendiums',
+        risk: 'read',
+        fixed: { action: 'list' },
+        params: { type: false },
+        summary: 'List compendium packs with their type, lock and write state.',
+      },
+      'create-pack': {
+        operation: 'manage-compendiums',
+        risk: 'write',
+        fixed: { action: 'create' },
+        params: { label: true, type: true, name: false },
+        summary: 'Create a world compendium pack.',
+      },
+      'delete-pack': {
+        operation: 'manage-compendiums',
+        risk: 'delete',
+        fixed: { action: 'delete' },
+        params: { identifier: true, confirmDelete: true },
+        summary: 'Delete a world compendium pack (system and module packs are refused).',
+      },
+    },
+  },
+
+  {
     name: 'scenes',
-    purpose: 'Scenes: look at the current one, list them, switch, and set scene music.',
+    purpose:
+      'Scenes as the table sees them: look at the current one, list them, switch, ping, pull the players, weather and fog. Making or changing a scene, its background and music, and its walls, lights and tiles is `documents`.',
     actions: {
       current: { operation: 'get-current-scene', risk: 'read' },
       list: { operation: 'list-scenes', risk: 'read' },
       activate: { operation: 'switch-scene', risk: 'write' },
-      'set-music': { operation: 'update-scene-music', risk: 'write' },
       ping: {
         operation: 'scene-view',
         risk: 'write',
@@ -183,49 +326,6 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: { sceneIdentifier: false, weather: true },
         summary: 'Set the weather effect of a scene (an empty string clears it).',
       },
-      create: {
-        operation: 'manage-scene',
-        risk: 'write',
-        fixed: { action: 'create-scene' },
-        params: { sceneData: true },
-        summary: 'Create a scene from scene data.',
-      },
-      update: {
-        operation: 'manage-scene',
-        risk: 'write',
-        fixed: { action: 'update-scene' },
-        params: { sceneIdentifier: true, sceneData: true },
-        summary: 'Change a scene.',
-      },
-      'create-documents': {
-        operation: 'manage-scene',
-        risk: 'write',
-        fixed: { action: 'create-documents' },
-        params: { sceneIdentifier: true, documentType: true, documents: true },
-        summary:
-          'Create walls, lights, sounds, regions, tiles, tokens, notes or drawings on a scene.',
-      },
-      'update-documents': {
-        operation: 'manage-scene',
-        risk: 'write',
-        fixed: { action: 'update-documents' },
-        params: { sceneIdentifier: true, documentType: true, documents: true },
-        summary: 'Change embedded documents of a scene (each entry needs its _id).',
-      },
-      'delete-documents': {
-        operation: 'manage-scene',
-        risk: 'delete',
-        fixed: { action: 'delete-documents' },
-        params: { sceneIdentifier: true, documentType: true, ids: true },
-        summary: 'Delete embedded documents of a scene.',
-      },
-      'list-documents': {
-        operation: 'manage-scene',
-        risk: 'read',
-        fixed: { action: 'list-documents' },
-        params: { sceneIdentifier: true, documentType: true },
-        summary: 'List the embedded documents of a scene.',
-      },
       'list-weather': {
         operation: 'scene-view',
         risk: 'read',
@@ -237,378 +337,14 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
-    name: 'playlists',
-    purpose: 'Playlists and their sounds: list, create, change, delete and control playback.',
-    actions: {
-      list: {
-        operation: 'manage-playlists',
-        risk: 'read',
-        fixed: { action: 'describe' },
-        params: { playlist: false },
-        summary: 'List playlists, or describe one playlist with its sounds.',
-      },
-      create: {
-        operation: 'manage-playlists',
-        risk: 'write',
-        fixed: { action: 'create' },
-        params: {
-          name: true,
-          mode: false,
-          fade: false,
-          description: false,
-          sorting: false,
-          folder: false,
-          color: false,
-          sounds: false,
-        },
-        summary: 'Create a playlist, optionally with sounds.',
-      },
-      update: {
-        operation: 'manage-playlists',
-        risk: 'write',
-        fixed: { action: 'update' },
-        params: {
-          playlist: true,
-          name: false,
-          mode: false,
-          fade: false,
-          description: false,
-          sorting: false,
-          folder: false,
-          color: false,
-          sounds: false,
-          updates: false,
-        },
-        summary: 'Change a playlist or its sounds.',
-      },
-      delete: {
-        operation: 'manage-playlists',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        params: { playlist: true },
-        summary: 'Delete a playlist.',
-      },
-      control: { operation: 'control-playlist', risk: 'write' },
-    },
-  },
-
-  {
-    name: 'effects',
-    purpose: 'Active effects on actors and items, and the conditions a token can have.',
-    actions: {
-      create: {
-        operation: 'manage-effects',
-        risk: 'write',
-        fixed: { action: 'create' },
-        params: {
-          actorIdentifier: true,
-          parentType: true,
-          parentItemIdentifier: false,
-          effectData: true,
-        },
-        summary: 'Create an ActiveEffect on an actor or on one of its items.',
-      },
-      update: {
-        operation: 'manage-effects',
-        risk: 'write',
-        fixed: { action: 'update' },
-        params: {
-          actorIdentifier: true,
-          parentType: true,
-          parentItemIdentifier: false,
-          effectId: true,
-          effectData: true,
-        },
-        summary: 'Change an ActiveEffect.',
-      },
-      delete: {
-        operation: 'manage-effects',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        params: {
-          actorIdentifier: true,
-          parentType: true,
-          parentItemIdentifier: false,
-          effectId: true,
-        },
-        summary: 'Delete an ActiveEffect.',
-      },
-      'list-conditions': { operation: 'get-available-conditions', risk: 'read' },
-      'toggle-condition': { operation: 'toggle-token-condition', risk: 'write' },
-    },
-  },
-
-  {
     name: 'tokens',
-    purpose: 'Tokens on the current scene: read, move, change and remove them.',
+    purpose:
+      'Tokens on the current scene: look at one, move it, and set its conditions. Changing or deleting a token is `documents` (type `Token`, the scene as `parent`).',
     actions: {
       get: { operation: 'get-token-details', risk: 'read' },
       move: { operation: 'move-token', risk: 'write' },
-      update: { operation: 'update-token', risk: 'write' },
-      delete: { operation: 'delete-tokens', risk: 'delete' },
-    },
-  },
-
-  {
-    name: 'items',
-    purpose: 'Items: world items, items on actors, and using an item.',
-    actions: {
-      list: {
-        operation: 'manage-world-items',
-        risk: 'read',
-        fixed: { action: 'list' },
-        params: { type: false, folder: false, nameFilter: false },
-        summary: 'List world items by type, folder or name.',
-      },
-      get: {
-        operation: 'manage-world-items',
-        risk: 'read',
-        fixed: { action: 'get' },
-        params: { itemIdentifier: true },
-        summary: 'Read one world item in full.',
-      },
-      create: {
-        operation: 'manage-world-items',
-        risk: 'write',
-        fixed: { action: 'create' },
-        params: { items: true, folder: false },
-        summary: 'Create world items.',
-      },
-      update: {
-        operation: 'manage-world-items',
-        risk: 'write',
-        fixed: { action: 'update' },
-        params: { updates: true },
-        summary: 'Change world items by id.',
-      },
-      'add-to-actor': {
-        operation: 'manage-world-items',
-        risk: 'write',
-        fixed: { action: 'add-to-actor' },
-        params: { actorIdentifier: true, items: true },
-        summary: 'Create items directly on an actor.',
-      },
-      'remove-from-actor': {
-        operation: 'manage-world-items',
-        risk: 'delete',
-        fixed: { action: 'remove-from-actor' },
-        params: { actorIdentifier: true, itemIds: false, itemNames: false, type: false },
-        summary: 'Delete items from an actor.',
-      },
-      'system-notes': {
-        operation: 'manage-world-items',
-        risk: 'read',
-        fixed: { action: 'describe' },
-        params: {},
-        summary: 'Item types and field values of the active game system.',
-      },
-      use: { operation: 'use-item', risk: 'write' },
-      'add-wfrp4e': {
-        operation: 'wfrp4e-add-items',
-        risk: 'write',
-        systems: ['wfrp4e'],
-      },
-    },
-  },
-
-  {
-    name: 'actors',
-    purpose:
-      'Actors (characters, NPCs, monsters): read, search, create, change, delete, place on the scene, and set who owns them.',
-    actions: {
-      list: {
-        operation: 'list-characters',
-        risk: 'read',
-        paged: 'characters',
-        summary: 'List actors, optionally of one type.',
-      },
-      get: { operation: 'get-character', risk: 'read' },
-      'get-entity': { operation: 'get-character-entity', risk: 'read' },
-      'search-items': { operation: 'search-character-items', risk: 'read' },
-      create: {
-        operation: 'manage-actors',
-        risk: 'write',
-        fixed: { action: 'create' },
-        params: { actors: true, folder: false },
-        summary: 'Create actors of any type with system data.',
-      },
-      update: {
-        operation: 'manage-actors',
-        risk: 'write',
-        fixed: { action: 'update' },
-        params: { updates: true },
-        summary: 'Change actors by id.',
-      },
-      delete: {
-        operation: 'manage-actors',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        params: { ids: true },
-        summary: 'Delete actors by id.',
-      },
-      place: {
-        operation: 'manage-actors',
-        risk: 'write',
-        fixed: { action: 'place' },
-        params: { actorIds: true, placement: false, hidden: false },
-        summary: 'Drop existing actors on the current scene as tokens.',
-      },
-      'update-items': {
-        operation: 'manage-actors',
-        risk: 'write',
-        fixed: { action: 'update-items' },
-        params: { actorIdentifier: true, itemUpdates: true },
-        summary: 'Change items that are on an actor.',
-      },
-      'delete-items': {
-        operation: 'manage-actors',
-        risk: 'delete',
-        fixed: { action: 'delete-items' },
-        params: { actorIdentifier: true, itemIds: true },
-        summary: 'Delete items that are on an actor.',
-      },
-      'system-notes': {
-        operation: 'manage-actors',
-        risk: 'read',
-        fixed: { action: 'describe' },
-        params: {},
-        summary: 'Actor types and field paths of the active game system.',
-      },
-      'create-from-compendium': { operation: 'create-actor-from-compendium', risk: 'write' },
-      'set-ownership': { operation: 'assign-actor-ownership', risk: 'write' },
-      'remove-ownership': { operation: 'remove-actor-ownership', risk: 'write' },
-      'list-ownership': { operation: 'list-actor-ownership', risk: 'read' },
-      'party-status': { operation: 'party-status', risk: 'read' },
-      'creature-card': { operation: 'creature-card', risk: 'read' },
-
-      // Actions that exist for one game system only. They are described, not listed.
-      'create-npc': { operation: 'dnd5e-create-npc', risk: 'write', systems: ['dnd5e'] },
-      'add-feature': { operation: 'dnd5e-add-feature', risk: 'write', systems: ['dnd5e'] },
-      'add-features-from-compendium': {
-        operation: 'dnd5e-add-features-from-compendium',
-        risk: 'write',
-        systems: ['dnd5e'],
-      },
-      'wfrp4e-update': { operation: 'wfrp4e-update-actor', risk: 'write', systems: ['wfrp4e'] },
-      'list-archetypes': { operation: 'list-dsa5-archetypes', risk: 'read', systems: ['dsa5'] },
-      'create-from-archetype': {
-        operation: 'create-dsa5-character-from-archetype',
-        risk: 'write',
-        systems: ['dsa5'],
-      },
-      'import-json': {
-        operation: 'import-dsa5-actor-from-json',
-        risk: 'write',
-        systems: ['dsa5'],
-      },
-    },
-  },
-
-  {
-    name: 'compendium',
-    purpose: 'Compendium packs: search, read entries, list packs, and find creatures by criteria.',
-    actions: {
-      search: { operation: 'search-compendium', risk: 'read' },
-      import: { operation: 'import-compendium-entry', risk: 'write' },
-      get: {
-        operation: 'get-compendium-item',
-        risk: 'read',
-        summary:
-          'Read one pack entry of any type (item, actor, journal, roll table, scene, macro, playlist, cards, adventure); compact: true shortens it.',
-      },
-      'list-packs': { operation: 'list-compendium-packs', risk: 'read' },
-      'find-creatures': { operation: 'list-creatures-by-criteria', risk: 'read' },
-      packs: {
-        operation: 'manage-compendiums',
-        risk: 'read',
-        fixed: { action: 'list' },
-        summary: 'List compendium packs with their lock and write state.',
-      },
-      'create-pack': {
-        operation: 'manage-compendiums',
-        risk: 'write',
-        fixed: { action: 'create' },
-        summary: 'Create a world compendium pack.',
-      },
-      'delete-pack': {
-        operation: 'manage-compendiums',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        summary: 'Delete a world compendium pack (system and module packs are refused).',
-      },
-      'list-entries': {
-        operation: 'manage-compendium-entries',
-        risk: 'read',
-        fixed: { action: 'list' },
-        summary: 'List the entries of a compendium pack.',
-      },
-      'create-entries': {
-        operation: 'manage-compendium-entries',
-        risk: 'write',
-        fixed: { action: 'create' },
-        summary: 'Add entries to an unlocked world pack.',
-      },
-      'update-entries': {
-        operation: 'manage-compendium-entries',
-        risk: 'write',
-        fixed: { action: 'update' },
-        summary: 'Change entries of an unlocked world pack.',
-      },
-      'delete-entries': {
-        operation: 'manage-compendium-entries',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        summary: 'Delete entries from an unlocked world pack.',
-      },
-      'copy-entry': {
-        operation: 'manage-compendium-entries',
-        risk: 'write',
-        fixed: { action: 'copy' },
-        summary: 'Copy a document into a pack by UUID.',
-      },
-    },
-  },
-
-  {
-    name: 'journals',
-    purpose: 'Journals and quests: read, search, write pages, and build quest journals.',
-    actions: {
-      list: {
-        operation: 'list-journals',
-        risk: 'read',
-        summary: 'List journals and their pages, or read one journal or page.',
-      },
-      search: { operation: 'search-journals', risk: 'read' },
-      'create-quest': { operation: 'create-quest-journal', risk: 'write' },
-      'update-quest': { operation: 'update-quest-journal', risk: 'write' },
-      'link-quest': { operation: 'link-quest-to-npc', risk: 'write' },
-      'replace-page': { operation: 'replace-journal-page', risk: 'write' },
-      'create-dashboard': { operation: 'create-campaign-dashboard', risk: 'write' },
-    },
-  },
-
-  {
-    name: 'chat',
-    purpose: 'Speak as an actor and ask players to roll.',
-    actions: {
-      post: { operation: 'create-chat-message', risk: 'write' },
-      'request-rolls': { operation: 'request-player-rolls', risk: 'write' },
-      'get-messages': { operation: 'get-chat-messages', risk: 'read' },
-      'gm-roll': { operation: 'gm-roll', risk: 'write' },
-      'list-tables': {
-        operation: 'roll-table',
-        risk: 'read',
-        fixed: { action: 'list' },
-        params: { search: false },
-        summary: 'List the roll tables of the world and of compendiums.',
-      },
-      'roll-table': {
-        operation: 'roll-table',
-        risk: 'write',
-        fixed: { action: 'roll' },
-        params: { table: true, visibility: false },
-        summary: 'Draw from a roll table.',
-      },
+      'toggle-condition': { operation: 'toggle-token-condition', risk: 'write' },
+      'list-conditions': { operation: 'get-available-conditions', risk: 'read' },
     },
   },
 
@@ -637,54 +373,36 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: { targets: true, sceneIdentifier: false },
         summary: 'Take tokens out of the combat.',
       },
-      'roll-initiative': {
+      initiative: {
         operation: 'combat',
         risk: 'write',
-        fixed: { action: 'roll-initiative' },
-        params: { who: false, targets: false, sceneIdentifier: false },
-        summary: 'Roll initiative as a GM roll.',
+        choice: {
+          param: 'mode',
+          into: 'action',
+          values: { roll: 'roll-initiative', set: 'set-initiative' },
+          description:
+            'roll: roll initiative as a GM roll (who, targets). set: set it (targets and initiative needed).',
+        },
+        params: { who: false, targets: false, initiative: false, sceneIdentifier: false },
+        summary: 'Roll or set the initiative of tokens.',
       },
-      'set-initiative': {
+      advance: {
         operation: 'combat',
         risk: 'write',
-        fixed: { action: 'set-initiative' },
-        params: { targets: true, initiative: true, sceneIdentifier: false },
-        summary: 'Set the initiative of tokens.',
-      },
-      begin: {
-        operation: 'combat',
-        risk: 'write',
-        fixed: { action: 'begin' },
+        choice: {
+          param: 'to',
+          into: 'action',
+          values: {
+            begin: 'begin',
+            'next-turn': 'next-turn',
+            'previous-turn': 'previous-turn',
+            'next-round': 'next-round',
+            'previous-round': 'previous-round',
+          },
+          description: 'Where to go: begin starts round 1.',
+        },
         params: { sceneIdentifier: false },
-        summary: 'Start round 1.',
-      },
-      'next-turn': {
-        operation: 'combat',
-        risk: 'write',
-        fixed: { action: 'next-turn' },
-        params: { sceneIdentifier: false },
-        summary: 'Advance to the next turn.',
-      },
-      'previous-turn': {
-        operation: 'combat',
-        risk: 'write',
-        fixed: { action: 'previous-turn' },
-        params: { sceneIdentifier: false },
-        summary: 'Go back one turn.',
-      },
-      'next-round': {
-        operation: 'combat',
-        risk: 'write',
-        fixed: { action: 'next-round' },
-        params: { sceneIdentifier: false },
-        summary: 'Advance to the next round.',
-      },
-      'previous-round': {
-        operation: 'combat',
-        risk: 'write',
-        fixed: { action: 'previous-round' },
-        params: { sceneIdentifier: false },
-        summary: 'Go back one round.',
+        summary: 'Start the combat or move to another turn or round.',
       },
       defeated: {
         operation: 'combat',
@@ -693,6 +411,7 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: { targets: true, defeated: false, sceneIdentifier: false },
         summary: 'Mark tokens defeated (defeated=false undoes it).',
       },
+      'apply-damage': { operation: 'apply-damage', risk: 'write' },
       end: {
         operation: 'combat',
         risk: 'delete',
@@ -700,7 +419,43 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: { sceneIdentifier: false },
         summary: 'End the combat by deleting it.',
       },
-      'apply-damage': { operation: 'apply-damage', risk: 'write' },
+    },
+  },
+
+  {
+    name: 'chat',
+    purpose:
+      'Speak as an actor or the GM, ask players to roll, read the chat log, roll for the GM.',
+    actions: {
+      post: { operation: 'create-chat-message', risk: 'write' },
+      'request-rolls': { operation: 'request-player-rolls', risk: 'write' },
+      'get-messages': { operation: 'get-chat-messages', risk: 'read' },
+      'gm-roll': { operation: 'gm-roll', risk: 'write' },
+      'roll-table': {
+        operation: 'roll-table',
+        risk: 'write',
+        fixed: { action: 'roll' },
+        params: { table: true, visibility: false },
+        summary: 'Draw from a roll table. Listing the tables is `documents` (type `RollTable`).',
+      },
+    },
+  },
+
+  {
+    name: 'journals',
+    purpose:
+      'Journals and quests: read and search them, and build quest journals and campaign dashboards. Changing a page is `documents` (type `JournalEntryPage`).',
+    actions: {
+      list: {
+        operation: 'list-journals',
+        risk: 'read',
+        summary: 'List journals and their pages, or read one journal or page.',
+      },
+      search: { operation: 'search-journals', risk: 'read' },
+      'create-quest': { operation: 'create-quest-journal', risk: 'write' },
+      'update-quest': { operation: 'update-quest-journal', risk: 'write' },
+      'link-quest': { operation: 'link-quest-to-npc', risk: 'write' },
+      'create-dashboard': { operation: 'create-campaign-dashboard', risk: 'write' },
     },
   },
 
@@ -716,116 +471,35 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
         params: {},
         summary: 'Whether the clock is started, paused or stopped.',
       },
-      start: {
+      control: {
         operation: 'calendar-clock',
         risk: 'write',
-        fixed: { action: 'start' },
+        choice: {
+          param: 'command',
+          into: 'action',
+          values: { start: 'start', pause: 'pause', stop: 'stop' },
+          description: 'start stays paused while the game is paused or a combat runs.',
+        },
         params: {},
-        summary: 'Start the clock; it stays paused while the game is paused or a combat runs.',
-      },
-      pause: {
-        operation: 'calendar-clock',
-        risk: 'write',
-        fixed: { action: 'pause' },
-        params: {},
-        summary: 'Pause the clock.',
-      },
-      stop: {
-        operation: 'calendar-clock',
-        risk: 'write',
-        fixed: { action: 'stop' },
-        params: {},
-        summary: 'Stop the clock.',
+        summary: 'Start, pause or stop the clock.',
       },
     },
   },
 
   {
-    name: 'folders',
+    name: 'audio',
     purpose:
-      'Folders in the world sidebar or inside a compendium pack, addressed by "Parent/Child" paths.',
+      'Playback of playlists and their sounds. Making and changing playlists and sounds is `documents`.',
     actions: {
-      list: {
-        operation: 'manage-folders',
-        risk: 'read',
-        fixed: { action: 'list' },
-        summary: 'List the folder tree of a document type, or of a pack.',
-      },
-      create: {
-        operation: 'manage-folders',
-        risk: 'write',
-        fixed: { action: 'create' },
-        summary: 'Create a folder at a path; missing parents are created.',
-      },
-      rename: {
-        operation: 'manage-folders',
-        risk: 'write',
-        fixed: { action: 'rename' },
-        summary: 'Rename a folder in place.',
-      },
-      move: {
-        operation: 'manage-folders',
-        risk: 'write',
-        fixed: { action: 'move' },
-        summary: 'Move a folder under another parent (null for the root).',
-      },
-      delete: {
-        operation: 'manage-folders',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        summary: 'Delete a folder; its contents move up unless told otherwise.',
-      },
-    },
-  },
-
-  {
-    name: 'media',
-    purpose: 'Bring local files into the world.',
-    actions: {
-      'upload-image': { operation: 'upload-image', risk: 'write' },
+      control: { operation: 'control-playlist', risk: 'write' },
     },
   },
 
   {
     name: 'macros',
     purpose:
-      'Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card.',
+      'Run Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card. Making and changing macros is `documents` (type `Macro`).',
     actions: {
-      list: {
-        operation: 'manage-macros',
-        risk: 'read',
-        fixed: { action: 'list' },
-        params: { search: false },
-        summary: 'List macros, optionally filtered by name.',
-      },
-      get: {
-        operation: 'manage-macros',
-        risk: 'read',
-        fixed: { action: 'get' },
-        params: { macro: true },
-        summary: 'Read one macro with its source.',
-      },
-      create: {
-        operation: 'manage-macros',
-        risk: 'write',
-        fixed: { action: 'create' },
-        params: { name: true, command: false, type: false, img: false, folder: false },
-        summary: 'Create a macro.',
-      },
-      update: {
-        operation: 'manage-macros',
-        risk: 'write',
-        fixed: { action: 'update' },
-        params: { macro: true, name: false, command: false, img: false, folder: false },
-        summary: 'Change a macro.',
-      },
-      delete: {
-        operation: 'manage-macros',
-        risk: 'delete',
-        fixed: { action: 'delete' },
-        params: { macro: true },
-        summary: 'Delete a macro.',
-      },
       execute: {
         operation: 'manage-macros',
         risk: 'execute',
@@ -838,10 +512,11 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
-    name: 'image-generation',
+    name: 'images',
     purpose:
-      'Generate images such as maps with ComfyUI. Off unless a GM switches it on in the module settings.',
+      'Images: bring a local file into the world, and generate maps with ComfyUI. Generating is off unless a GM switches it on in the module settings.',
     actions: {
+      upload: { operation: 'upload-image', risk: 'write' },
       generate: { operation: 'generate-map', risk: 'write', feature: 'imageGeneration' },
       status: { operation: 'check-map-status', risk: 'read', feature: 'imageGeneration' },
       cancel: { operation: 'cancel-map-job', risk: 'write', feature: 'imageGeneration' },

@@ -5,33 +5,21 @@ import { CharacterTools } from '../tools/character.js';
 import { CompendiumTools } from '../tools/compendium.js';
 import { SceneTools } from '../tools/scene.js';
 import { PlaylistTools } from '../tools/playlist.js';
-import { ActorCreationTools } from '../tools/actor-creation.js';
-import { ActorManagementTools } from '../tools/actor-management.js';
-import { EffectManagementTools } from '../tools/effect-management.js';
 import { QuestCreationTools } from '../tools/quest-creation.js';
 import { DiceRollTools } from '../tools/dice-roll.js';
 import { CampaignManagementTools } from '../tools/campaign-management.js';
 import { OwnershipTools } from '../tools/ownership.js';
 import { TokenManipulationTools } from '../tools/token-manipulation.js';
 import { MapGenerationTools } from '../tools/map-generation.js';
-import { WFRP4eUpdateActorTools } from '../tools/wfrp4e/update-actor.js';
-import { WFRP4eAddItemsTools } from '../tools/wfrp4e/add-items.js';
-import { DnD5eAddFeatureTool } from '../tools/dnd5e/add-feature.js';
-import { DnD5eNpcTools } from '../tools/dnd5e/npc.js';
-import { DnD5eFeaturesFromCompendiumTools } from '../tools/dnd5e/features.js';
 import { ChatTools } from '../tools/chat.js';
 import { ScriptExecutionTools } from '../tools/script-execution.js';
 import { TableTools } from '../tools/table-tools.js';
 import { PermissionsTools } from '../tools/permissions.js';
-import { FolderManagementTools } from '../tools/folder-management.js';
 import { CompendiumManagementTools } from '../tools/compendium-management.js';
-import { CompendiumEntryTools } from '../tools/compendium-entries.js';
 import { ImageUploadTools } from '../tools/image-upload.js';
-import { CompendiumImportTools } from '../tools/compendium-import.js';
+import { ActorPlacementTools } from '../tools/actor-placement.js';
 import { DocumentsTools } from '../tools/documents.js';
-import { SceneBuilderTools } from '../tools/scene-builder.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
-import { DSA5CharacterCreator } from '../systems/dsa5/character-creator.js';
 import { DSA5JsonActorImporter } from '../systems/dsa5/json-actor-importer.js';
 import { bindMethods, ToolRegistry, type ToolDefinition } from './tool-registry.js';
 import type { OperationCatalog } from './domain-tool.js';
@@ -58,11 +46,7 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     definitions: characterTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(characterTools, {
       'get-character': 'handleGetCharacter',
-      'list-characters': 'handleListCharacters',
-      'get-character-entity': 'handleGetCharacterEntity',
       'use-item': 'handleUseItem',
-      'search-character-items': 'handleSearchCharacterItems',
-      'manage-world-items': 'handleManageWorldItems',
     }),
   });
 
@@ -73,7 +57,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
       'search-compendium': 'handleSearchCompendium',
       'get-compendium-item': 'handleGetCompendiumItem',
       'list-creatures-by-criteria': 'handleListCreaturesByCriteria',
-      'list-compendium-packs': 'handleListCompendiumPacks',
     }),
   });
 
@@ -83,37 +66,13 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     handlers: bindMethods(sceneTools, {
       'get-current-scene': 'handleGetCurrentScene',
       'get-world-info': 'handleGetWorldInfo',
-      'update-scene-music': 'handleUpdateSceneMusic',
     }),
   });
 
-  const actorCreationTools = new ActorCreationTools(base);
+  const actorPlacementTools = new ActorPlacementTools(base);
   registry.registerModule({
-    definitions: actorCreationTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(actorCreationTools, {
-      'create-actor-from-compendium': 'handleCreateActorFromCompendium',
-    }),
-  });
-
-  const actorManagementTools = new ActorManagementTools({ ...base, systemRegistry });
-  registry.registerModule({
-    definitions: actorManagementTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(actorManagementTools, { 'manage-actors': 'handleManageActors' }),
-  });
-
-  const effectManagementTools = new EffectManagementTools(base);
-  registry.registerModule({
-    definitions: effectManagementTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(effectManagementTools, { 'manage-effects': 'handleManageEffects' }),
-  });
-
-  const dsa5CharacterCreator = new DSA5CharacterCreator(base);
-  registry.registerModule({
-    definitions: dsa5CharacterCreator.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(dsa5CharacterCreator, {
-      'create-dsa5-character-from-archetype': 'handleCreateCharacterFromArchetype',
-      'list-dsa5-archetypes': 'handleListArchetypes',
-    }),
+    definitions: actorPlacementTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(actorPlacementTools, { 'place-actors': 'handlePlaceActors' }),
   });
 
   const dsa5JsonActorImporter = new DSA5JsonActorImporter(base);
@@ -124,26 +83,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     }),
   });
 
-  const dnd5eAddFeatureTool = new DnD5eAddFeatureTool(base);
-  registry.registerModule({
-    definitions: dnd5eAddFeatureTool.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(dnd5eAddFeatureTool, { 'dnd5e-add-feature': 'handleAddFeature' }),
-  });
-
-  const dnd5eNpcTools = new DnD5eNpcTools({ ...base, addFeatureTool: dnd5eAddFeatureTool });
-  registry.registerModule({
-    definitions: dnd5eNpcTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(dnd5eNpcTools, { 'dnd5e-create-npc': 'handleCreateNpc' }),
-  });
-
-  const dnd5eFeaturesFromCompendiumTools = new DnD5eFeaturesFromCompendiumTools(base);
-  registry.registerModule({
-    definitions: dnd5eFeaturesFromCompendiumTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(dnd5eFeaturesFromCompendiumTools, {
-      'dnd5e-add-features-from-compendium': 'handleAddFeaturesFromCompendium',
-    }),
-  });
-
   const questCreationTools = new QuestCreationTools(base);
   registry.registerModule({
     definitions: questCreationTools.getToolDefinitions() as ToolDefinition[],
@@ -151,7 +90,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
       'create-quest-journal': 'handleCreateQuestJournal',
       'link-quest-to-npc': 'handleLinkQuestToNPC',
       'update-quest-journal': 'handleUpdateQuestJournal',
-      'replace-journal-page': 'handleReplaceJournalPage',
       'list-journals': 'handleListJournals',
       'search-journals': 'handleSearchJournals',
     }),
@@ -192,25 +130,11 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     },
   });
 
-  const wfrp4eUpdateActorTools = new WFRP4eUpdateActorTools(base);
-  registry.registerModule({
-    definitions: wfrp4eUpdateActorTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(wfrp4eUpdateActorTools, { 'wfrp4e-update-actor': 'handleUpdateActor' }),
-  });
-
-  const wfrp4eAddItemsTools = new WFRP4eAddItemsTools(base);
-  registry.registerModule({
-    definitions: wfrp4eAddItemsTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(wfrp4eAddItemsTools, { 'wfrp4e-add-items': 'handleAddItems' }),
-  });
-
   const tokenManipulationTools = new TokenManipulationTools(base);
   registry.registerModule({
     definitions: tokenManipulationTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(tokenManipulationTools, {
       'move-token': 'handleMoveToken',
-      'update-token': 'handleUpdateToken',
-      'delete-tokens': 'handleDeleteTokens',
       'get-token-details': 'handleGetTokenDetails',
       'toggle-token-condition': 'handleToggleTokenCondition',
       'get-available-conditions': 'handleGetAvailableConditions',
@@ -233,7 +157,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: playlistTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(playlistTools, {
-      'manage-playlists': 'handleManagePlaylists',
       'control-playlist': 'handleControlPlaylist',
     }),
   });
@@ -255,12 +178,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     ),
   });
 
-  const sceneBuilderTools = new SceneBuilderTools(base);
-  registry.registerModule({
-    definitions: sceneBuilderTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(sceneBuilderTools, { 'manage-scene': 'handleManageScene' }),
-  });
-
   const calendarClockTools = new CalendarClockTools(base);
   registry.registerModule({
     definitions: calendarClockTools.getToolDefinitions() as ToolDefinition[],
@@ -273,12 +190,6 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     handlers: bindMethods(permissionsTools, { 'get-permissions': 'handleGetPermissions' }),
   });
 
-  const folderManagementTools = new FolderManagementTools(base);
-  registry.registerModule({
-    definitions: folderManagementTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(folderManagementTools, { 'manage-folders': 'handleManageFolders' }),
-  });
-
   const compendiumManagementTools = new CompendiumManagementTools(base);
   registry.registerModule({
     definitions: compendiumManagementTools.getToolDefinitions() as ToolDefinition[],
@@ -287,26 +198,10 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
     }),
   });
 
-  const compendiumEntryTools = new CompendiumEntryTools(base);
-  registry.registerModule({
-    definitions: compendiumEntryTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(compendiumEntryTools, {
-      'manage-compendium-entries': 'handleManageCompendiumEntries',
-    }),
-  });
-
   const imageUploadTools = new ImageUploadTools(base);
   registry.registerModule({
     definitions: imageUploadTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(imageUploadTools, { 'upload-image': 'handleUploadImage' }),
-  });
-
-  const compendiumImportTools = new CompendiumImportTools(base);
-  registry.registerModule({
-    definitions: compendiumImportTools.getToolDefinitions() as ToolDefinition[],
-    handlers: bindMethods(compendiumImportTools, {
-      'import-compendium-entry': 'handleImportCompendiumEntry',
-    }),
   });
 
   const documentsTools = new DocumentsTools(base);

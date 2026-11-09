@@ -9,7 +9,7 @@ export type Kinds = Record<string, string[]>;
 
 const SYSTEM_KINDS: Record<string, Kinds> = {
   dnd5e: {
-    inventory: ['weapon', 'equipment', 'consumable', 'tool', 'loot', 'container'],
+    inventory: ['weapon', 'equipment', 'consumable', 'tool', 'loot', 'container', 'backpack'],
     spells: ['spell'],
     features: ['feat', 'class', 'subclass', 'race', 'background', 'facility'],
   },

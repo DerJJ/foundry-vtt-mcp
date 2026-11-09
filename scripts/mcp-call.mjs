@@ -2,17 +2,20 @@
 // hand against the connected world. Needs the built server and the bridge connected in a GM browser.
 //
 //   node scripts/mcp-call.mjs '[["world","info"],["actors","list",{"limit":5}]]'
+//   node scripts/mcp-call.mjs @calls.json     (the calls are read from a file)
 //
 // Each call is [tool, action, params]. Calls run in order; a failing call prints its error and the
 // run goes on.
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const calls = JSON.parse(process.argv[2] ?? '[]');
+const input = process.argv[2] ?? '[]';
+const calls = JSON.parse(input.startsWith('@') ? fs.readFileSync(input.slice(1), 'utf8') : input);
 const limit = Number(process.env.MCP_CALL_MAX ?? 1500);
 
 const client = new Client({ name: 'mcp-call', version: '1.0.0' });

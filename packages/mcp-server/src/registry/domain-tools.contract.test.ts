@@ -16,7 +16,7 @@ const actions = DOMAIN_TOOLS.flatMap(tool =>
 );
 
 /** What clients pay for in every session: all descriptions and schemas. A ceiling, not a goal. */
-const SURFACE_BUDGET_CHARS = 28_000; // lowered again when the actions that documents replaces are removed
+const SURFACE_BUDGET_CHARS = 18_000;
 
 describe('domain tool specs', () => {
   it('give every tool and every action in it a different name', () => {
@@ -56,7 +56,10 @@ describe('domain tool specs', () => {
       const schema = catalog.get(spec.operation!)!.definition.inputSchema as {
         required?: string[];
       };
-      const fixed = new Set(Object.keys(spec.fixed ?? {}));
+      const fixed = new Set([
+        ...Object.keys(spec.fixed ?? {}),
+        ...(spec.choice ? [spec.choice.into] : []),
+      ]);
       for (const key of (schema.required ?? []).filter(k => !fixed.has(k))) {
         const covered = spec.params ? spec.params[key] === true : true;
         expect(covered, `${key} is required by the operation`).toBe(true);

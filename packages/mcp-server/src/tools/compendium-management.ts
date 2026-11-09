@@ -2,7 +2,7 @@
  * Compendium Management Tools
  *
  * CRUD for the compendium packs themselves (not their contents — that is
- * manage-compendium-entries). Only *world* packs can be written: system and
+ * the documents tool, with pack). Only *world* packs can be written: system and
  * module packs are locked by Foundry, so create always makes a world pack and
  * delete refuses anything that looks like a system/module pack id.
  *
@@ -87,7 +87,7 @@ export class CompendiumManagementTools {
         name: 'manage-compendiums',
         description:
           'Create, list, and delete compendium packs in Foundry VTT. Managing the ' +
-          'documents inside a pack is a different tool: manage-compendium-entries.\n' +
+          'documents inside a pack is a different tool: documents, with pack.\n' +
           '- "list": Every pack, with its id, label, document type, and whether it is writable ' +
           '(only unlocked world packs are).\n' +
           '- "create": Make a new world compendium. "label" and "type" are required; "name" ' +

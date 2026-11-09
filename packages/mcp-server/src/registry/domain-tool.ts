@@ -31,6 +31,18 @@ export interface ActionSpec {
    * operation belongs to the action and its own `required` list applies.
    */
   params?: Readonly<Record<string, boolean>>;
+  /**
+   * One parameter of the action selects one of several behaviours of the operation: the
+   * caller passes `param: "<value>"` and the operation receives `into: values[<value>]`.
+   * Used where several operation actions are one idea to the caller (advance a combat to the
+   * next turn, the previous round, ...).
+   */
+  choice?: {
+    param: string;
+    into: string;
+    values: Readonly<Record<string, string>>;
+    description: string;
+  };
   /** One line for the action list. Defaults to the first sentence of the operation's description. */
   summary?: string;
   /** The action exists only for these game systems and is described only for them. */
@@ -89,11 +101,20 @@ function actionSchema(spec: ActionSpec, catalog: OperationCatalog): Schema {
   const properties = Object.fromEntries(
     selected.filter(key => !fixed.has(key) && key in all).map(key => [key, all[key]])
   );
-  const required = spec.params
+  const baseRequired = spec.params
     ? Object.entries(spec.params)
         .filter(([key, isRequired]) => isRequired && !fixed.has(key))
         .map(([key]) => key)
     : (schema.required ?? []).filter(key => !fixed.has(key));
+  const required = [...baseRequired];
+  if (spec.choice) {
+    properties[spec.choice.param] = {
+      type: 'string',
+      enum: Object.keys(spec.choice.values),
+      description: spec.choice.description,
+    };
+    required.unshift(spec.choice.param);
+  }
   if (spec.paged) {
     properties['limit'] = {
       type: 'integer',
@@ -252,7 +273,12 @@ export function buildDomainTool(
     }
 
     const operation = catalog.get(actionSpec.operation!)!;
-    const callParams = { ...params, ...(actionSpec.fixed ?? {}) };
+    const callParams: Record<string, unknown> = { ...params, ...(actionSpec.fixed ?? {}) };
+    if (actionSpec.choice) {
+      const { param, into, values } = actionSpec.choice;
+      callParams[into] = values[String(params[param])];
+      delete callParams[param];
+    }
     const paging = actionSpec.paged ? takePaging(callParams) : undefined;
     const result = await operation.handler(callParams);
     return paging && actionSpec.paged ? applyPaging(result, actionSpec.paged, paging) : result;

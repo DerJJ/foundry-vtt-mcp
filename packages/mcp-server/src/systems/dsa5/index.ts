@@ -15,7 +15,6 @@ export { DSA5IndexBuilder } from './index-builder.js';
 export { DSA5Adapter } from './adapter.js';
 
 // Character creator (runs in MCP server Node.js context)
-export { DSA5CharacterCreator } from './character-creator.js';
 
 // Filter system
 export {

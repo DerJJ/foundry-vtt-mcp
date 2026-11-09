@@ -5,18 +5,12 @@ import { Logger } from '../logger.js';
 import { SystemRegistry } from '../systems/system-registry.js';
 import {
   detectGameSystem,
-  getSystemPaths,
   getCreatureLevel,
   getCreatureType,
   hasSpellcasting,
-  formatSystemError,
   type GameSystem,
 } from '../utils/system-detection.js';
-import {
-  GenericFiltersSchema,
-  describeFilters,
-  type GenericFilters,
-} from '../utils/compendium-filters.js';
+import { GenericFiltersSchema, describeFilters } from '../utils/compendium-filters.js';
 import { readDerived } from '../systems/cosmere-rpg/constants.js';
 
 /** The longest a creature search waits for the index to be built. */
@@ -346,19 +340,6 @@ export class CompendiumTools {
             },
           },
           required: [],
-        },
-      },
-      {
-        name: 'list-compendium-packs',
-        description: 'List all available compendium packs',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            type: {
-              type: 'string',
-              description: 'Optional filter by pack type',
-            },
-          },
         },
       },
     ];
@@ -836,46 +817,6 @@ export class CompendiumTools {
       this.logger.error('Failed to list creatures by criteria', error);
       throw new Error(
         `Failed to list creatures: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  async handleListCompendiumPacks(args: any): Promise<any> {
-    const schema = z.object({
-      type: z.string().optional(),
-    });
-
-    const { type } = schema.parse(args);
-
-    this.logger.info('Listing compendium packs', { type });
-
-    try {
-      const packs = await this.foundryClient.query('foundry-mcp-bridge.getAvailablePacks');
-
-      // Filter by type if specified
-      const filteredPacks = type ? packs.filter((pack: any) => pack.type === type) : packs;
-
-      this.logger.debug('Successfully retrieved compendium packs', {
-        total: packs.length,
-        filtered: filteredPacks.length,
-        type,
-      });
-
-      return {
-        packs: filteredPacks.map((pack: any) => ({
-          id: pack.id,
-          label: pack.label,
-          type: pack.type,
-          system: pack.system,
-          private: pack.private,
-        })),
-        total: filteredPacks.length,
-        availableTypes: [...new Set(packs.map((pack: any) => pack.type))],
-      };
-    } catch (error) {
-      this.logger.error('Failed to list compendium packs', error);
-      throw new Error(
-        `Failed to list compendium packs: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

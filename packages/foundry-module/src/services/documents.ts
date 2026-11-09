@@ -40,7 +40,18 @@ export interface DocumentsRequest {
 const DEFAULT_LIMIT = 50;
 const DEFAULT_MAX_CHARS = 40_000;
 const MAX_EXAMPLE_CHARS = 6_000;
-const SCHEMA_CHARS = 30_000;
+const SCHEMA_CHARS = 14_000;
+/** Fields every document has that are bookkeeping, not content: left out of `schema`. */
+const BOOKKEEPING_FIELDS = [
+  '_id',
+  '_stats',
+  'sort',
+  'ownership',
+  'flags',
+  'effects',
+  'items',
+  'folder',
+];
 
 /** Document types that live in a world collection (or a pack). Embedded types need a parent. */
 const WORLD_TYPES = [
@@ -745,12 +756,13 @@ export class DocumentsService {
     const systemFields = model?.schema?.fields ?? baseFields['system']?.fields;
     delete baseFields['system'];
 
-    let depth = 4;
-    let fields: Record<string, unknown> = {};
+    for (const key of BOOKKEEPING_FIELDS) delete baseFields[key];
+    // The base fields are listed by name and type only; the system fields, which hold the
+    // content, go as deep as fits.
+    const fields = describeFields(baseFields, 0);
     let systemDescription: Record<string, unknown> | undefined;
-    for (; depth >= 1; depth--) {
-      fields = describeFields(baseFields, Math.min(depth, 2));
-      systemDescription = systemFields ? describeFields(systemFields, depth) : undefined;
+    for (let depth = 4; systemFields && depth >= 1; depth--) {
+      systemDescription = describeFields(systemFields, depth);
       if (JSON.stringify({ fields, systemDescription }).length <= SCHEMA_CHARS) break;
     }
 
