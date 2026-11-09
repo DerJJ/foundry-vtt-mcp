@@ -279,6 +279,8 @@ export interface CompendiumEntryFull {
   img?: string;
   pack: string;
   packLabel: string;
+  /** The pack's document type: Actor, Item, JournalEntry, RollTable, Scene, Macro, Playlist, ... */
+  documentName?: string;
   system: Record<string, unknown>;
   items?: CompendiumItem[];
   effects?: CompendiumEffect[];

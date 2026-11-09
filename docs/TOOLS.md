@@ -127,7 +127,8 @@ Compendium packs: search, read entries, list packs, and find creatures by criter
 | Action | Risk | Game system | Parameters | Does |
 | --- | --- | --- | --- | --- |
 | `search` | read | all | **query**, packType, filters, limit | Search through compendium packs by name. |
-| `get` | read | all | **packId**, **itemId**, compact | Read one pack entry: full data, or compact stats with compact: true. |
+| `import` | write | all | **packId**, **itemId**, folder | Import one compendium entry into the world as a new document, like the Import button in Foundry: an Item, Journal entry, Roll table, Scene, Macro, Playlist, Cards or Actor, with all of its data. |
+| `get` | read | all | **packId**, **itemId**, compact | Read one pack entry of any type (item, actor, journal, roll table, scene, macro, playlist, cards, adventure); compact: true shortens it. |
 | `list-packs` | read | all | type | List all available compendium packs |
 | `find-creatures` | read | all | challengeRating, creatureType, size, hasSpells, hasLegendaryActions, level, traits, rarity, tier, role, hasInvestiture, hitPoints, defensesMin, deflectMin, limit, fallbackToNameSearch | MULTI-SYSTEM CREATURE DISCOVERY: Get a comprehensive list of creatures matching specific criteria. |
 | `packs` | read | all | label, type, name, identifier, confirmDelete | List compendium packs with their lock and write state. |

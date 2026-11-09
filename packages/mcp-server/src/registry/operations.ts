@@ -27,6 +27,7 @@ import { FolderManagementTools } from '../tools/folder-management.js';
 import { CompendiumManagementTools } from '../tools/compendium-management.js';
 import { CompendiumEntryTools } from '../tools/compendium-entries.js';
 import { ImageUploadTools } from '../tools/image-upload.js';
+import { CompendiumImportTools } from '../tools/compendium-import.js';
 import { SceneBuilderTools } from '../tools/scene-builder.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
 import { DSA5CharacterCreator } from '../systems/dsa5/character-creator.js';
@@ -297,6 +298,14 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: imageUploadTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(imageUploadTools, { 'upload-image': 'handleUploadImage' }),
+  });
+
+  const compendiumImportTools = new CompendiumImportTools(base);
+  registry.registerModule({
+    definitions: compendiumImportTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(compendiumImportTools, {
+      'import-compendium-entry': 'handleImportCompendiumEntry',
+    }),
   });
 
   return registry;

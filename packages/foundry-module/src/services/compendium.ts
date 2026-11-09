@@ -966,6 +966,7 @@ export class CompendiumService {
       img: (document as any).img || undefined,
       pack: packId,
       packLabel: pack.metadata.label,
+      documentName: (pack as any).documentName ?? pack.metadata.type,
       system,
       fullData,
     };

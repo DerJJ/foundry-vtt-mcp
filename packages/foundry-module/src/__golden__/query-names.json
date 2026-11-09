@@ -62,6 +62,7 @@
   "foundry-mcp-bridge.getWorldInfo",
   "foundry-mcp-bridge.getWorldItem",
   "foundry-mcp-bridge.gmRoll",
+  "foundry-mcp-bridge.importCompendiumDocument",
   "foundry-mcp-bridge.list-scenes",
   "foundry-mcp-bridge.listActors",
   "foundry-mcp-bridge.listCreaturesByCriteria",

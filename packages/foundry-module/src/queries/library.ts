@@ -12,6 +12,7 @@ export class LibraryQueries implements QueryGroup {
   routes(): Record<string, QueryHandler> {
     return {
       'upload-image': this.handleUploadImage.bind(this),
+      importCompendiumDocument: this.handleImportCompendiumDocument.bind(this),
       listFolders: this.handleListFolders.bind(this),
       createFolder: this.handleCreateFolder.bind(this),
       renameFolder: this.handleRenameFolder.bind(this),
@@ -26,6 +27,28 @@ export class LibraryQueries implements QueryGroup {
       deletePackEntries: this.handleDeletePackEntries.bind(this),
       copyPackEntry: this.handleCopyPackEntry.bind(this),
     };
+  }
+
+  /** Handle importing one compendium document into the world. */
+  async handleImportCompendiumDocument(data: {
+    packId: string;
+    documentId: string;
+    folderSegments?: string[];
+  }): Promise<any> {
+    try {
+      // SECURITY: Silent GM validation
+      const gmCheck = validateGMAccess();
+      if (!gmCheck.allowed) {
+        return { error: 'Access denied', success: false };
+      }
+
+      validateFoundryState();
+      return await this.dataAccess.library.importCompendiumDocument(data);
+    } catch (error) {
+      throw new Error(
+        `Failed to import compendium document: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 
   /**

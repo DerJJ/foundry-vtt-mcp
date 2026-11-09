@@ -1,3 +1,4 @@
+import { describeCompendiumDocument, isOtherDocument } from './compendium-documents.js';
 import { z } from 'zod';
 import { FoundryClient } from '../foundry-client.js';
 import { Logger } from '../logger.js';
@@ -473,6 +474,16 @@ export class CompendiumTools {
         hasImage: !!item.img,
         imageUrl: item.img,
       };
+
+      if (isOtherDocument(item)) {
+        // Journals, roll tables, scenes, macros, playlists, cards and adventures
+        return {
+          ...baseResponse,
+          documentName: item.documentName,
+          ...describeCompendiumDocument(item, compact),
+          mode: compact ? 'compact' : 'full',
+        };
+      }
 
       if (compact) {
         // Compact response for UI performance

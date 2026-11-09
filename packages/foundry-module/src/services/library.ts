@@ -16,6 +16,68 @@ export type FolderableType =
  */
 export class LibraryService {
   /**
+   * Imports one compendium document into the world, the way Foundry's own Import button does:
+   * all of its data is kept and the result is a new world document. Adventures import through
+   * Foundry's own dialog and are refused.
+   */
+  async importCompendiumDocument(params: {
+    packId: string;
+    documentId: string;
+    folderSegments?: string[];
+  }): Promise<any> {
+    validateFoundryState();
+
+    const pack: any = game.packs.get(params.packId);
+    if (!pack) throw new Error(`Compendium pack ${params.packId} not found`);
+    const documentName: string = pack.documentName ?? pack.metadata?.type;
+    if (documentName === 'Adventure') {
+      throw new Error(
+        'Adventures cannot be imported here: they bundle many documents and are imported through the compendium in Foundry.'
+      );
+    }
+
+    const document = await pack.getDocument(params.documentId);
+    if (!document)
+      throw new Error(`Document ${params.documentId} not found in pack ${params.packId}`);
+
+    const collection: any = (game as any).collections?.get(documentName);
+    if (!collection?.fromCompendium) {
+      throw new Error(`Documents of type ${documentName} cannot be imported into the world.`);
+    }
+    const data = collection.fromCompendium(document);
+    if (params.folderSegments?.length) {
+      const folder = await this.createFolderByPath(
+        params.folderSegments,
+        documentName as FolderableType
+      );
+      data.folder = folder.id;
+    }
+
+    const DocumentClass: any = (globalThis as any).getDocumentClass?.(documentName);
+    if (!DocumentClass?.create) {
+      throw new Error(`Documents of type ${documentName} cannot be created in this world.`);
+    }
+    const created = await DocumentClass.create(data);
+    auditLog(
+      'importCompendiumDocument',
+      { pack: params.packId, document: params.documentId },
+      'success'
+    );
+
+    return {
+      success: true,
+      imported: {
+        id: created.id,
+        name: created.name,
+        documentName,
+        type: created.type ?? null,
+        folder: created.folder?.name ?? null,
+        fromPack: params.packId,
+      },
+    };
+  }
+
+  /**
    * The folder collection to walk: the world sidebar, or one compendium pack's
    * own folders. Folders inside a pack are homogeneous, so the caller need not
    * filter them by type.

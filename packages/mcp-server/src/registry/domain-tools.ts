@@ -405,10 +405,12 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
     purpose: 'Compendium packs: search, read entries, list packs, and find creatures by criteria.',
     actions: {
       search: { operation: 'search-compendium', risk: 'read' },
+      import: { operation: 'import-compendium-entry', risk: 'write' },
       get: {
         operation: 'get-compendium-item',
         risk: 'read',
-        summary: 'Read one pack entry: full data, or compact stats with compact: true.',
+        summary:
+          'Read one pack entry of any type (item, actor, journal, roll table, scene, macro, playlist, cards, adventure); compact: true shortens it.',
       },
       'list-packs': { operation: 'list-compendium-packs', risk: 'read' },
       'find-creatures': { operation: 'list-creatures-by-criteria', risk: 'read' },

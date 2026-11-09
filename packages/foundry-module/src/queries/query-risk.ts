@@ -90,6 +90,7 @@ const write: string[] = [
   'updateWorldItems',
   'upload-generated-map',
   'upload-image',
+  'importCompendiumDocument',
   'createFolder',
   'renameFolder',
   'moveFolder',
