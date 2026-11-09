@@ -1,4 +1,5 @@
 import { validateGMAccess } from './gm-access.js';
+import { applySceneBackground, splitBackground } from '../services/scene-background.js';
 import type { QueryGroup, QueryHandler } from './query-registry.js';
 
 /** Building scenes and their embedded documents, and the Simple Calendar clock. */
@@ -23,20 +24,21 @@ export class SceneBuilderQueries implements QueryGroup {
       return o;
     };
     if (data.action === 'create-scene') {
-      const expectedBg = data.sceneData?.background?.src;
-      const scene = await (globalThis as any).Scene.create(data.sceneData);
-      if (expectedBg && scene.background?.src !== expectedBg) {
-        await scene.update({ background: { src: expectedBg } });
-      }
+      const { data: sceneData, background } = splitBackground(data.sceneData);
+      const scene = await (globalThis as any).Scene.create(sceneData);
+      if (background) await applySceneBackground(scene, background);
       return { success: true, scene: { id: scene.id, name: scene.name } };
     }
     const scene = findScene(data.sceneIdentifier);
     if (!scene) throw new Error(`Scene not found: ${data.sceneIdentifier}`);
     const type = data.documentType;
     switch (data.action) {
-      case 'update-scene':
-        await scene.update(data.sceneData);
+      case 'update-scene': {
+        const { data: sceneData, background } = splitBackground(data.sceneData);
+        if (Object.keys(sceneData ?? {}).length > 0) await scene.update(sceneData);
+        if (background) await applySceneBackground(scene, background);
         return { success: true, scene: { id: scene.id, name: scene.name } };
+      }
       case 'create-documents': {
         const docs = await scene.createEmbeddedDocuments(type, data.documents);
         return { success: true, documentType: type, created: docs.map((d: any) => d.id) };
