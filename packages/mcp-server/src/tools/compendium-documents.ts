@@ -155,12 +155,15 @@ export function describeCompendiumDocument(item: Doc, compact: boolean): Doc {
       );
       return {
         description: clip(stripHtml(data.description), limit),
+        // Compact drops empty lists and shortens long ones to a count and the first names.
         contents: compact
           ? Object.fromEntries(
-              Object.entries(contents).map(([key, list]) => [
-                key,
-                { count: list.length, first: list.slice(0, 5) },
-              ])
+              Object.entries(contents)
+                .filter(([, list]) => list.length > 0)
+                .map(([key, list]) => [
+                  key,
+                  list.length > 5 ? { count: list.length, first: list.slice(0, 5) } : list,
+                ])
             )
           : contents,
       };

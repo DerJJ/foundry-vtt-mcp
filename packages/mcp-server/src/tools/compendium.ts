@@ -770,7 +770,9 @@ export class CompendiumTools {
     try {
       const results = await this.foundryClient.query(
         'foundry-mcp-bridge.listCreaturesByCriteria',
-        params
+        params,
+        // The bridge waits up to 20 seconds for a creature index that is still building.
+        { timeoutMs: 30000 }
       );
 
       this.logger.debug('Creature criteria search completed', {

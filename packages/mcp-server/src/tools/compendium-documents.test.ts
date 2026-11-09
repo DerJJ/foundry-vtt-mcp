@@ -139,6 +139,12 @@ describe('scenes, macros, playlists, cards and adventures', () => {
       entry('Adventure', { actors: [{ name: 'Rat' }] }),
       true
     );
-    expect(compact.contents.actors).toEqual({ count: 1, first: ['Rat'] });
+    expect(compact.contents.actors).toEqual(['Rat']);
+    expect(compact.contents.scenes).toBeUndefined();
+    const many: any = describeCompendiumDocument(
+      entry('Adventure', { actors: Array.from({ length: 8 }, (_, i) => ({ name: `N${i}` })) }),
+      true
+    );
+    expect(many.contents.actors).toEqual({ count: 8, first: ['N0', 'N1', 'N2', 'N3', 'N4'] });
   });
 });
