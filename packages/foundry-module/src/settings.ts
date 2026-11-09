@@ -487,8 +487,10 @@ export class ModuleSettings {
       'serverHost',
       'serverPort',
       'connectionType',
-      // Permissions
-      'allowWriteOperations',
+      // What the AI may do
+      'accessLevel',
+      'allowExecute',
+      'imageGenerationEnabled',
       // Safety Controls
       'maxActorsPerRequest',
       // Enhanced Creature Index
@@ -568,27 +570,6 @@ export class ModuleSettings {
   /**
    * Create settings migration for version updates
    */
-  /**
-   * Get write operation permissions
-   */
-  getWritePermissions(): {
-    allowWriteOperations: boolean;
-    maxActorsPerRequest: number;
-  } {
-    return {
-      allowWriteOperations: this.getSetting('allowWriteOperations'),
-      maxActorsPerRequest: this.getSetting('maxActorsPerRequest'),
-    };
-  }
-
-  /**
-   * Check if AI model is allowed to perform write operations
-   */
-  isWriteOperationAllowed(_operation?: string): boolean {
-    // Simplified - single permission covers all write operations
-    return this.getSetting('allowWriteOperations');
-  }
-
   migrateSettings(_fromVersion: string, _toVersion: string): void {
     // Add migration logic here for future versions
     // For now, no migrations needed as this is initial version
@@ -604,8 +585,10 @@ export class ModuleSettings {
       'serverHost',
       'serverPort',
       'connectionType',
-      // Permissions
-      'allowWriteOperations',
+      // What the AI may do
+      'accessLevel',
+      'allowExecute',
+      'imageGenerationEnabled',
       // Safety Controls
       'maxActorsPerRequest',
       // Enhanced Creature Index
