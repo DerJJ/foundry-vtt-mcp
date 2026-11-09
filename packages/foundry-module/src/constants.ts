@@ -24,7 +24,9 @@ export const DEFAULT_CONFIG = {
   MCP_HOST: 'localhost',
   MCP_PORT: 31415,
   CONNECTION_TIMEOUT: 10,
-  RECONNECT_ATTEMPTS: 5,
+  // Keep trying (every 30 seconds at most): the MCP server is started by the AI client, often after
+  // Foundry, and a bridge that gave up after 30 seconds needed a page reload to find it.
+  RECONNECT_ATTEMPTS: Number.POSITIVE_INFINITY,
   RECONNECT_DELAY: 1000,
   LOG_LEVEL: 'info',
 } as const;
