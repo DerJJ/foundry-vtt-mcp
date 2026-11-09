@@ -17,7 +17,7 @@ using Claude Desktop.
 4. Start creating AI-powered campaigns!
 
 📋 FEATURES:
-• 16 domain tools (world, scenes, actors, compendium, chat, combat and more); see docs/TOOLS.md
+• 14 domain tools (documents, actors, compendium, scenes, chat, combat, modules and more); see docs/TOOLS.md
 • Actor creation with natural language processing  
 • Quest management with HTML generation and updates
 • Campaign system with multi-part structure and progress tracking

@@ -21,7 +21,7 @@ AI client ──stdio──> MCP server ──:31415──> Foundry module (GM b
 
 ## Upgrading from v0.8.6
 
-Version 1.0 replaces the 50 tools with 16 domain tools, **without aliases**. Old prompts and saved instructions that name a tool such as `search-compendium` need to be updated: [docs/TOOLS.md](docs/TOOLS.md#migration-from-the-50-tools-of-v086) lists where every old tool went.
+Version 1.0 replaces the 50 tools with 14 domain tools, **without aliases**. Old prompts and saved instructions that name a tool such as `search-compendium` need to be updated: [docs/TOOLS.md](docs/TOOLS.md#migration-from-the-50-tools-of-v086) lists where every old tool went.
 
 Check the module settings after the update:
 

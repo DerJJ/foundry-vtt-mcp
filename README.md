@@ -115,19 +115,17 @@ Once connected, ask Claude Desktop:
 
 ## Features
 
-- **11 domain tools** that let Claude read and change a Foundry world, each with several actions (see [docs/TOOLS.md](docs/TOOLS.md))
-- **D&D 5e NPC Creation Suite**: Build complete NPCs from prompts — stat block, attacks, saves, auras, and spellcasting
-- **Mongoose Traveller 2e (mgt2e) Support**: Full actor lifecycle — create/update/delete travellers, NPCs, creatures, and spacecraft with skill shorthand normalisation; creature compendium index with characteristic DMs; weapon-trait enum reference
-- **WFRP4e Support**: Character reading plus editing — update characteristics, wounds, skills and careers, and add or remove items on existing actors
-- **Generic Actor CRUD**: `actors` creates, updates, and deletes actors of any type on any system; also updates and deletes embedded items
-- **Character Management**: Access stats, abilities, inventory, and detailed entity information
-- **Token Manipulation**: Move, update, delete tokens and manage status conditions
-- **Enhanced Compendium Search**: Instant filtering by CR, type, abilities, and more
-- **Content Creation**: Generate actors, NPCs, and quest journals (with optional folder organisation)
-- **World Item Management**: Create, list, and update world-level Items; attach items directly to actors
-- **Campaign Management**: Multi-part quest tracking with progress dashboards
-- **Interactive Dice System**: Send different dice roll requests to players from Claude
-- **Actor Ownership**: Manage player permissions for characters and tokens
+- **14 domain tools** that let Claude read and change a Foundry world, each with several actions (see [docs/TOOLS.md](docs/TOOLS.md))
+- **One `documents` tool for plain changes**: list, read, create, change and delete any Foundry document at any depth: actors and the items, spells and effects on them, scenes and their walls, journals and their pages, playlists, macros, roll tables, folders, and the entries of compendium packs. `schema` shows the fields of a type for the world's game system.
+- **Game systems**: Pathfinder 2e and D&D 5e are verified; DSA5, WFRP4e, Cosmere RPG and Mongoose Traveller 2e are included and unverified. No action carries a system in its name: system differences are in `schema`.
+- **Character Management**: stats, abilities, inventory, spells and features of any actor
+- **Token Manipulation**: move tokens and manage status conditions
+- **Combat**: run the combat tracker, roll initiative, apply damage
+- **Enhanced Compendium Search**: instant filtering by CR, type, abilities, and more
+- **Content Creation**: quest journals and campaign dashboards, and any document through `documents`
+- **Modules**: see which Foundry modules are installed and running, and switch them on or off (applied after a reload)
+- **Interactive Dice System**: send different dice roll requests to players from Claude
+- **Actor Ownership**: manage player permissions for characters and tokens
 - **GM-Only**: MCP Bridge only connects to Game Master users
 - **Map Generation**: A portable ComfyUI backend that generates battlemaps from prompts
 - **Remote Connections**: WebRTC connections initiated through browser (Tested with Google Chrome) to MCP server and ComfyUI
@@ -135,26 +133,24 @@ Once connected, ask Claude Desktop:
 
 ## MCP Tools
 
-Eleven tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool to `describe` itself to see its actions and, for one action, its parameters. Actions that exist for one game system (the D&D 5e NPC suite, WFRP4e, DSA5) are listed only when the world runs that system. Every action and the tool of v0.8.6 that it replaced are in [docs/TOOLS.md](docs/TOOLS.md).
+Fourteen tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool to `describe` itself to see its actions and, for one action, its parameters. Every action, and where each tool of v0.8.6 went, is in [docs/TOOLS.md](docs/TOOLS.md).
 
-| Tool               | For                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| `world`            | world information and `capabilities` (game system, access level, what is switched on) |
-| `scenes`           | the current scene, listing and switching scenes, scene music                          |
-| `playlists`        | create, change, delete and play playlists                                             |
-| `effects`          | active effects and token conditions                                                   |
-| `tokens`           | read, move, change and remove tokens                                                  |
-| `items`            | world items, items on actors, using an item                                           |
-| `actors`           | characters, NPCs and monsters: read, search, create, change, delete, place, ownership |
-| `compendium`       | search packs, read entries, find creatures by criteria                                |
-| `journals`         | journals and quests, campaign dashboards                                              |
-| `chat`             | speak as an actor, read the chat log, GM rolls, roll tables, ask players to roll      |
-| `combat`           | the combat tracker and applying damage                                                |
-| `time`             | the Simple Calendar Reborn clock                                                      |
-| `folders`          | folders in the sidebar and inside compendium packs                                    |
-| `media`            | upload local image files into the world                                               |
-| `macros`           | macros and scripts (off unless "Allow script and macro execution" is on)              |
-| `image-generation` | maps and images through ComfyUI (off unless switched on)                              |
+| Tool         | For                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `world`      | world information and `capabilities` (game system, access level, what is switched on)                                                                                           |
+| `documents`  | list, read, create, change and delete any document: actors and their items, scenes and their walls, journals, playlists, macros, folders, pack entries; `schema` for the fields |
+| `actors`     | a compact actor view, using items and casting spells, placing on the scene, ownership, party and creature cards                                                                 |
+| `compendium` | search packs, read an entry of any type, find creatures by criteria, make and delete world packs                                                                                |
+| `scenes`     | the current scene, switching, ping and pull players, weather and fog                                                                                                            |
+| `tokens`     | read and move tokens, status conditions                                                                                                                                         |
+| `combat`     | the combat tracker and applying damage                                                                                                                                          |
+| `chat`       | speak as an actor or the GM, read the chat log, GM rolls, roll tables, ask players to roll                                                                                      |
+| `journals`   | quests, campaign dashboards, searching journals                                                                                                                                 |
+| `modules`    | the installed and running Foundry modules, switching them on or off (applied after a reload)                                                                                    |
+| `time`       | the Simple Calendar Reborn clock                                                                                                                                                |
+| `audio`      | playing playlists and sounds                                                                                                                                                    |
+| `macros`     | run macros and scripts (off unless "Allow script and macro execution" is on)                                                                                                    |
+| `images`     | upload local images; generate maps with ComfyUI (generation off unless switched on)                                                                                             |
 
 ## Settings
 
@@ -167,7 +163,7 @@ Eleven tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool t
 - **Websocket Server Host** IP Address of Claude Desktop MCP Server location. Only used for local network websocket connections. Remote Servers use WebRT. Defaults to localhost.
 - **Access level** What Claude may do in this world. _Read only_: look but never change. _Read & write_ (default): create and change content. _Full access_: also delete.
 - **Allow script and macro execution** Off by default; _Full access_ does not turn it on, because scripts run as code in your browser.
-- **Enable image generation (ComfyUI)** Off by default. The `image-generation` tool is always listed and refuses while this is off.
+- **Enable image generation (ComfyUI)** Off by default. Map generation in the `images` tool refuses while this is off.
 - **Max Actors Per Request** This is a failsafe to stop a massive amount of actors being created from one single request. It does not limit the amount of characters being created by multiple requests
 - **Show Connection Messages** This can turn off the banner messages for connections for Foundry MCP Bridge
 - **Auto-Reconnect on Disconnect** Will automatically attempt to reconnect if the connection is lost

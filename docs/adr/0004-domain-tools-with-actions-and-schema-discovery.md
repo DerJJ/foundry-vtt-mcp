@@ -1,6 +1,6 @@
 # Domain tools with actions, and schema discovery
 
-Status: accepted (2026-11-08). Replaces the "same tools" rule of ADR-0001 for the unification; ADR-0001 still describes the restructure that came before it.
+Status: accepted (2026-11-08). Replaces the "same tools" rule of ADR-0001 for the unification; ADR-0001 still describes the restructure that came before it. The grouping of the tools was changed by [ADR-0007](0007-one-documents-tool-for-plain-changes.md); the rules below still hold.
 
 The server used to list 50 tools, one per operation. Their descriptions and input schemas were about 75,000 characters (roughly 20,000 tokens) in every session, and the two largest, `dnd5e-add-feature` and `dnd5e-create-npc`, had 34 properties each.
 
