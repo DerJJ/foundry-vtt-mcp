@@ -4,6 +4,7 @@
  * world or in a compendium pack, plus `schema` to learn the fields of a type.
  */
 
+import { MODULE_ID } from '../constants.js';
 import { auditLog, sanitizeData, validateFoundryState } from './support.js';
 import { LibraryService, type FolderableType } from './library.js';
 import { hasKindTable, kindsFor, type Kinds } from './document-kinds.js';
@@ -555,6 +556,16 @@ export class DocumentsService {
       }
       return merged;
     });
+
+    // The world setting "Max Actors Per Request" limits how many actors one call may create.
+    if (type === 'Actor' && !request.parent) {
+      const max = Number((game as any).settings?.get?.(MODULE_ID, 'maxActorsPerRequest'));
+      if (Number.isFinite(max) && max > 0 && payload.length > max) {
+        throw new Error(
+          `At most ${max} actors can be created in one request (the world setting "Max Actors Per Request"); ${payload.length} were asked for.`
+        );
+      }
+    }
 
     let created: any[];
     if (request.parent) {
