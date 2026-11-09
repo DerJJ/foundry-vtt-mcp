@@ -19,6 +19,7 @@ import { CompendiumManagementTools } from '../tools/compendium-management.js';
 import { ImageUploadTools } from '../tools/image-upload.js';
 import { ActorPlacementTools } from '../tools/actor-placement.js';
 import { DocumentsTools } from '../tools/documents.js';
+import { ModulesTools } from '../tools/modules.js';
 import { CalendarClockTools } from '../tools/calendar-clock.js';
 import { DSA5JsonActorImporter } from '../systems/dsa5/json-actor-importer.js';
 import { bindMethods, ToolRegistry, type ToolDefinition } from './tool-registry.js';
@@ -208,6 +209,12 @@ function createOperationRegistry(deps: ToolRegistryDeps): ToolRegistry {
   registry.registerModule({
     definitions: documentsTools.getToolDefinitions() as ToolDefinition[],
     handlers: bindMethods(documentsTools, { documents: 'handleDocuments' }),
+  });
+
+  const modulesTools = new ModulesTools(base);
+  registry.registerModule({
+    definitions: modulesTools.getToolDefinitions() as ToolDefinition[],
+    handlers: bindMethods(modulesTools, { modules: 'handleModules' }),
   });
 
   return registry;

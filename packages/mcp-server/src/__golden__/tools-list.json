@@ -209,6 +209,25 @@
     }
   },
   {
+    "name": "modules",
+    "description": "The Foundry modules of this world: what is installed and what runs, and switching them on or off. Foundry applies a switch only when the world loads again, so every browser has to reload (F5) afterwards; the bridge reconnects by itself.\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- list(active?, query?, limit?, offset?): Installed modules with version, whether they run, and pendingReload for a switch that is not applied yet.\n- get(id*): One module: description, authors, compatibility, what it requires and who requires it.\n- set-active(active*, id?, ids?, withDependencies?, withDependents?): Switch modules on or off. Applied only after a reload of every browser. The bridge module itself cannot be switched off.\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "The action to run, from the list in the description."
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Arguments of the action. Use describe for the full schema."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
     "name": "macros",
     "description": "Run Foundry macros and scripts. Running code is off unless a GM switches on \"Allow script and macro execution\" in the module settings; every run is whispered to the GM as a chat card. Making and changing macros is `documents` (type `Macro`).\n\nCall with {\"action\": \"<name>\", \"params\": {...}}. Parameters: * required, ? optional.\n- execute(macro*, args?, timeoutMs?) (execute): Run a macro in the GM browser; returns its result, logs and errors.\n- run-script(code*, args?, timeoutMs?) (execute): Execute JavaScript (an async function body) in the GM browser with the Foundry API (game, canvas, CONFIG, fou…\n\n{\"action\":\"describe\"} lists the actions of this world's game system; {\"action\":\"describe\",\"params\":{\"action\":\"<name>\"}} returns the full parameter schema of one action.",
     "inputSchema": {

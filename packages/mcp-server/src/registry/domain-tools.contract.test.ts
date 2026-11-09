@@ -16,7 +16,7 @@ const actions = DOMAIN_TOOLS.flatMap(tool =>
 );
 
 /** What clients pay for in every session: all descriptions and schemas. A ceiling, not a goal. */
-const SURFACE_BUDGET_CHARS = 18_000;
+const SURFACE_BUDGET_CHARS = 19_500;
 
 describe('domain tool specs', () => {
   it('give every tool and every action in it a different name', () => {

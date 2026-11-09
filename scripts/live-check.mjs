@@ -105,6 +105,7 @@ for (const tool of [
   'combat',
   'chat',
   'journals',
+  'modules',
   'time',
   'audio',
   'macros',
@@ -183,6 +184,45 @@ await step('documents.list (RollTable)', () => call('documents', 'list', { type:
 await step('tokens.list-conditions', () => call('tokens', 'list-conditions'));
 await step('actors.list-ownership', () => call('actors', 'list-ownership', {}));
 await step('documents.list (Item)', () => call('documents', 'list', { type: 'Item' }));
+
+// --- modules ----------------------------------------------------------------------------------
+let installed;
+await step('modules.list', async () => {
+  installed = await call('modules', 'list', { limit: 500 });
+  expect(installed.total > 0 && installed.modules.length > 0, 'no modules');
+  const bridge = installed.modules.find(m => m.id === 'foundry-mcp-bridge');
+  expect(bridge?.active === true, 'the bridge module is not listed as running');
+  const running = await call('modules', 'list', { active: true, limit: 500 });
+  expect(
+    running.modules.every(m => m.active),
+    'active filter does not filter'
+  );
+  return `${installed.total} installed, ${installed.activeCount} running, ${installed.pendingReload} waiting for a reload`;
+});
+await step('modules.get', async () => {
+  const r = await call('modules', 'get', { id: 'foundry-mcp-bridge' });
+  expect(r.version && r.relationships && Array.isArray(r.dependents), 'incomplete answer');
+});
+await step('modules.set-active refuses to switch off the bridge', async () => {
+  if (!canWrite) skip('read only');
+  try {
+    await call('modules', 'set-active', { id: 'foundry-mcp-bridge', active: false });
+  } catch (error) {
+    expect(/connection to this tool/.test(error.message), `unexpected refusal: ${error.message}`);
+    return 'refused as expected';
+  }
+  throw new Error('the bridge module was switched off');
+});
+await step('modules.set-active to the state a module already has changes nothing', async () => {
+  if (!canWrite) skip('read only');
+  const library = installed?.modules?.find(
+    m => m.active && !m.pendingReload && m.id !== 'foundry-mcp-bridge'
+  );
+  if (!library) skip('no running module to ask about');
+  const r = await call('modules', 'set-active', { id: library.id, active: true });
+  expect(r.reloadRequired === false && r.changed.length === 0, 'it changed something');
+  return library.id;
+});
 
 // --- compendium entries of every document type -------------------------------------------------
 // Worlds rarely have Scene, Playlist, Cards or Adventure packs, so the check makes its own: one

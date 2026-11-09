@@ -496,6 +496,45 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
   },
 
   {
+    name: 'modules',
+    purpose:
+      'The Foundry modules of this world: what is installed and what runs, and switching them on or off. Foundry applies a switch only when the world loads again, so every browser has to reload (F5) afterwards; the bridge reconnects by itself.',
+    actions: {
+      list: {
+        operation: 'modules',
+        risk: 'read',
+        fixed: { action: 'list' },
+        params: { active: false, query: false },
+        paged: 'modules',
+        summary:
+          'Installed modules with version, whether they run, and pendingReload for a switch that is not applied yet.',
+      },
+      get: {
+        operation: 'modules',
+        risk: 'read',
+        fixed: { action: 'get' },
+        params: { id: true },
+        summary:
+          'One module: description, authors, compatibility, what it requires and who requires it.',
+      },
+      'set-active': {
+        operation: 'modules',
+        risk: 'write',
+        fixed: { action: 'set-active' },
+        params: {
+          id: false,
+          ids: false,
+          active: true,
+          withDependencies: false,
+          withDependents: false,
+        },
+        summary:
+          'Switch modules on or off. Applied only after a reload of every browser. The bridge module itself cannot be switched off.',
+      },
+    },
+  },
+
+  {
     name: 'macros',
     purpose:
       'Run Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card. Making and changing macros is `documents` (type `Macro`).',

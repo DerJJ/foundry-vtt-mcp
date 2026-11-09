@@ -44,7 +44,7 @@ describe('MCP tool surface', () => {
 
   it('lists a small, fixed number of domain tools', () => {
     const golden = JSON.parse(fs.readFileSync(GOLDEN_FILE, 'utf8')) as { name: string }[];
-    expect(golden.length).toBeLessThanOrEqual(13);
+    expect(golden.length).toBeLessThanOrEqual(14);
     expect(new Set(golden.map(t => t.name)).size).toBe(golden.length);
   });
 

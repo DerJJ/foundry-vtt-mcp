@@ -21,6 +21,7 @@ import { TableQueries } from './queries/table.js';
 import { SceneBuilderQueries } from './queries/scene-builder.js';
 import { LibraryQueries } from './queries/library.js';
 import { DocumentsQueries } from './queries/documents.js';
+import { ModulesQueries } from './queries/modules.js';
 import { DocumentsService } from './services/documents.js';
 import { Dnd5eQueries } from './systems/dnd5e/queries.js';
 import { Wfrp4eQueries } from './systems/wfrp4e/queries.js';
@@ -56,6 +57,7 @@ export class QueryHandlers {
       new TableQueries(),
       new SceneBuilderQueries(),
       new LibraryQueries(this.dataAccess),
+      new ModulesQueries(),
       new DocumentsQueries(
         new DocumentsService(this.dataAccess.library, () => this.dataAccess.items.getSystemSchema())
       ),

@@ -76,6 +76,7 @@
   "foundry-mcp-bridge.manageEffects",
   "foundry-mcp-bridge.manageMacros",
   "foundry-mcp-bridge.manageScene",
+  "foundry-mcp-bridge.modules",
   "foundry-mcp-bridge.move-token",
   "foundry-mcp-bridge.moveFolder",
   "foundry-mcp-bridge.moveToken",

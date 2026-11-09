@@ -141,6 +141,16 @@ Playback of playlists and their sounds. Making and changing playlists and sounds
 | --- | --- | --- | --- | --- |
 | `control` | write | all | **playlist**, **command**, sound | Playback control for playlists and their sounds: play (playAll), stop (stopAll), cycle-mode (sequential -> shuffle -> soundboard), play-sound, stop-sound. |
 
+## `modules`
+
+The Foundry modules of this world: what is installed and what runs, and switching them on or off. Foundry applies a switch only when the world loads again, so every browser has to reload (F5) afterwards; the bridge reconnects by itself.
+
+| Action | Risk | Game system | Parameters | Does |
+| --- | --- | --- | --- | --- |
+| `list` | read | all | active, query, limit, offset | Installed modules with version, whether they run, and pendingReload for a switch that is not applied yet. |
+| `get` | read | all | **id** | One module: description, authors, compatibility, what it requires and who requires it. |
+| `set-active` | write | all | id, ids, **active**, withDependencies, withDependents | Switch modules on or off. Applied only after a reload of every browser. The bridge module itself cannot be switched off. |
+
 ## `macros`
 
 Run Foundry macros and scripts. Running code is off unless a GM switches on "Allow script and macro execution" in the module settings; every run is whispered to the GM as a chat card. Making and changing macros is `documents` (type `Macro`).

@@ -116,6 +116,7 @@ export const QUERY_RISK: Readonly<Record<string, RiskOf>> = {
   ...Object.fromEntries(read.map(name => [name, 'read' as Risk])),
   ...Object.fromEntries(write.map(name => [name, 'write' as Risk])),
   ...Object.fromEntries(destructive.map(name => [name, 'delete' as Risk])),
+  modules: (data: any): Risk => (data?.action === 'set-active' ? 'write' : 'read'),
   documents: (data: any): Risk =>
     data?.action === 'delete'
       ? 'delete'
