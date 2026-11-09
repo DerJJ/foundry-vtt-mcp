@@ -154,6 +154,60 @@ await step('items.system-notes', () => call('items', 'system-notes'));
 await step('actors.system-notes', () => call('actors', 'system-notes'));
 
 // --- compendium entries of every document type -------------------------------------------------
+// Worlds rarely have Scene, Playlist, Cards or Adventure packs, so the check makes its own: one
+// small world pack per type, with one entry created straight in the pack (no world document is
+// made). The packs are deleted at the end.
+const FIXTURE_PACKS = [
+  { type: 'Scene', entry: { name: `${PREFIX}-scene` } },
+  { type: 'Playlist', entry: { name: `${PREFIX}-playlist-entry` } },
+  { type: 'Cards', entry: { name: `${PREFIX}-deck`, type: 'deck' } },
+  { type: 'Adventure', entry: { name: `${PREFIX}-adventure` } },
+];
+const packNameOf = type => `${PREFIX}-${type.toLowerCase()}`;
+const fixturePackIds = [];
+async function deleteFixturePack(type) {
+  await call('compendium', 'delete-pack', {
+    identifier: `world.${packNameOf(type)}`,
+    confirmDelete: true,
+  });
+}
+if (canWrite) {
+  await step('fixture packs: create a Scene, Playlist, Cards and Adventure entry', async () => {
+    const made = [];
+    for (const { type, entry } of FIXTURE_PACKS) {
+      if (canDelete) {
+        try {
+          await deleteFixturePack(type); // a leftover of an earlier run
+        } catch {
+          // not there
+        }
+      }
+      try {
+        await call('compendium', 'create-pack', {
+          label: `${PREFIX} ${type}`,
+          type,
+          name: packNameOf(type),
+        });
+        fixturePackIds.push(type);
+        const r = await call('compendium', 'create-entries', {
+          pack: `world.${packNameOf(type)}`,
+          entries: [entry],
+        });
+        expect(
+          r?.created?.length === 1,
+          `${type} entry not created: ${JSON.stringify(r?.failed ?? r).slice(0, 120)}`
+        );
+        made.push(type);
+      } catch (error) {
+        throw new Error(`${type}: ${String(error.message ?? error).slice(0, 150)}`);
+      }
+    }
+    return made.join(', ');
+  });
+} else {
+  results.push({ name: 'fixture packs', status: 'skip', detail: 'read only' });
+}
+
 const DOCUMENT_TYPES = [
   'Item',
   'Actor',
@@ -169,7 +223,11 @@ const sample = {};
 async function firstEntry(type) {
   if (type in sample) return sample[type];
   sample[type] = null;
-  const packs = (await call('compendium', 'list-packs', { type })).packs ?? [];
+  const listed = (await call('compendium', 'list-packs', { type })).packs ?? [];
+  const mine = `world.${PREFIX}`;
+  const packs = [...listed].sort(
+    (a, b) => Number(b.id.startsWith(mine)) - Number(a.id.startsWith(mine))
+  );
   for (const pack of packs.slice(0, 5)) {
     const listed = await call('compendium', 'list-entries', { pack: pack.id });
     const entry = listed.entries?.[0];
@@ -455,6 +513,14 @@ for (const id of created.actors) {
     await call('actors', 'delete', { ids: [id] });
   } catch (error) {
     leftovers.push(`actor ${id}: ${String(error.message).slice(0, 80)}`);
+  }
+}
+for (const type of fixturePackIds) {
+  try {
+    if (!canDelete) throw new Error('no delete access');
+    await deleteFixturePack(type);
+  } catch (error) {
+    leftovers.push(`compendium world.${packNameOf(type)}: ${String(error.message).slice(0, 80)}`);
   }
 }
 for (const type of importedTypes) {
