@@ -11,6 +11,10 @@ import type { DomainToolSpec } from './domain-tool.js';
  * The migration table in docs/TOOLS.md and the surface test read this.
  */
 export const MERGED_OPERATIONS: Readonly<Record<string, { into: string; note: string }>> = {
+  'post-chat': {
+    into: 'chat `post`',
+    note: 'pass `html: true` to keep HTML (off by default); `speaker` is now `actorIdentifier`; without a speaker the message is from the GM',
+  },
   'get-compendium-entry-full': {
     into: 'compendium `get`',
     note: 'full data is the default; `entryId` is now `itemId`',
@@ -490,7 +494,6 @@ export const DOMAIN_TOOLS: readonly DomainToolSpec[] = [
       post: { operation: 'create-chat-message', risk: 'write' },
       'request-rolls': { operation: 'request-player-rolls', risk: 'write' },
       'get-messages': { operation: 'get-chat-messages', risk: 'read' },
-      'post-rich': { operation: 'post-chat', risk: 'write' },
       'gm-roll': { operation: 'gm-roll', risk: 'write' },
       'list-tables': {
         operation: 'roll-table',

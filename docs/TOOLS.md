@@ -160,10 +160,9 @@ Speak as an actor and ask players to roll.
 
 | Action | Risk | Game system | Parameters | Does |
 | --- | --- | --- | --- | --- |
-| `post` | write | all | actorIdentifier, tokenId, **content**, language, chatLog, whisperTo | Speak an in-character line as an actor or a specific token: a floating speech bubble over the token (the default), a real chat-log message, or a whisper to named players. |
+| `post` | write | all | actorIdentifier, tokenId, **content**, language, chatLog, whisperTo, html, style | Say something in the chat. |
 | `request-rolls` | write | all | **rollType**, **rollTarget**, **targetPlayer**, **isPublic**, **userConfirmedVisibility**, dc, rollModifier, flavor, advantageMode | Request dice rolls from players with interactive buttons. |
 | `get-messages` | read | all | limit, since, beforeId, actor, kinds, rollsOnly, includeText, textLength | Read the Foundry chat log as structured events (GM view, includes whispers), oldest first, so you can tell what happened and who did it. |
-| `post-rich` | write | all | **content**, speaker, whisperTo, style | Post a chat message as the GM. |
 | `gm-roll` | write | all | formula, sceneIdentifier, targets, rollType, key, advantageMode, visibility, flavor | Roll hidden from the players. |
 | `list-tables` | read | all | search | List the roll tables of the world and of compendiums. |
 | `roll-table` | write | all | **table**, visibility | Draw from a roll table. |

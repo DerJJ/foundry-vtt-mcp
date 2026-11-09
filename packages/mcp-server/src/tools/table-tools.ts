@@ -66,14 +66,6 @@ const schemas = {
       visibility: z.enum(['public', 'gm', 'blind', 'none']).optional(),
     })
     .strict(),
-  'post-chat': z
-    .object({
-      content: z.string().min(1),
-      speaker: z.string().optional(),
-      whisperTo: z.array(z.string().min(1)).optional(),
-      style: z.enum(['ic', 'ooc', 'emote']).optional(),
-    })
-    .strict(),
   'scene-view': z
     .object({
       action: z.enum(['ping', 'pull-players', 'reset-fog', 'weather', 'list-weather']),
@@ -97,7 +89,6 @@ const queryNames: Record<ToolName, string> = {
   'party-status': 'partyStatus',
   'gm-roll': 'gmRoll',
   'roll-table': 'rollTable',
-  'post-chat': 'postChat',
   'scene-view': 'sceneView',
   'creature-card': 'creatureCard',
 };
@@ -228,22 +219,6 @@ export class TableTools {
             visibility: { type: 'string', enum: ['public', 'gm', 'blind', 'none'] },
           },
           required: ['action'],
-        },
-      },
-      {
-        name: 'post-chat',
-        description:
-          'Post a chat message as the GM. speaker: a token or actor name to speak in character (style ic) or emote. ' +
-          'whisperTo: user names or character names; the GM always receives whispers too. Content may contain simple HTML.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            content: { type: 'string' },
-            speaker: { type: 'string' },
-            whisperTo: { type: 'array', items: { type: 'string' } },
-            style: { type: 'string', enum: ['ic', 'ooc', 'emote'] },
-          },
-          required: ['content'],
         },
       },
       {

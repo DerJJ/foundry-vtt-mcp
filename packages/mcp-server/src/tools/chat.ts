@@ -7,6 +7,9 @@ export interface ChatToolsOptions {
   logger: Logger;
 }
 
+const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 export class ChatTools {
   private foundryClient: FoundryClient;
   private logger: Logger;
@@ -21,11 +24,13 @@ export class ChatTools {
       {
         name: 'create-chat-message',
         description:
-          'Speak an in-character line as an actor or a specific token: a floating speech ' +
+          'Say something in the chat. As an actor or a specific token: a floating speech ' +
           'bubble over the token (the default), a real chat-log message, or a whisper to ' +
-          'named players. Pass a language to have Polyglot scramble a chat-log message for ' +
-          "viewers who don't know it. One call posts one line. Requires Allow Write " +
-          'Operations in the bridge module settings.',
+          'named players; pass a language to have Polyglot scramble a chat-log message for ' +
+          "viewers who don't know it. Without actorIdentifier or tokenId the message comes " +
+          'from the GM (narration, out-of-character notes). html: true keeps HTML in the text, ' +
+          'and style (ic, ooc, emote) sets the kind of message; both post a chat-log message. ' +
+          'One call posts one line.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -46,7 +51,7 @@ export class ChatTools {
               type: 'string',
               description:
                 'The message text as plain text, in the language actually being spoken (not ' +
-                'translated or bracketed). HTML is escaped and shows literally.',
+                'translated or bracketed). HTML is escaped and shows literally, unless html is true.',
             },
             language: {
               type: 'string',
@@ -74,6 +79,19 @@ export class ChatTools {
                 'delivered as a chat-log message, since a bubble would be visible to everyone, so ' +
                 'passing this implies chatLog: true.',
             },
+            html: {
+              type: 'boolean',
+              description:
+                'Let the text contain HTML (bold, lists, links). Default false: HTML is escaped. ' +
+                'Posts a chat-log message, without a bubble.',
+            },
+            style: {
+              type: 'string',
+              enum: ['ic', 'ooc', 'emote'],
+              description:
+                'Kind of chat-log message: ic (in character, the default with a speaker), ooc ' +
+                '(out of character, the default without one) or emote. Not combined with a bubble.',
+            },
           },
           required: ['content'],
         },
@@ -82,20 +100,43 @@ export class ChatTools {
   }
 
   async handleCreateChatMessage(args: any): Promise<any> {
-    const schema = z
-      .object({
-        actorIdentifier: z.string().optional(),
-        tokenId: z.string().optional(),
-        content: z.string().min(1),
-        language: z.string().optional(),
-        chatLog: z.boolean().optional(),
-        whisperTo: z.array(z.string()).optional(),
-      })
-      .refine(v => v.actorIdentifier || v.tokenId, {
-        message: 'Either actorIdentifier or tokenId is required',
-      });
+    const schema = z.object({
+      actorIdentifier: z.string().optional(),
+      tokenId: z.string().optional(),
+      content: z.string().min(1),
+      language: z.string().optional(),
+      chatLog: z.boolean().optional(),
+      whisperTo: z.array(z.string()).optional(),
+      html: z.boolean().optional(),
+      style: z.enum(['ic', 'ooc', 'emote']).optional(),
+    });
 
     const parsed = schema.parse(args);
+
+    // A message from the GM, with HTML, or with a style is a plain chat-log message; a bubble,
+    // a language and a token id belong to the in-character path below.
+    const asChatLogMessage =
+      parsed.html === true ||
+      parsed.style !== undefined ||
+      (!parsed.actorIdentifier && !parsed.tokenId);
+    if (asChatLogMessage) {
+      if (parsed.tokenId) {
+        throw new Error('tokenId cannot be combined with html or style: use actorIdentifier.');
+      }
+      if (parsed.language) {
+        throw new Error('language only works for a line spoken as an actor without html or style.');
+      }
+      this.logger.info('Posting chat message', {
+        speaker: parsed.actorIdentifier ?? 'GM',
+        whispered: !!parsed.whisperTo?.length,
+      });
+      return this.foundryClient.query('foundry-mcp-bridge.postChat', {
+        content: parsed.html === true ? parsed.content : escapeHtml(parsed.content),
+        ...(parsed.actorIdentifier ? { speaker: parsed.actorIdentifier } : {}),
+        ...(parsed.whisperTo?.length ? { whisperTo: parsed.whisperTo } : {}),
+        ...(parsed.style ? { style: parsed.style } : {}),
+      });
+    }
 
     this.logger.info('Creating chat message', {
       speaker: parsed.tokenId ?? parsed.actorIdentifier,

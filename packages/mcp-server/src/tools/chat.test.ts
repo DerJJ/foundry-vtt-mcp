@@ -63,8 +63,11 @@ describe('create-chat-message tool definition', () => {
     expect(props.whisperTo.description).toMatch(/fails|error/i);
   });
 
-  it('says the tool needs write operations allowed', () => {
-    expect(definition().description).toMatch(/Allow Write Operations/);
+  it('describes the html flag and the GM message', () => {
+    const description = definition().description;
+    expect(description).toMatch(/html: true/);
+    expect(description).toMatch(/from the GM/);
+    expect((definition().inputSchema.properties as Record<string, any>).html.type).toBe('boolean');
   });
 });
 
@@ -121,10 +124,55 @@ describe('handleCreateChatMessage', () => {
     ).resolves.toEqual(ack);
   });
 
-  it('rejects a call naming no speaker', async () => {
-    const { tools, query } = makeTools();
-    await expect(tools.handleCreateChatMessage({ content: 'x' })).rejects.toThrow();
-    expect(query).not.toHaveBeenCalled();
+  describe('messages from the GM, with HTML, or with a style', () => {
+    it('posts a call without a speaker as the GM, escaped', async () => {
+      const { tools, query } = makeTools();
+      await tools.handleCreateChatMessage({ content: 'The <door> opens & creaks.' });
+      expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.postChat', {
+        content: 'The &lt;door&gt; opens &amp; creaks.',
+      });
+    });
+
+    it('keeps HTML only when html is true', async () => {
+      const { tools, query } = makeTools();
+      await tools.handleCreateChatMessage({ content: '<b>Hear ye</b>', html: true });
+      expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.postChat', {
+        content: '<b>Hear ye</b>',
+      });
+    });
+
+    it('passes the speaker, whisper targets and style on', async () => {
+      const { tools, query } = makeTools();
+      await tools.handleCreateChatMessage({
+        actorIdentifier: 'Wenet',
+        content: 'Hm.',
+        style: 'emote',
+        whisperTo: ['Test'],
+      });
+      expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.postChat', {
+        content: 'Hm.',
+        speaker: 'Wenet',
+        whisperTo: ['Test'],
+        style: 'emote',
+      });
+    });
+
+    it('refuses combinations that would be silently ignored', async () => {
+      const { tools, query } = makeTools();
+      await expect(
+        tools.handleCreateChatMessage({ tokenId: 't', content: 'x', html: true })
+      ).rejects.toThrow('tokenId cannot be combined');
+      await expect(
+        tools.handleCreateChatMessage({ content: 'x', language: 'common' })
+      ).rejects.toThrow('language only works');
+      expect(query).not.toHaveBeenCalled();
+    });
+
+    it('a plain line from an actor still goes through the bubble path', async () => {
+      const { tools, query } = makeTools();
+      await tools.handleCreateChatMessage({ actorIdentifier: 'Wenet', content: 'x' });
+      expect(query).toHaveBeenCalledWith('foundry-mcp-bridge.createChatMessage', expect.anything());
+    });
   });
 
   it('rejects empty content', async () => {
