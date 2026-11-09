@@ -1,22 +1,9 @@
 import { MODULE_ID, ERROR_MESSAGES } from '../constants.js';
 import { permissionManager } from '../permissions.js';
 import { validateFoundryState } from './support.js';
+import { escapeHTML } from '../escape-html.js';
 import type { FoundryDataAccess } from '../data-access.js';
 
-// The same five characters foundry.utils.escapeHTML replaces in v14, kept local because
-// that helper isn't confirmed in v13, this module's minimum.
-const HTML_ESCAPES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#x27;',
-};
-
-/** Escape text so it renders as written when Foundry inserts it as HTML. */
-function escapeHTML(text: string): string {
-  return text.replace(/[&<>"']/g, c => HTML_ESCAPES[c]);
-}
 export class ChatService {
   constructor(private readonly access: FoundryDataAccess) {}
 

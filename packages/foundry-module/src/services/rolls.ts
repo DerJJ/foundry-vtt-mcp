@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../constants.js';
 import { validateFoundryState } from './support.js';
+import { escapeHTML } from '../escape-html.js';
 import { pf2eModifier, pf2eStatistic } from '../systems/pf2e/rolls.js';
 
 export class RollService {
@@ -60,32 +61,44 @@ export class RollService {
       // Generate roll button HTML
       const buttonId = foundry.utils.randomID();
       const buttonLabel = this.buildRollButtonLabel(data.rollType, data.rollTarget, data.isPublic);
+      // Everything below that came from the caller or from a name in the world is escaped:
+      // it ends up in chat HTML and in attribute values.
+      const safe = {
+        label: escapeHTML(buttonLabel),
+        formula: escapeHTML(rollFormula),
+        target: escapeHTML(playerInfo.targetName),
+        character: escapeHTML(playerInfo.character?.name ?? ''),
+        flavor: escapeHTML(data.flavor ?? ''),
+        rollTarget: escapeHTML(String(data.rollTarget)),
+        rollModifier: escapeHTML(String(data.rollModifier || '')),
+        rollType: escapeHTML(String(data.rollType)),
+      };
 
       // Check if this type of roll was already performed (optional: could check for duplicate recent rolls)
       // For now, we'll just create the button and let the rendering logic handle the state restoration
 
       const rollButtonHtml = `
         <div class="mcp-roll-request" style="margin: 12px 0; padding: 12px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
-          <p><strong>Roll Request:</strong> ${buttonLabel}</p>
-          <p><strong>Target:</strong> ${playerInfo.targetName} ${playerInfo.character ? `(${playerInfo.character.name})` : ''}</p>
-          ${data.flavor ? `<p><strong>Context:</strong> ${data.flavor}</p>` : ''}
+          <p><strong>Roll Request:</strong> ${safe.label}</p>
+          <p><strong>Target:</strong> ${safe.target} ${playerInfo.character ? `(${safe.character})` : ''}</p>
+          ${data.flavor ? `<p><strong>Context:</strong> ${safe.flavor}</p>` : ''}
           ${data.advantageMode === 'advantage' ? '<p><strong>Advantage</strong></p>' : data.advantageMode === 'disadvantage' ? '<p><strong>Disadvantage</strong></p>' : ''}
 
           <div style="text-align: center; margin-top: 8px;">
             <!-- Single Roll Button (clickable by both character owner and GM) -->
             <button class="mcp-roll-button mcp-button-active"
                     data-button-id="${buttonId}"
-                    data-roll-formula="${rollFormula}"
-                    data-roll-label="${buttonLabel}"
+                    data-roll-formula="${safe.formula}"
+                    data-roll-label="${safe.label}"
                     data-is-public="${data.isPublic}"
                     data-character-id="${playerInfo.character?.id || ''}"
-                    data-roll-type="${data.rollType}"
-                    data-roll-target="${String(data.rollTarget).replace(/"/g, '&quot;')}"
-                    data-advantage-mode="${data.advantageMode || 'normal'}"
+                    data-roll-type="${safe.rollType}"
+                    data-roll-target="${safe.rollTarget}"
+                    data-advantage-mode="${escapeHTML(String(data.advantageMode || 'normal'))}"
                     data-dc="${typeof data.dc === 'number' ? data.dc : ''}"
-                    data-roll-modifier="${String(data.rollModifier || '').replace(/"/g, '&quot;')}"
+                    data-roll-modifier="${safe.rollModifier}"
                     data-target-user-id="${playerInfo.user?.id || ''}">
-              🎲 ${buttonLabel}
+              🎲 ${safe.label}
             </button>
           </div>
         </div>
