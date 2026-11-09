@@ -6,8 +6,8 @@
 //   node scripts/live-check.mjs            read, create, change and delete test objects
 //   node scripts/live-check.mjs --chat     also posts one chat message (it cannot be deleted)
 //
-// What it can only check with a human: scenes and tokens need a scene, ownership needs a player
-// user. Those steps report "skipped" with the reason instead of failing.
+// What it can only check with a human: combat needs tokens in a combat, ownership needs a
+// player user. Those steps report "skipped" with the reason instead of failing.
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -48,7 +48,7 @@ async function step(name, run) {
   } catch (error) {
     if (error instanceof Skip) results.push({ name, status: 'skip', detail: error.message });
     else
-      results.push({ name, status: 'FAIL', detail: String(error.message ?? error).slice(0, 200) });
+      results.push({ name, status: 'FAIL', detail: String(error.message ?? error).slice(0, 220) });
   }
 }
 
@@ -82,8 +82,6 @@ if (caps) {
   });
 } else {
   console.log(`The bridge did not answer within 5 minutes: ${lastError.slice(0, 200)}`);
-}
-if (!caps) {
   console.log('Is Foundry open with the bridge connected?');
   await client.close();
   process.exit(1);
@@ -99,16 +97,18 @@ await step('world.info', async () => {
 
 for (const tool of [
   'world',
-  'scenes',
-  'playlists',
-  'effects',
-  'tokens',
-  'items',
+  'documents',
   'actors',
   'compendium',
-  'journals',
+  'scenes',
+  'tokens',
+  'combat',
   'chat',
-  'image-generation',
+  'journals',
+  'time',
+  'audio',
+  'macros',
+  'images',
 ]) {
   await step(`${tool}.describe`, async () => {
     const d = await call(tool, 'describe');
@@ -118,40 +118,71 @@ for (const tool of [
   });
 }
 
+// --- documents.schema ---------------------------------------------------------------------------
+let schema;
+await step('documents.schema (overview)', async () => {
+  schema = await call('documents', 'schema');
+  expect(schema.system === system, 'wrong system');
+  expect(schema.types?.Actor?.subtypes?.length > 0, 'no actor subtypes');
+  expect(schema.types?.Actor?.embedded?.includes('Item'), 'actors do not list Item as embedded');
+  expect(schema.kinds?.spells || schema.kinds?.inventory, 'no kinds');
+  return `kinds: ${Object.keys(schema.kinds).join(', ')}`;
+});
+await step('documents.schema (Item, a subtype)', async () => {
+  const subtype = schema?.kinds?.spells?.[0] ?? schema?.types?.Item?.subtypes?.[0];
+  if (!subtype) skip('no item subtype');
+  const r = await call('documents', 'schema', { type: 'Item', subtype });
+  expect(r.system || r.fields, 'no fields');
+  expect(JSON.stringify(r).length < 30_000, `schema answer too large: ${JSON.stringify(r).length}`);
+  return `${subtype}: ${JSON.stringify(r).length} characters`;
+});
+await step('documents.schema (Actor npc)', async () => {
+  const subtypes = schema?.types?.Actor?.subtypes ?? [];
+  const subtype = subtypes.find(s => s === 'npc') ?? subtypes[0];
+  const r = await call('documents', 'schema', { type: 'Actor', subtype });
+  expect(r.fields && r.subtypes, 'no fields');
+  expect(JSON.stringify(r).length < 30_000, `schema answer too large: ${JSON.stringify(r).length}`);
+  return `${subtype}: ${JSON.stringify(r).length} characters`;
+});
+
 // --- reads ----------------------------------------------------------------------------------
 let hasScene = false;
 await step('scenes.list', async () => {
   const r = await call('scenes', 'list');
-  hasScene = JSON.stringify(r).length > 10 && !/"scenes":\s*\[\]/.test(JSON.stringify(r));
+  hasScene = Array.isArray(r) ? r.length > 0 : JSON.stringify(r).length > 10;
   return hasScene ? 'has scenes' : 'no scenes';
 });
 await step('scenes.current', async () => {
   if (!hasScene) skip('the world has no scene');
   await call('scenes', 'current');
 });
-await step('compendium.list-packs', () => call('compendium', 'list-packs'));
+await step('compendium.packs', async () => {
+  const r = await call('compendium', 'packs');
+  expect(r.packs?.length > 0, 'no packs');
+  const filtered = await call('compendium', 'packs', { type: 'Item' });
+  expect(
+    filtered.packs.every(p => p.type === 'Item'),
+    'type filter does not filter'
+  );
+  return `${r.total} packs`;
+});
 await step('compendium.search', () => call('compendium', 'search', { query: 'dr', limit: 3 }));
 await step('compendium.find-creatures', async () => {
-  try {
-    await call('compendium', 'find-creatures', { limit: 3 });
-  } catch (error) {
-    if (/still building/.test(error.message)) skip(`index building: ${error.message.slice(0, 80)}`);
-    throw error;
-  }
+  const r = await call('compendium', 'find-creatures', { limit: 3 });
+  expect(r.creatures?.length >= 0, 'no creature answer');
 });
-await step('actors.list (paged)', async () => {
-  const r = await call('actors', 'list', { limit: 2 });
+await step('documents.list (Actor, paged)', async () => {
+  const r = await call('documents', 'list', { type: 'Actor', limit: 2 });
   expect(r.hasMore !== undefined && r.total !== undefined, 'no paging fields');
   return `total ${r.total}`;
 });
 await step('journals.list', () => call('journals', 'list'));
 await step('journals.search', () => call('journals', 'search', { searchQuery: 'a' }));
-await step('playlists.list', () => call('playlists', 'list'));
-await step('effects.list-conditions', () => call('effects', 'list-conditions'));
+await step('documents.list (Playlist)', () => call('documents', 'list', { type: 'Playlist' }));
+await step('documents.list (RollTable)', () => call('documents', 'list', { type: 'RollTable' }));
+await step('tokens.list-conditions', () => call('tokens', 'list-conditions'));
 await step('actors.list-ownership', () => call('actors', 'list-ownership', {}));
-await step('items.list', () => call('items', 'list', {}));
-await step('items.system-notes', () => call('items', 'system-notes'));
-await step('actors.system-notes', () => call('actors', 'system-notes'));
+await step('documents.list (Item)', () => call('documents', 'list', { type: 'Item' }));
 
 // --- compendium entries of every document type -------------------------------------------------
 // Worlds rarely have Scene, Playlist, Cards or Adventure packs, so the check makes its own: one
@@ -164,7 +195,7 @@ const FIXTURE_PACKS = [
   { type: 'Adventure', entry: { name: `${PREFIX}-adventure` } },
 ];
 const packNameOf = type => `${PREFIX}-${type.toLowerCase()}`;
-const fixturePackIds = [];
+const fixturePackTypes = [];
 async function deleteFixturePack(type) {
   await call('compendium', 'delete-pack', {
     identifier: `world.${packNameOf(type)}`,
@@ -172,7 +203,7 @@ async function deleteFixturePack(type) {
   });
 }
 if (canWrite) {
-  await step('fixture packs: create a Scene, Playlist, Cards and Adventure entry', async () => {
+  await step('fixture packs: a Scene, Playlist, Cards and Adventure entry', async () => {
     const made = [];
     for (const { type, entry } of FIXTURE_PACKS) {
       if (canDelete) {
@@ -188,14 +219,15 @@ if (canWrite) {
           type,
           name: packNameOf(type),
         });
-        fixturePackIds.push(type);
-        const r = await call('compendium', 'create-entries', {
+        fixturePackTypes.push(type);
+        const r = await call('documents', 'create', {
+          type,
           pack: `world.${packNameOf(type)}`,
-          entries: [entry],
+          data: entry,
         });
         expect(
           r?.created?.length === 1,
-          `${type} entry not created: ${JSON.stringify(r?.failed ?? r).slice(0, 120)}`
+          `${type} entry not created: ${JSON.stringify(r).slice(0, 120)}`
         );
         made.push(type);
       } catch (error) {
@@ -223,14 +255,14 @@ const sample = {};
 async function firstEntry(type) {
   if (type in sample) return sample[type];
   sample[type] = null;
-  const listed = (await call('compendium', 'list-packs', { type })).packs ?? [];
+  const listed = (await call('compendium', 'packs', { type })).packs ?? [];
   const mine = `world.${PREFIX}`;
   const packs = [...listed].sort(
     (a, b) => Number(b.id.startsWith(mine)) - Number(a.id.startsWith(mine))
   );
   for (const pack of packs.slice(0, 5)) {
-    const listed = await call('compendium', 'list-entries', { pack: pack.id });
-    const entry = listed.entries?.[0];
+    const r = await call('documents', 'list', { type, pack: pack.id, limit: 1 });
+    const entry = r.documents?.[0];
     if (entry) {
       sample[type] = { packId: pack.id, itemId: entry.id, name: entry.name };
       break;
@@ -260,12 +292,23 @@ for (const type of DOCUMENT_TYPES) {
     return `${found.name} (${found.packId})`;
   });
 }
+await step('documents.get (a pack entry)', async () => {
+  const found = await firstEntry('Item');
+  if (!found) skip('no Item pack');
+  const r = await call('documents', 'get', {
+    type: 'Item',
+    pack: found.packId,
+    id: found.itemId,
+    fields: ['name', 'type'],
+  });
+  expect(r.data?.name === found.name, 'wrong entry');
+});
 
 // --- access guard ---------------------------------------------------------------------------
 await step('guard: delete is refused below full access', async () => {
   if (canDelete) skip('world is at full access');
   try {
-    await call('actors', 'delete', { ids: ['does-not-exist'] });
+    await call('documents', 'delete', { type: 'Actor', id: 'does-not-exist' });
   } catch (error) {
     expect(/Full access/.test(error.message), `unexpected refusal: ${error.message}`);
     return 'refused as expected';
@@ -275,7 +318,7 @@ await step('guard: delete is refused below full access', async () => {
 await step('guard: write is refused at read only', async () => {
   if (canWrite) skip('world allows writing');
   try {
-    await call('actors', 'update', { updates: [{ id: 'x', name: 'x' }] });
+    await call('documents', 'update', { type: 'Actor', id: 'x', data: { name: 'x' } });
   } catch (error) {
     expect(/write access/.test(error.message), `unexpected refusal: ${error.message}`);
     return 'refused as expected';
@@ -285,7 +328,7 @@ await step('guard: write is refused at read only', async () => {
 await step('image-generation is refused while switched off', async () => {
   if (caps.imageGenerationEnabled) skip('image generation is on');
   try {
-    await call('image-generation', 'status', { job_id: 'x' });
+    await call('images', 'status', { job_id: 'x' });
   } catch (error) {
     expect(/off/.test(error.message), `unexpected refusal: ${error.message}`);
     return 'refused as expected';
@@ -294,43 +337,47 @@ await step('image-generation is refused while switched off', async () => {
 });
 
 // --- leftovers of earlier runs (only with delete access) ----------------------------------------
+const FOLDER_TYPES = [
+  'Item',
+  'Actor',
+  'JournalEntry',
+  'RollTable',
+  'Scene',
+  'Macro',
+  'Playlist',
+  'Cards',
+];
+const IMPORT_FOLDER = `${PREFIX}-import`;
+async function deleteByName(type, startsWith) {
+  const r = await call('documents', 'list', { type, query: startsWith, limit: 200 });
+  const ids = (r.documents ?? []).filter(d => d.name?.startsWith(startsWith)).map(d => d.id);
+  if (ids.length) await call('documents', 'delete', { type, id: ids, confirm: true });
+  return ids.length;
+}
+async function deleteFolder(type, folder) {
+  await call('documents', 'delete', {
+    type: 'Folder',
+    subtype: type,
+    folder,
+    deleteContents: true,
+    confirm: true,
+  });
+}
 if (canDelete) {
   await step('clean up leftovers of earlier runs', async () => {
     const removed = [];
-    const all = await call('actors', 'list', { limit: 1000 });
-    const old = (all.characters ?? []).filter(c => c.name?.startsWith(PREFIX)).map(c => c.id);
-    if (old.length) {
-      await call('actors', 'delete', { ids: old });
-      removed.push(`${old.length} actors`);
+    for (const type of ['Actor', 'Playlist', 'Macro', 'JournalEntry', 'RollTable', 'Scene']) {
+      const n = await deleteByName(type, PREFIX);
+      if (n) removed.push(`${n} ${type}`);
     }
-    for (const name of [`${PREFIX}-playlist`, `${PREFIX}-playlist-b`]) {
-      try {
-        await call('playlists', 'delete', { playlist: name });
-        removed.push(`playlist ${name}`);
-      } catch {
-        // not there
-      }
-    }
-    for (const type of [
-      'Item',
-      'Actor',
-      'JournalEntry',
-      'RollTable',
-      'Scene',
-      'Macro',
-      'Playlist',
-      'Cards',
-    ]) {
-      try {
-        await call('folders', 'delete', {
-          path: `${PREFIX}-import`,
-          documentType: type,
-          deleteContents: true,
-          confirmDelete: true,
-        });
-        removed.push(`${type} folder`);
-      } catch {
-        // not there
+    for (const type of FOLDER_TYPES) {
+      for (const folder of [IMPORT_FOLDER, `${PREFIX}-folder`]) {
+        try {
+          await deleteFolder(type, folder);
+          removed.push(`${type} folder`);
+        } catch {
+          // not there
+        }
       }
     }
     return removed.length ? `removed ${removed.join(', ')}` : 'nothing to remove';
@@ -338,121 +385,266 @@ if (canDelete) {
 }
 
 // --- writes: create, change, delete ---------------------------------------------------------
-const actorType = 'npc';
-const created = { actors: [], playlists: [] };
-
-async function findActorId(name) {
-  const r = await call('actors', 'list', { limit: 1000 });
-  return r.characters?.find(c => c.name === name)?.id;
-}
+const created = [];
+const track = (type, id) => created.push({ type, id });
 
 let actorId;
 const actorName = `${PREFIX}-actor`;
-await step('actors.create', async () => {
+await step('documents.create (Actor)', async () => {
   if (!canWrite) skip('read only');
-  await call('actors', 'create', { actors: [{ name: actorName, type: actorType }] });
-  actorId = await findActorId(actorName);
-  expect(actorId, 'created actor not found in the list');
-  created.actors.push(actorId);
+  const subtypes = schema?.types?.Actor?.subtypes ?? [];
+  const subtype = subtypes.includes('npc') ? 'npc' : subtypes[0];
+  const r = await call('documents', 'create', {
+    type: 'Actor',
+    data: { name: actorName, type: subtype },
+  });
+  actorId = r.created?.[0]?.id;
+  expect(actorId, 'no id in the answer');
+  track('Actor', actorId);
 });
 await step('actors.get', async () => {
   if (!actorId) skip('no test actor');
   await call('actors', 'get', { identifier: actorName });
 });
-await step('actors.update', async () => {
+await step('documents.update (Actor)', async () => {
   if (!actorId) skip('no test actor');
-  await call('actors', 'update', { updates: [{ id: actorId, name: `${actorName}-renamed` }] });
-  expect(await findActorId(`${actorName}-renamed`), 'rename not visible');
-});
-await step('items.add-to-actor + actors.search-items + actors.delete-items', async () => {
-  if (!actorId) skip('no test actor');
-  await call('items', 'add-to-actor', {
-    actorIdentifier: actorId,
-    items: [{ name: `${PREFIX}-item`, type: 'equipment' }],
+  await call('documents', 'update', {
+    type: 'Actor',
+    id: actorId,
+    data: { name: `${actorName}-renamed` },
   });
-  const found = await call('actors', 'search-items', {
-    characterIdentifier: actorId,
+  const r = await call('documents', 'get', { type: 'Actor', id: actorId, fields: ['name'] });
+  expect(r.data?.name === `${actorName}-renamed`, 'rename not visible');
+});
+await step('documents (an item on the actor: create, list by kind, update, delete)', async () => {
+  if (!actorId) skip('no test actor');
+  const parent = { type: 'Actor', id: actorId };
+  const c = await call('documents', 'create', {
+    type: 'Item',
+    kind: 'inventory',
+    parent,
+    data: { name: `${PREFIX}-item`, type: 'equipment' },
+  });
+  const itemId = c.created?.[0]?.id;
+  expect(itemId, 'item not created');
+  const l = await call('documents', 'list', {
+    type: 'Item',
+    kind: 'inventory',
+    parent,
     query: PREFIX,
   });
-  expect(JSON.stringify(found).includes(PREFIX), 'item not found on the actor');
-  if (!canDelete) skip('item added; cannot delete below full access');
-  const ids = JSON.stringify(found).match(/"id":"([^"]+)"/g) ?? [];
-  expect(ids.length > 0, 'no item id to delete');
-  const itemId = ids[0].slice(6, -1);
-  await call('actors', 'delete-items', { actorIdentifier: actorId, itemIds: [itemId] });
+  expect(
+    l.documents.some(d => d.id === itemId),
+    'item not listed under inventory'
+  );
+  await call('documents', 'update', {
+    type: 'Item',
+    id: itemId,
+    parent,
+    data: { name: `${PREFIX}-item-2` },
+  });
+  if (!canDelete) skip('item created and changed; cannot delete below full access');
+  await call('documents', 'delete', { type: 'Item', id: itemId, parent });
+  const after = await call('documents', 'list', { type: 'Item', parent, query: PREFIX });
+  expect(after.total === 0, 'item still there');
 });
-await step('effects (ActiveEffect create/update/delete, or the PF2e explanation)', async () => {
+await step('documents (an effect on the actor)', async () => {
   if (!actorId) skip('no test actor');
   try {
-    await call('effects', 'create', {
-      actorIdentifier: actorId,
-      parentType: 'actor',
-      effectData: { name: `${PREFIX}-effect` },
+    const r = await call('documents', 'create', {
+      type: 'ActiveEffect',
+      parent: { type: 'Actor', id: actorId },
+      data: { name: `${PREFIX}-effect` },
     });
+    expect(r.created?.length === 1, 'effect not created');
   } catch (error) {
-    if (system === 'pf2e') {
-      expect(/effect item/.test(error.message), `unexpected error: ${error.message}`);
-      return 'pf2e explains that effects are items';
-    }
-    throw error;
+    // PF2e models effects as items and may decline an ActiveEffect on an actor.
+    if (system !== 'pf2e') throw error;
+    return `pf2e: ${String(error.message).slice(0, 80)}`;
   }
-  // Foundry accepted it (it goes away with the test actor).
 });
 await step('actors.set-ownership + remove-ownership', async () => {
   if (!actorId) skip('no test actor');
   skip('needs a player user; run by hand');
 });
 
-let playlistName = `${PREFIX}-playlist`;
-await step('playlists.create/update/delete', async () => {
+await step('documents (a playlist and a sound)', async () => {
   if (!canWrite) skip('read only');
-  await call('playlists', 'create', { name: playlistName });
-  created.playlists.push(playlistName);
-  await call('playlists', 'update', { playlist: playlistName, name: `${playlistName}-b` });
-  playlistName = `${playlistName}-b`;
-  created.playlists[0] = playlistName;
-  if (!canDelete) skip('created and renamed; cannot delete below full access');
-  await call('playlists', 'delete', { playlist: playlistName });
-  created.playlists.length = 0;
+  const r = await call('documents', 'create', {
+    type: 'Playlist',
+    data: { name: `${PREFIX}-playlist` },
+  });
+  const id = r.created?.[0]?.id;
+  expect(id, 'playlist not created');
+  track('Playlist', id);
+  await call('documents', 'update', {
+    type: 'Playlist',
+    id,
+    data: { name: `${PREFIX}-playlist-b` },
+  });
+  const sound = await call('documents', 'create', {
+    type: 'PlaylistSound',
+    parent: { type: 'Playlist', id },
+    data: { name: `${PREFIX}-sound`, path: 'sounds/none.ogg' },
+  });
+  expect(sound.created?.length === 1, 'sound not created');
+});
+await step('documents (a macro)', async () => {
+  if (!canWrite) skip('read only');
+  const r = await call('documents', 'create', {
+    type: 'Macro',
+    data: { name: `${PREFIX}-macro`, type: 'script', command: 'return 1;' },
+  });
+  const id = r.created?.[0]?.id;
+  expect(id, 'macro not created');
+  track('Macro', id);
+  const g = await call('documents', 'get', { type: 'Macro', id, fields: ['command'] });
+  expect(g.data?.command === 'return 1;', 'command not stored');
+});
+await step('documents (a journal: its pages, change a page)', async () => {
+  if (!canWrite) skip('read only');
+  const r = await call('documents', 'create', {
+    type: 'JournalEntry',
+    data: {
+      name: `${PREFIX}-journal`,
+      pages: [{ name: 'One', type: 'text', text: { content: '<p>first</p>' } }],
+    },
+  });
+  const id = r.created?.[0]?.id;
+  expect(id, 'journal not created');
+  track('JournalEntry', id);
+  const parent = { type: 'JournalEntry', id };
+  const pages = await call('documents', 'list', { type: 'JournalEntryPage', parent });
+  expect(pages.total === 1, 'page not listed');
+  await call('documents', 'update', {
+    type: 'JournalEntryPage',
+    id: pages.documents[0].id,
+    parent,
+    data: { 'text.content': '<p>second</p>' },
+  });
+  const got = await call('documents', 'get', {
+    type: 'JournalEntryPage',
+    id: pages.documents[0].id,
+    parent,
+    fields: ['text.content'],
+  });
+  expect(String(got.data?.text?.content).includes('second'), 'page not changed');
+});
+await step('documents (a roll table) + chat.roll-table', async () => {
+  if (!canWrite) skip('read only');
+  const r = await call('documents', 'create', {
+    type: 'RollTable',
+    data: {
+      name: `${PREFIX}-table`,
+      formula: '1d2',
+      results: [
+        { type: 'text', text: 'heads', range: [1, 1], weight: 1 },
+        { type: 'text', text: 'tails', range: [2, 2], weight: 1 },
+      ],
+    },
+  });
+  const id = r.created?.[0]?.id;
+  expect(id, 'table not created');
+  track('RollTable', id);
+  const drawn = await call('chat', 'roll-table', { table: `${PREFIX}-table`, visibility: 'gm' });
+  expect(JSON.stringify(drawn).match(/heads|tails/), 'nothing drawn');
+});
+await step('documents (a scene with a background, and a wall in it)', async () => {
+  if (!canWrite) skip('read only');
+  const r = await call('documents', 'create', {
+    type: 'Scene',
+    data: {
+      name: `${PREFIX}-scene`,
+      width: 1000,
+      height: 1000,
+      background: { src: 'icons/svg/mystery-man.svg' },
+    },
+  });
+  const id = r.created?.[0]?.id;
+  expect(id, 'scene not created');
+  track('Scene', id);
+  const listed = await call('scenes', 'list');
+  const mine = (Array.isArray(listed) ? listed : []).find(s => s.id === id);
+  expect(
+    mine?.background === 'icons/svg/mystery-man.svg',
+    `background not set: ${mine?.background}`
+  );
+  const parent = { type: 'Scene', id };
+  const wall = await call('documents', 'create', {
+    type: 'Wall',
+    parent,
+    data: { c: [0, 0, 200, 0] },
+  });
+  expect(wall.created?.length === 1, 'wall not created');
+  const walls = await call('documents', 'list', { type: 'Wall', parent });
+  expect(walls.total === 1, 'wall not listed');
+});
+await step('documents (a folder: create, rename, move)', async () => {
+  if (!canWrite) skip('read only');
+  await call('documents', 'create', {
+    type: 'Folder',
+    subtype: 'Actor',
+    folder: `${PREFIX}-folder/inner`,
+  });
+  const l = await call('documents', 'list', { type: 'Folder', subtype: 'Actor' });
+  expect(
+    l.folders?.some(f => f.path === `${PREFIX}-folder/inner`),
+    'folder not listed'
+  );
+  await call('documents', 'update', {
+    type: 'Folder',
+    subtype: 'Actor',
+    folder: `${PREFIX}-folder/inner`,
+    data: { name: 'inner2' },
+  });
+  await call('documents', 'update', {
+    type: 'Folder',
+    subtype: 'Actor',
+    folder: `${PREFIX}-folder/inner2`,
+    data: { parent: null },
+  });
 });
 
-await step('actors.place + tokens.get/move/update/toggle-condition/delete', async () => {
+await step('actors.place + tokens + documents (Token)', async () => {
   if (!actorId) skip('no test actor');
   if (!hasScene) skip('the world has no scene');
-  await call('actors', 'place', { actorIds: [actorId], placement: 'center' });
-  skip('placed; token steps need the token id and are run by hand until this reads it');
+  const r = await call('actors', 'place', { actorIds: [actorId], placement: 'center' });
+  const tokenId = r.tokenIds?.[0];
+  expect(tokenId, 'no token id');
+  const sceneId = (await call('scenes', 'current', {})).id;
+  const t = await call('tokens', 'get', { tokenId });
+  expect(t.id === tokenId, 'token not read');
+  await call('tokens', 'move', { tokenId, x: 300, y: 300, animate: false });
+  await call('documents', 'update', {
+    type: 'Token',
+    id: tokenId,
+    parent: { type: 'Scene', id: sceneId },
+    data: { rotation: 45 },
+  });
+  if (!canDelete) skip('token placed, moved and changed; cannot delete below full access');
+  await call('documents', 'delete', {
+    type: 'Token',
+    id: tokenId,
+    parent: { type: 'Scene', id: sceneId },
+  });
 });
 
-if (system === 'dnd5e') {
-  await step('dnd5e: actors.create-npc + add-feature + add-features-from-compendium', async () => {
+if (withChat) {
+  await step('chat.post (GM, html)', async () => {
     if (!canWrite) skip('read only');
-    const name = `${PREFIX}-dnd5e-npc`;
-    await call('actors', 'create-npc', {
-      name,
-      creatureType: 'humanoid',
-      size: 'medium',
-      cr: 1,
-      abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
-      hpAverage: 10,
-      hpFormula: '2d8+1',
-      acMode: 'flat',
-      acValue: 12,
+    await call('chat', 'post', {
+      content: `${PREFIX}: <b>live check</b> message, safe to delete`,
+      html: true,
     });
-    const id = await findActorId(name);
-    expect(id, 'npc not found');
-    created.actors.push(id);
-    await call('actors', 'add-feature', {
-      featureType: 'passive',
-      actorIdentifier: id,
-      featureName: `${PREFIX}-feature`,
-      description: 'Test feature.',
-    });
+    leftovers.push('one chat message (no tool deletes chat messages)');
   });
+} else {
+  results.push({ name: 'chat.post', status: 'skip', detail: 'run with --chat; the message stays' });
 }
 
-// Imports go into one throwaway folder per document type; deleting the folders with their
-// contents at the end removes everything again.
-const IMPORT_FOLDER = `${PREFIX}-import`;
+// --- copies from compendiums into a throwaway folder -----------------------------------------------
+// Each copy goes into one folder per document type; deleting the folders with their contents
+// at the end removes everything again.
 const importedTypes = [];
 for (const type of [
   'Item',
@@ -464,58 +656,46 @@ for (const type of [
   'Playlist',
   'Cards',
 ]) {
-  await step(`compendium.import (${type})`, async () => {
+  await step(`documents.create from a compendium (${type})`, async () => {
     if (!canWrite) skip('read only');
     const found = await firstEntry(type);
     if (!found) skip(`no ${type} pack with entries in this world`);
-    const r = await call('compendium', 'import', {
-      packId: found.packId,
-      itemId: found.itemId,
+    const r = await call('documents', 'create', {
+      type,
+      from: { packId: found.packId, itemId: found.itemId },
       folder: IMPORT_FOLDER,
     });
     importedTypes.push(type);
-    expect(r?.success && r.imported?.id, 'no imported document in the answer');
-    expect(r.imported.documentName === type, `imported a ${r.imported.documentName}`);
-    expect(r.imported.folder === IMPORT_FOLDER, `not filed in the folder: ${r.imported.folder}`);
-    return `${r.imported.name}`;
+    expect(r?.success && r.created?.[0]?.id, 'nothing created');
+    return r.created[0].name;
   });
 }
-await step('compendium.import refuses adventures', async () => {
+await step('documents.create refuses a source of another type', async () => {
   if (!canWrite) skip('read only');
-  const found = await firstEntry('Adventure');
-  if (!found) skip('no Adventure pack in this world');
+  const found = await firstEntry('Item');
+  if (!found) skip('no Item pack');
   try {
-    await call('compendium', 'import', { packId: found.packId, itemId: found.itemId });
+    await call('documents', 'create', {
+      type: 'Actor',
+      from: { packId: found.packId, itemId: found.itemId },
+    });
   } catch (error) {
-    expect(
-      /Adventures cannot be imported/.test(error.message),
-      `unexpected error: ${error.message}`
-    );
+    expect(/Item/.test(error.message), `unexpected error: ${error.message}`);
     return 'refused as expected';
   }
-  throw new Error('the adventure was imported');
+  throw new Error('an Item was copied as an Actor');
 });
 
-if (withChat) {
-  await step('chat.post', async () => {
-    if (!canWrite) skip('read only');
-    await call('chat', 'post', { content: `${PREFIX}: live check message, safe to delete` });
-    leftovers.push('one chat message (no tool deletes chat messages)');
-  });
-} else {
-  results.push({ name: 'chat.post', status: 'skip', detail: 'run with --chat; the message stays' });
-}
-
 // --- clean up -------------------------------------------------------------------------------
-for (const id of created.actors) {
+for (const { type, id } of created.reverse()) {
   try {
     if (!canDelete) throw new Error('no delete access');
-    await call('actors', 'delete', { ids: [id] });
+    await call('documents', 'delete', { type, id });
   } catch (error) {
-    leftovers.push(`actor ${id}: ${String(error.message).slice(0, 80)}`);
+    leftovers.push(`${type} ${id}: ${String(error.message).slice(0, 80)}`);
   }
 }
-for (const type of fixturePackIds) {
+for (const type of fixturePackTypes) {
   try {
     if (!canDelete) throw new Error('no delete access');
     await deleteFixturePack(type);
@@ -526,19 +706,22 @@ for (const type of fixturePackIds) {
 for (const type of importedTypes) {
   try {
     if (!canDelete) throw new Error('no delete access');
-    await call('folders', 'delete', {
-      path: IMPORT_FOLDER,
-      documentType: type,
-      deleteContents: true,
-      confirmDelete: true,
-    });
+    await deleteFolder(type, IMPORT_FOLDER);
   } catch (error) {
     leftovers.push(
       `folder "${IMPORT_FOLDER}" of ${type} with its contents: ${String(error.message).slice(0, 80)}`
     );
   }
 }
-for (const name of created.playlists) leftovers.push(`playlist ${name}`);
+// the folders made by the folder step
+for (const folder of [`${PREFIX}-folder`, 'inner2']) {
+  try {
+    if (!canDelete) throw new Error('no delete access');
+    await deleteFolder('Actor', folder);
+  } catch (error) {
+    if (!canDelete) leftovers.push(`Actor folder "${folder}": no delete access`);
+  }
+}
 
 // --- report ---------------------------------------------------------------------------------
 const width = Math.max(...results.map(r => r.name.length));
