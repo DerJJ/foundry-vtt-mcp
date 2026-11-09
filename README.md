@@ -115,7 +115,7 @@ Once connected, ask Claude Desktop:
 
 ## Features
 
-- **14 domain tools** that let Claude read and change a Foundry world, each with several actions (see [docs/TOOLS.md](docs/TOOLS.md))
+- **15 domain tools** that let Claude read and change a Foundry world, each with several actions (see [docs/TOOLS.md](docs/TOOLS.md))
 - **One `documents` tool for plain changes**: list, read, create, change and delete any Foundry document at any depth: actors and the items, spells and effects on them, scenes and their walls, journals and their pages, playlists, macros, roll tables, folders, and the entries of compendium packs. `schema` shows the fields of a type for the world's game system.
 - **Game systems**: Pathfinder 2e and D&D 5e are verified; DSA5, WFRP4e, Cosmere RPG and Mongoose Traveller 2e are included and unverified. No action carries a system in its name: system differences are in `schema`.
 - **Character Management**: stats, abilities, inventory, spells and features of any actor
@@ -123,7 +123,7 @@ Once connected, ask Claude Desktop:
 - **Combat**: run the combat tracker, roll initiative, apply damage
 - **Enhanced Compendium Search**: instant filtering by CR, type, abilities, and more
 - **Content Creation**: quest journals and campaign dashboards, and any document through `documents`
-- **Modules**: see which Foundry modules are installed and running, and switch them on or off (applied after a reload)
+- **Modules and settings**: see which Foundry modules are installed and running and switch them on or off, reload the GM browser to apply it, and read or change Foundry settings (never the bridge's own)
 - **Interactive Dice System**: send different dice roll requests to players from Claude
 - **Actor Ownership**: manage player permissions for characters and tokens
 - **GM-Only**: MCP Bridge only connects to Game Master users
@@ -133,7 +133,7 @@ Once connected, ask Claude Desktop:
 
 ## MCP Tools
 
-Fourteen tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool to `describe` itself to see its actions and, for one action, its parameters. Every action, and where each tool of v0.8.6 went, is in [docs/TOOLS.md](docs/TOOLS.md).
+Fifteen tools, each taking `{ "action": "...", "params": { ... } }`. Ask a tool to `describe` itself to see its actions and, for one action, its parameters. Every action, and where each tool of v0.8.6 went, is in [docs/TOOLS.md](docs/TOOLS.md).
 
 | Tool         | For                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
