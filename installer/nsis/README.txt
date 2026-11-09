@@ -1,5 +1,9 @@
-Foundry MCP Server v0.4.8
-===========================
+Foundry MCP Server
+==================
+
+A fork of foundry-vtt-mcp by Adam Dooley and its contributors (MIT licence),
+with work from community forks. Who did what: docs/CREDITS.md in the repository
+https://github.com/DerJJ/foundry-vtt-mcp
 
 Thank you for installing Foundry MCP Server!
 
@@ -13,7 +17,7 @@ using Claude Desktop.
 4. Start creating AI-powered campaigns!
 
 📋 FEATURES:
-• 22 MCP tools for comprehensive Foundry VTT integration
+• 16 domain tools (world, scenes, actors, compendium, chat, combat and more); see docs/TOOLS.md
 • Actor creation with natural language processing  
 • Quest management with HTML generation and updates
 • Campaign system with multi-part structure and progress tracking
@@ -26,18 +30,18 @@ using Claude Desktop.
 • Start Menu → Foundry MCP Server → Test Connection (verify installation)
 
 📚 DOCUMENTATION:
-Complete setup guide: https://github.com/adambdooley/foundry-vtt-mcp
+Complete setup guide: https://github.com/DerJJ/foundry-vtt-mcp
 
 💡 TROUBLESHOOTING:
 If you encounter issues:
 1. Ensure Claude Desktop was restarted after installation
 2. Verify Foundry VTT has the MCP Bridge module installed and enabled
 3. Run "Test Connection" from the Start Menu
-4. Visit: https://github.com/adambdooley/foundry-vtt-mcp/issues
+4. Visit: https://github.com/DerJJ/foundry-vtt-mcp/issues
 
 🎯 SUPPORT:
-• Documentation: https://github.com/adambdooley/foundry-vtt-mcp
-• Issues: https://github.com/adambdooley/foundry-vtt-mcp/issues
+• Documentation: https://github.com/DerJJ/foundry-vtt-mcp
+• Issues: https://github.com/DerJJ/foundry-vtt-mcp/issues
 • Foundry VTT Community: https://foundryvtt.com/community
 
 Enjoy your AI-powered Foundry VTT campaigns! 🎲

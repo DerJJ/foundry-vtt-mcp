@@ -1,8 +1,8 @@
 {
   "id": "foundry-mcp-bridge",
   "title": "Foundry MCP Bridge",
-  "description": "Connect Foundry VTT to Claude through MCP protocol. Enable AI-powered actor creation, intelligent compendium search, campaign analysis, and interactive dice roll coordination with comprehensive GM-only security.",
-  "version": "0.8.6",
+  "description": "Connect Foundry VTT to Claude through MCP protocol. Enable AI-powered actor creation, intelligent compendium search, campaign analysis, and interactive dice roll coordination with comprehensive GM-only security. A fork of Adam Dooley's foundry-vtt-mcp, with work from its community; see the credits in the repository.",
+  "version": "1.0.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14",
@@ -10,16 +10,35 @@
   },
   "authors": [
     {
-      "name": "Adam Dooley",
-      "email": "adambriandooley@gmail.com",
+      "name": "Adam Dooley (original author)",
       "url": "https://github.com/adambdooley"
+    },
+    {
+      "name": "DerJJ (this fork)",
+      "url": "https://github.com/DerJJ"
+    },
+    {
+      "name": "flownzu",
+      "url": "https://github.com/flownzu"
+    },
+    {
+      "name": "Jeffrey Winters (KillgoreAlpha)",
+      "url": "https://github.com/KillgoreAlpha"
+    },
+    {
+      "name": "Erik Gieszelmann (ErikGenibo)",
+      "url": "https://github.com/ErikGenibo"
+    },
+    {
+      "name": "Khelben La'Forge",
+      "url": "https://github.com/khelbenlaforge"
     }
   ],
-  "url": "https://github.com/adambdooley/foundry-vtt-mcp",
-  "bugs": "https://github.com/adambdooley/foundry-vtt-mcp/issues",
-  "changelog": "https://github.com/adambdooley/foundry-vtt-mcp/releases",
-  "readme": "https://github.com/adambdooley/foundry-vtt-mcp/blob/master/README.md",
-  "license": "https://github.com/adambdooley/foundry-vtt-mcp/blob/master/LICENSE",
+  "url": "https://github.com/DerJJ/foundry-vtt-mcp",
+  "bugs": "https://github.com/DerJJ/foundry-vtt-mcp/issues",
+  "changelog": "https://github.com/DerJJ/foundry-vtt-mcp/releases",
+  "readme": "https://github.com/DerJJ/foundry-vtt-mcp/blob/master/README.md",
+  "license": "https://github.com/DerJJ/foundry-vtt-mcp/blob/master/LICENSE",
   "esmodules": ["dist/main.js"],
   "styles": ["styles/module.css", "styles/enhanced-creature-index.css"],
   "languages": [
@@ -30,8 +49,8 @@
     }
   ],
   "socket": true,
-  "manifest": "https://github.com/adambdooley/foundry-vtt-mcp/releases/latest/download/module.json",
-  "download": "https://github.com/adambdooley/foundry-vtt-mcp/releases/latest/download/foundry-vtt-mcp.zip",
+  "manifest": "https://github.com/DerJJ/foundry-vtt-mcp/releases/latest/download/module.json",
+  "download": "https://github.com/DerJJ/foundry-vtt-mcp/releases/latest/download/foundry-vtt-mcp.zip",
   "protected": false,
   "coreTranslation": false,
   "library": false,

@@ -1,5 +1,7 @@
 # Foundry VTT MCP Bridge
 
+> **Credits.** This is a fork of [foundry-vtt-mcp](https://github.com/adambdooley/foundry-vtt-mcp) by **Adam Dooley** and its contributors (MIT licence). The module, the server, the bridge between them and most of the tools are their work; this fork restructured the code and added to it. Features from community forks by **flownzu**, **Jeffrey Winters (KillgoreAlpha)**, **Erik Gieszelmann (ErikGenibo)** and **Khelben La'Forge** were ported with the original authors kept in the git history. Who did what: [docs/CREDITS.md](docs/CREDITS.md). If you want the original, it is [here](https://github.com/adambdooley/foundry-vtt-mcp).
+
 Connect Foundry VTT to Claude Desktop for AI-powered campaign management through the Model Context Protocol (MCP). It currently supports Dungeons and Dragons Fifth Edition, Pathfinder Second Edition, Das Schwarze Augen Fifth Edition, Cosmere RPG System, Warhammer Fantasy Roleplay 4th Edition, & Mongoose Traveller 2nd Edition. The majority of MCP tools are system agnostic or have features that are aware of the system it is working with, excluding some DSA 5 specific tools.
 
 ## Overview
@@ -27,7 +29,7 @@ The Foundry MCP Bridge enables natural AI conversations with your Foundry VTT ga
 
 [Video guide for Windows Installer](https://youtu.be/Se04A21wrbE)
 
-1. Download the latest `FoundryMCPServer-Setup-vx.x.x.exe` from [Releases](https://github.com/adambdooley/foundry-vtt-mcp/releases)
+1. Download the latest `FoundryMCPServer-Setup-vx.x.x.exe` from [Releases](https://github.com/DerJJ/foundry-vtt-mcp/releases)
 2. Run the installer - it will:
    - Install the MCP server with bundled Node.js runtime
    - Configure the Claude Desktop MCP server settings
@@ -38,7 +40,7 @@ The Foundry MCP Bridge enables natural AI conversations with your Foundry VTT ga
 
 ### Option 2: Mac Installer
 
-1.  Download the latest `FoundryMCPServer-vx.x.x.dmg` from [Releases](https://github.com/adambdooley/foundry-vtt-mcp/releases)
+1.  Download the latest `FoundryMCPServer-vx.x.x.dmg` from [Releases](https://github.com/DerJJ/foundry-vtt-mcp/releases)
 2.  Run the package installer inside the dmg - it will:
     - Open DMG and double-click the PKG installer
     - Configure the Claude Desktop MCP server settings
@@ -52,7 +54,7 @@ The Foundry MCP Bridge enables natural AI conversations with your Foundry VTT ga
 
 1. Open Foundry VTT (v13 or v14)
 2. Select install module in the Foundry Add-ons menu
-3. At the bottom of the window, add the Manifest URL as: https://github.com/adambdooley/foundry-vtt-mcp/blob/master/packages/foundry-module/module.json and click install
+3. At the bottom of the window, add the Manifest URL as: https://github.com/DerJJ/foundry-vtt-mcp/releases/latest/download/module.json and click install
 4. Enable "Foundry MCP Bridge" in Module Management
    - **Do not change the module ID or folder name.** The MCP backend and the Claude integration both expect the module to live in a directory called `foundry-mcp-bridge`. Renaming the ID in `module.json` breaks socket routing and stops Claude from seeing the backend.
 
@@ -60,7 +62,7 @@ The Foundry MCP Bridge enables natural AI conversations with your Foundry VTT ga
 
 ```bash
 # Clone repository
-git clone https://github.com/adambdooley/foundry-vtt-mcp.git
+git clone https://github.com/DerJJ/foundry-vtt-mcp.git
 cd foundry-vtt-mcp
 
 # Install dependencies and build
@@ -226,7 +228,7 @@ npm run test:mcp:schema
 
 ## Support & Development
 
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/adambdooley/foundry-vtt-mcp/issues)
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/DerJJ/foundry-vtt-mcp/issues)
 - **YouTube Channel**: [Subscribe for updates and tutorials](https://www.youtube.com/channel/UCVrSC-FzuAk5AgvfboJj0WA)
 - **Documentation**: Built with TypeScript, comprehensive documentation included
 - **License**: MIT License (Additional Third Party licenses are included for bundled components for the installers)

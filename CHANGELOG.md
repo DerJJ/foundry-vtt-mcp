@@ -1,4 +1,8 @@
-## Unreleased
+## v1.0.0 (unreleased)
+
+This is a fork of [adambdooley/foundry-vtt-mcp](https://github.com/adambdooley/foundry-vtt-mcp) v0.8.6, reworked and extended; see [docs/CREDITS.md](docs/CREDITS.md) for the original author, the contributors and the community forks whose work was ported.
+
+**Upgrading from v0.8.6:** the 50 tools are replaced, with no aliases. The table in [docs/TOOLS.md](docs/TOOLS.md#migration-from-the-50-tools-of-v086) shows where every old tool went. Check the new world setting "Access level" (default: Read & write); the old "Allow Write Operations" is gone and is not carried over.
 
 ### Breaking
 
@@ -11,7 +15,7 @@
 
 ### Added (ported from community forks, authors kept in the git history)
 
-- **Running the table** (flownzu): `combat` (status, add, remove, roll and set initiative, begin, turns and rounds, defeated, end) and `apply-damage` for dnd5e and pf2e, `actors.party-status`, `actors.creature-card`, `chat.gm-roll`, `chat.list-tables`, `chat.roll-table`, `chat.post-rich`, `scenes.ping`, `pull-players`, `reset-fog`, `set-weather`, `list-weather`.
+- **Running the table** (flownzu): `combat` (status, add, remove, roll and set initiative, begin, turns and rounds, defeated, end) and `apply-damage` for dnd5e and pf2e, `actors.party-status`, `actors.creature-card`, `chat.gm-roll`, `chat.list-tables`, `chat.roll-table`, and the rich message options of `chat.post`, `scenes.ping`, `pull-players`, `reset-fog`, `set-weather`, `list-weather`.
 - **Scene building and time** (flownzu): `scenes.create`, `update`, `create-documents`, `update-documents`, `delete-documents`, `list-documents`; `time` for the Simple Calendar Reborn clock.
 - **Chat, rolls and spells** (DerJJ, with flownzu): `chat.get-messages` reads the chat log with structured roll results; `items.use` and `chat.request-rolls` wait for the chat messages they create; PF2e modifiers and spells cast through their spellcasting entry; spell DC and attack on PF2e and dnd5e characters.
 - **Folders, compendium management and uploads** (KillgoreAlpha): `folders.*` addressed by "Parent/Child" paths, `compendium.packs`, `create-pack`, `delete-pack`, `list-entries`, `create-entries`, `update-entries`, `delete-entries`, `copy-entry`, `media.upload-image`, `tokenImg` and folder paths in `actors.update`, and the optional `features` array of `actors.create-npc`.

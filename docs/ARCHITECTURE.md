@@ -1,5 +1,7 @@
 # Architecture
 
+This fork is built on [foundry-vtt-mcp](https://github.com/adambdooley/foundry-vtt-mcp) by Adam Dooley and its contributors; see [CREDITS.md](CREDITS.md).
+
 How the code is organised, where a change belongs, and what keeps a restructure honest. For the decisions behind it, see [docs/adr](adr/).
 
 ## Processes and packages
